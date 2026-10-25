@@ -715,19 +715,25 @@ textarea.form-control {
 .form-check input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: var(--orange-primary);
+    accent-color: var(--blue-primary);
     cursor: pointer;
 }
 
 .form-check:has(input:checked) {
     background: var(--blue-subtle);
     border-color: var(--blue-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.form-check:has(input:checked) .form-check-label {
+    color: var(--blue-primary);
 }
 
 .form-check-label {
     font-size: 0.9rem;
     font-weight: 600;
     color: var(--text-primary);
+    transition: color var(--transition-fast);
 }
 
 .checkbox-group {
