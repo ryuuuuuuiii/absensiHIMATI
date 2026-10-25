@@ -39,19 +39,19 @@
                     @if ($logo1 && file_exists(public_path('uploads/logos/' . $logo1)))
                         <img src="{{ asset('uploads/logos/' . $logo1) }}" alt="Logo 1">
                     @else
-                        <div class="login-logos"><span class="logo-placeholder"><i class="fas fa-university"></i></span></div>
+                        <span class="logo-placeholder"><i class="fas fa-university"></i></span>
                     @endif
 
                     @if ($logo2 && file_exists(public_path('uploads/logos/' . $logo2)))
                         <img src="{{ asset('uploads/logos/' . $logo2) }}" alt="Logo 2">
                     @else
-                        <div class="login-logos"><span class="logo-placeholder"><i class="fas fa-graduation-cap"></i></span></div>
+                        <span class="logo-placeholder"><i class="fas fa-graduation-cap"></i></span>
                     @endif
 
                     @if ($logo3 && file_exists(public_path('uploads/logos/' . $logo3)))
                         <img src="{{ asset('uploads/logos/' . $logo3) }}" alt="Logo 3">
                     @else
-                        <div class="login-logos"><span class="logo-placeholder"><i class="fas fa-users"></i></span></div>
+                        <span class="logo-placeholder"><i class="fas fa-users"></i></span>
                     @endif
                 </div>
                 <div class="sidebar-brand">

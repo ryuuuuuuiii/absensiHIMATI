@@ -103,15 +103,16 @@
             
             <div class="public-footer">
                 <p>&copy; {{ date('Y') }} HIMA TI Politeknik Hasnur • All Rights Reserved</p>
-                <div class="footer-links" style="margin-top: 8px;">
-                    <a href="{{ route('public.my_qr') }}"><i class="fas fa-qrcode"></i> Cari QR Anggota</a> •
-                    <a href="{{ route('public.meeting.create') }}"><i class="fas fa-calendar-plus"></i> Buat Rapat</a> •
+                <div class="footer-links">
+                    <a href="{{ route('public.my_qr') }}"><i class="fas fa-qrcode"></i> Cari QR Anggota</a>
+                    <a href="{{ route('public.meeting.create') }}"><i class="fas fa-calendar-plus"></i> Buat Rapat</a>
                     <a href="{{ route('login') }}"><i class="fas fa-lock"></i> Login Admin</a>
                 </div>
             </div>
         </div>
     </div>
     
+    <div id="toastContainer" class="toast-container"></div>
     <script src="{{ asset('assets/js/app.js') }}"></script>
     <script>
         window.BASE_URL = "{{ url('/') }}";

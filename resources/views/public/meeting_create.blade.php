@@ -242,20 +242,20 @@
 
         <!-- ========== STEP 4: Mode Rapat ========== -->
         <div class="step-content" id="step4">
-            <h3 style="margin-bottom: var(--space-6); text-align: center; color: var(--text-secondary);">
-                Pilih Mode Rapat
+            <h3 style="margin-bottom: var(--space-6); text-align: center; color: var(--text-primary); font-weight: 700;">
+                <i class="fas fa-broadcast-tower" style="color: var(--blue-primary); margin-right: 8px;"></i>Pilih Mode Rapat
             </h3>
             
             <div class="mode-selection">
-                <div class="mode-card active" onclick="selectMode('offline', this)">
-                    <div class="mode-icon"><i class="fas fa-users"></i></div>
+                <div class="mode-card rapat-type-card selected active" onclick="selectMode('offline', this)">
+                    <div class="mode-icon"><i class="fas fa-qrcode"></i></div>
                     <div class="mode-title">Rapat Offline</div>
-                    <div class="mode-desc">Absensi tatap muka langsung menggunakan Scanner Kamera QR Code</div>
+                    <div class="mode-desc">Presensi tatap muka langsung menggunakan Scanner Kamera QR Code</div>
                 </div>
-                <div class="mode-card" onclick="selectMode('online', this)">
-                    <div class="mode-icon"><i class="fas fa-laptop"></i></div>
+                <div class="mode-card rapat-type-card" onclick="selectMode('online', this)">
+                    <div class="mode-icon"><i class="fas fa-globe"></i></div>
                     <div class="mode-title">Rapat Online</div>
-                    <div class="mode-desc">Absensi jarak jauh via link khusus yang bisa diakses anggota</div>
+                    <div class="mode-desc">Presensi mandiri jarak jauh via tautan absensi khusus anggota</div>
                 </div>
             </div>
             
@@ -271,19 +271,37 @@
 
         <!-- ========== STEP 5: Konfirmasi ========== -->
         <div class="step-content" id="step5">
-            <h3 style="margin-bottom: var(--space-6); text-align: center; color: var(--text-secondary);">
-                Konfirmasi Data Rapat
+            <h3 style="margin-bottom: var(--space-6); text-align: center; color: var(--text-primary); font-weight: 700;">
+                <i class="fas fa-clipboard-check" style="color: var(--blue-primary); margin-right: 8px;"></i>Konfirmasi Data Rapat
             </h3>
             
-            <div class="card" style="background: var(--dark-surface-2); margin-bottom: var(--space-6);" id="summaryCard">
-                <!-- Populated dynamically by public-meeting.js -->
+            <div class="card" style="background: var(--bg-surface-subtle); border: 1.5px solid var(--border-color); margin-bottom: var(--space-6); padding: var(--space-5);" id="summaryCard">
+                <div class="meeting-info-grid">
+                    <div class="meeting-info-item">
+                        <label><i class="fas fa-user"></i> Pembuat Rapat</label>
+                        <p id="confirmCreator">-</p>
+                    </div>
+                    <div class="meeting-info-item">
+                        <label><i class="fas fa-tag"></i> Jenis Rapat</label>
+                        <p id="confirmJenis">-</p>
+                    </div>
+                    <div class="meeting-info-item">
+                        <label><i class="fas fa-broadcast-tower"></i> Mode Rapat</label>
+                        <p id="confirmMode">Offline</p>
+                    </div>
+                    <div class="meeting-info-item">
+                        <label><i class="fas fa-clock"></i> Tanggal & Waktu</label>
+                        <p id="confirmTanggal">-</p>
+                    </div>
+                </div>
+                <div id="confirmDetails" style="margin-top: var(--space-4);"></div>
             </div>
             
             <div style="display: flex; justify-content: space-between;">
                 <button type="button" class="btn btn-secondary" onclick="prevStep(5)">
                     <i class="fas fa-arrow-left"></i> Kembali
                 </button>
-                <button type="submit" class="btn btn-success btn-lg" id="btnSubmit">
+                <button type="submit" class="btn btn-primary btn-lg" id="btnSubmit">
                     <i class="fas fa-check-circle"></i> Buat Rapat Sekarang
                 </button>
             </div>
@@ -293,5 +311,9 @@
 @endsection
 
 @push('scripts')
+<script>
+    const JENIS_RAPAT_LABELS = {!! json_encode(config('himati.meeting_types', [])) !!};
+    const DEPARTEMEN_LABELS = {!! json_encode(config('himati.departments', [])) !!};
+</script>
 <script src="{{ asset('assets/js/public-meeting.js') }}"></script>
 @endpush
