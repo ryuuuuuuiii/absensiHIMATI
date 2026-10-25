@@ -749,47 +749,100 @@ textarea.form-control {
 .rapat-type-card {
     background: #FFFFFF;
     border: 2px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    padding: var(--space-5);
+    border-radius: var(--radius-xl);
+    padding: 18px 20px;
     cursor: pointer;
     transition: all var(--transition-base);
     display: flex;
     align-items: center;
-    gap: var(--space-4);
+    gap: 16px;
     position: relative;
     box-shadow: var(--shadow-sm);
 }
 
 .rapat-type-card:hover {
-    border-color: var(--blue-border);
+    border-color: #93C5FD;
     background: #F8FAFC;
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.08);
+    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.08);
 }
 
 .rapat-type-card.selected {
     border-color: var(--blue-primary);
-    background: var(--blue-subtle);
+    background: #EFF6FF;
     box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14), var(--shadow-md);
 }
 
-.rapat-type-card .type-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: var(--radius-md);
-    background: var(--blue-subtle);
+.rapat-type-card.selected::after {
+    content: '\f058';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 14px;
+    right: 16px;
     color: var(--blue-primary);
+    font-size: 1.2rem;
+}
+
+.rapat-type-card .type-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     transition: all var(--transition-fast);
     flex-shrink: 0;
 }
 
-.rapat-type-card.selected .type-icon {
-    background: var(--blue-primary);
+/* Individual Icon Styles: Fresh pastel containers with rich matching icons */
+.rapat-type-card .type-icon.icon-dept {
+    background: #EFF6FF;
+    color: #2563EB;
+}
+.rapat-type-card .type-icon.icon-perdana {
+    background: #ECFDF5;
+    color: #059669;
+}
+.rapat-type-card .type-icon.icon-event {
+    background: #F0F9FF;
+    color: #0284C7;
+}
+.rapat-type-card .type-icon.icon-bph {
+    background: #FFF7ED;
+    color: #EA580C;
+}
+.rapat-type-card .type-icon.icon-lintas {
+    background: #F5F3FF;
+    color: #7C3AED;
+}
+
+/* Selected state: Vibrant solid gradient + white icon */
+.rapat-type-card.selected .type-icon.icon-dept {
+    background: linear-gradient(135deg, #2563EB, #1D4ED8);
     color: #FFFFFF !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+.rapat-type-card.selected .type-icon.icon-perdana {
+    background: linear-gradient(135deg, #10B981, #059669);
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+.rapat-type-card.selected .type-icon.icon-event {
+    background: linear-gradient(135deg, #0284C7, #0369A1);
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+}
+.rapat-type-card.selected .type-icon.icon-bph {
+    background: linear-gradient(135deg, #F97316, #EA580C);
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35);
+}
+.rapat-type-card.selected .type-icon.icon-lintas {
+    background: linear-gradient(135deg, #8B5CF6, #6D28D9);
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35);
 }
 
 .rapat-type-card .type-name {

@@ -64,33 +64,43 @@
                 
                 <div class="rapat-type-grid">
                     <div class="rapat-type-card" onclick="selectRapatType('internal_dept', this)">
-                        <div class="type-icon"><i class="fas fa-building"></i></div>
-                        <div class="type-name">Internal Departemen</div>
-                        <div class="type-desc">Rapat per departemen</div>
+                        <div class="type-icon icon-dept"><i class="fas fa-building"></i></div>
+                        <div>
+                            <div class="type-name">Internal Departemen</div>
+                            <div class="type-desc">Rapat per departemen</div>
+                        </div>
                     </div>
                     
                     <div class="rapat-type-card" onclick="selectRapatType('perdana', this)">
-                        <div class="type-icon" style="background: linear-gradient(135deg, #27AE60, #1E8449);"><i class="fas fa-flag"></i></div>
-                        <div class="type-name">Rapat Perdana</div>
-                        <div class="type-desc">Rapat seluruh anggota</div>
+                        <div class="type-icon icon-perdana"><i class="fas fa-flag"></i></div>
+                        <div>
+                            <div class="type-name">Rapat Perdana</div>
+                            <div class="type-desc">Rapat seluruh anggota</div>
+                        </div>
                     </div>
                     
                     <div class="rapat-type-card" onclick="selectRapatType('kepanitiaan', this)">
-                        <div class="type-icon" style="background: linear-gradient(135deg, #3498DB, #2471A3);"><i class="fas fa-calendar-star"></i></div>
-                        <div class="type-name">Kepanitiaan / Even</div>
-                        <div class="type-desc">Rapat event & kepanitiaan</div>
+                        <div class="type-icon icon-event"><i class="fas fa-calendar-check"></i></div>
+                        <div>
+                            <div class="type-name">Kepanitiaan / Even</div>
+                            <div class="type-desc">Rapat event & kepanitiaan</div>
+                        </div>
                     </div>
                     
                     <div class="rapat-type-card" onclick="selectRapatType('bph', this)">
-                        <div class="type-icon" style="background: linear-gradient(135deg, #9B59B6, #7D3C98);"><i class="fas fa-crown"></i></div>
-                        <div class="type-name">BPH / Inti</div>
-                        <div class="type-desc">Badan Pengurus Harian</div>
+                        <div class="type-icon icon-bph"><i class="fas fa-crown"></i></div>
+                        <div>
+                            <div class="type-name">BPH / Inti</div>
+                            <div class="type-desc">Badan Pengurus Harian</div>
+                        </div>
                     </div>
                     
                     <div class="rapat-type-card" onclick="selectRapatType('lintas_dept', this)">
-                        <div class="type-icon" style="background: linear-gradient(135deg, #E74C3C, #C0392B);"><i class="fas fa-exchange-alt"></i></div>
-                        <div class="type-name">Lintas Departemen</div>
-                        <div class="type-desc">Kolaborasi antar dept</div>
+                        <div class="type-icon icon-lintas"><i class="fas fa-people-arrows"></i></div>
+                        <div>
+                            <div class="type-name">Lintas Departemen</div>
+                            <div class="type-desc">Kolaborasi antar departemen</div>
+                        </div>
                     </div>
                 </div>
                 
