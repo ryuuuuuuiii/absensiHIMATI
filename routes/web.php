@@ -15,6 +15,7 @@ use App\Http\Controllers\PublicMeetingController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Models\Meeting;
+use App\Services\FileUploadService;
 use Illuminate\Support\Facades\Route;
 
 // ============================================
@@ -226,3 +227,15 @@ Route::get('/meeting/absent_form.php', function () {
 Route::get('/meeting/online_attend.php', function () {
     return redirect()->route('public.online', request('token'));
 });
+
+// ============================================
+// UPLOADS FILE ROUTING (Support Vercel Serverless)
+// ============================================
+Route::get('/uploads/{folder}/{filename}', function (string $folder, string $filename) {
+    $res = app(FileUploadService::class)->response($folder, $filename);
+    if ($res) {
+        return $res;
+    }
+
+    abort(404);
+})->where('folder', 'profiles|bukti|dokumentasi|feedbacks');

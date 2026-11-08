@@ -8,6 +8,7 @@ use App\Models\EventDivision;
 use App\Models\EventMember;
 use App\Models\Meeting;
 use App\Models\Member;
+use App\Services\FileUploadService;
 use App\Services\GoogleSyncService;
 use App\Services\MeetingSpamProtectionService;
 use Illuminate\Http\Request;
@@ -21,8 +22,11 @@ class MeetingController extends Controller
 
     protected MeetingSpamProtectionService $spamService;
 
-    public function __construct(GoogleSyncService $syncService, MeetingSpamProtectionService $spamService)
-    {
+    public function __construct(
+        GoogleSyncService $syncService,
+        MeetingSpamProtectionService $spamService,
+        protected FileUploadService $uploadService
+    ) {
         $this->syncService = $syncService;
         $this->spamService = $spamService;
     }
@@ -470,13 +474,7 @@ class MeetingController extends Controller
 
         $file = $request->file('foto');
         $filename = 'doc_'.$meeting->id.'_'.time().'.'.$file->getClientOriginalExtension();
-        $targetDir = public_path('uploads/dokumentasi');
-
-        if (! File::isDirectory($targetDir)) {
-            File::makeDirectory($targetDir, 0755, true);
-        }
-
-        $file->move($targetDir, $filename);
+        $filename = $this->uploadService->store($file, 'dokumentasi', $filename);
 
         $photos = $meeting->foto_dokumentasi ? json_decode($meeting->foto_dokumentasi, true) : [];
         if (! is_array($photos)) {
@@ -602,13 +600,7 @@ class MeetingController extends Controller
         }
 
         $filename = 'doc_'.$meeting->id.'_'.time().'.'.$file->getClientOriginalExtension();
-        $targetDir = public_path('uploads/dokumentasi');
-
-        if (! File::isDirectory($targetDir)) {
-            File::makeDirectory($targetDir, 0755, true);
-        }
-
-        $file->move($targetDir, $filename);
+        $filename = $this->uploadService->store($file, 'dokumentasi', $filename);
 
         $photos = $meeting->foto_dokumentasi ? json_decode($meeting->foto_dokumentasi, true) : [];
         if (! is_array($photos)) {

@@ -6,11 +6,13 @@ use App\Models\Attendance;
 use App\Models\Meeting;
 use App\Models\Member;
 use App\Models\Setting;
+use App\Services\FileUploadService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\File;
 
 class PublicAttendanceController extends Controller
 {
+    public function __construct(protected FileUploadService $uploadService) {}
+
     public function onlineAttend($uniqueLink)
     {
         $meeting = Meeting::with('creator')
@@ -115,14 +117,7 @@ class PublicAttendanceController extends Controller
         if ($request->hasFile('bukti_foto')) {
             $file = $request->file('bukti_foto');
             $filename = 'bukti_'.$meeting->id.'_'.$userId.'_'.time().'.'.$file->getClientOriginalExtension();
-            $targetDir = public_path('uploads/bukti');
-
-            if (! File::isDirectory($targetDir)) {
-                File::makeDirectory($targetDir, 0755, true);
-            }
-
-            $file->move($targetDir, $filename);
-            $data['bukti_foto'] = $filename;
+            $data['bukti_foto'] = $this->uploadService->store($file, 'bukti', $filename);
         }
 
         if ($attendance) {
@@ -201,14 +196,7 @@ class PublicAttendanceController extends Controller
         if ($request->hasFile('bukti_foto')) {
             $file = $request->file('bukti_foto');
             $filename = 'surat_'.$meeting->id.'_'.$userId.'_'.time().'.'.$file->getClientOriginalExtension();
-            $targetDir = public_path('uploads/bukti');
-
-            if (! File::isDirectory($targetDir)) {
-                File::makeDirectory($targetDir, 0755, true);
-            }
-
-            $file->move($targetDir, $filename);
-            $data['bukti_foto'] = $filename;
+            $data['bukti_foto'] = $this->uploadService->store($file, 'bukti', $filename);
         }
 
         if ($attendance) {

@@ -7,16 +7,19 @@ use App\Models\AnnouncementRead;
 use App\Models\Attendance;
 use App\Models\Feedback;
 use App\Models\Member;
+use App\Services\FileUploadService;
 use App\Services\QrCodeService;
 use App\Services\SpService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class PortalController extends Controller
 {
-    public function __construct(protected QrCodeService $qrService) {}
+    public function __construct(
+        protected QrCodeService $qrService,
+        protected FileUploadService $uploadService
+    ) {}
 
     public function dashboard()
     {
@@ -259,13 +262,7 @@ class PortalController extends Controller
 
             $file = $request->file('profile_photo');
             $filename = 'profile_'.$member->id.'_'.time().'.'.$file->getClientOriginalExtension();
-            $targetDir = public_path('uploads/profiles');
-
-            if (! File::isDirectory($targetDir)) {
-                File::makeDirectory($targetDir, 0755, true);
-            }
-
-            $file->move($targetDir, $filename);
+            $filename = $this->uploadService->store($file, 'profiles', $filename);
             $data['profile_photo'] = $filename;
         }
 
@@ -309,13 +306,7 @@ class PortalController extends Controller
         if ($request->hasFile('screenshot')) {
             $file = $request->file('screenshot');
             $screenshotFilename = 'feedback_'.time().'_'.Str::random(10).'.'.$file->getClientOriginalExtension();
-            $targetDir = public_path('uploads/feedbacks');
-
-            if (! File::isDirectory($targetDir)) {
-                File::makeDirectory($targetDir, 0755, true);
-            }
-
-            $file->move($targetDir, $screenshotFilename);
+            $screenshotFilename = $this->uploadService->store($file, 'feedbacks', $screenshotFilename);
         }
 
         Feedback::create([
@@ -442,11 +433,7 @@ class PortalController extends Controller
             return;
         }
 
-        $filepath = public_path('uploads/profiles/'.$filename);
-
-        if (File::exists($filepath)) {
-            File::delete($filepath);
-        }
+        $this->uploadService->delete('profiles', $filename);
     }
 
     private function storeProofPhoto(Request $request, Attendance $attendance, string $prefix): ?string
@@ -459,15 +446,8 @@ class PortalController extends Controller
 
         $file = $request->file('bukti_foto');
         $filename = $prefix.'_'.$attendance->meeting_id.'_'.$attendance->user_id.'_'.time().'.'.$file->getClientOriginalExtension();
-        $targetDir = public_path('uploads/bukti');
 
-        if (! File::isDirectory($targetDir)) {
-            File::makeDirectory($targetDir, 0755, true);
-        }
-
-        $file->move($targetDir, $filename);
-
-        return $filename;
+        return $this->uploadService->store($file, 'bukti', $filename);
     }
 
     private function deleteProofFile(?string $filename): void
@@ -476,10 +456,6 @@ class PortalController extends Controller
             return;
         }
 
-        $filepath = public_path('uploads/bukti/'.$filename);
-
-        if (File::exists($filepath)) {
-            File::delete($filepath);
-        }
+        $this->uploadService->delete('bukti', $filename);
     }
 }
