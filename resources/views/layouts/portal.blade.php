@@ -423,7 +423,11 @@
 
             async function fetchPageData(urlPath) {
                 const res = await fetch(urlPath, {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: {
+                        'Accept': 'text/html,application/xhtml+xml,application/xml',
+                        'X-Portal-Spa': '1'
+                    },
+                    credentials: 'same-origin'
                 });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const htmlText = await res.text();

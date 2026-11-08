@@ -28,20 +28,22 @@ class PortalController extends Controller
 
         $recentAttendances = $member->attendances()
             ->with('meeting')
-            ->whereHas('meeting', function ($query) {
-                $query->where('status', 'completed');
-            })
-            ->get()
-            ->sortByDesc(fn (Attendance $attendance) => $attendance->meeting?->tanggal?->timestamp ?? 0)
-            ->take(5);
+            ->join('meetings', 'meetings.id', '=', 'attendances.meeting_id')
+            ->where('meetings.status', 'completed')
+            ->orderByDesc('meetings.tanggal')
+            ->orderByDesc('meetings.waktu_mulai')
+            ->select('attendances.*')
+            ->take(5)
+            ->get();
 
         $upcomingAttendances = $member->attendances()
             ->with('meeting')
-            ->whereHas('meeting', function ($query) {
-                $query->whereIn('status', ['draft', 'scanning']);
-            })
-            ->get()
-            ->sortBy(fn (Attendance $attendance) => $attendance->meeting?->tanggal?->timestamp ?? 0);
+            ->join('meetings', 'meetings.id', '=', 'attendances.meeting_id')
+            ->whereIn('meetings.status', ['draft', 'scanning'])
+            ->orderBy('meetings.tanggal')
+            ->orderBy('meetings.waktu_mulai')
+            ->select('attendances.*')
+            ->get();
 
         $unattendedAttendances = $upcomingAttendances->filter(fn (Attendance $a) => ! in_array($a->status, ['hadir', 'izin', 'sakit'], true));
         $attendedAttendances = $upcomingAttendances->filter(fn (Attendance $a) => in_array($a->status, ['hadir', 'izin', 'sakit'], true));
@@ -177,6 +179,7 @@ class PortalController extends Controller
         }
 
         $attendance->update($data);
+        cache()->forget("portal_stats_{$member->id}");
 
         return redirect()->route('portal.attendance')
             ->with('success', 'Pengajuan absen berhasil dikirim.'.$member->sp_attendance_notice);
@@ -220,6 +223,7 @@ class PortalController extends Controller
         }
 
         $attendance->update($data);
+        cache()->forget("portal_stats_{$member->id}");
 
         return back()->with('success', 'Presensi kehadiran berhasil dicatat.'.$member->sp_attendance_notice.' Terima kasih!');
     }
@@ -331,29 +335,31 @@ class PortalController extends Controller
      */
     private function attendanceStats(Member $member): array
     {
-        $summary = $member->attendances()
-            ->join('meetings', 'meetings.id', '=', 'attendances.meeting_id')
-            ->where('meetings.status', 'completed')
-            ->selectRaw("
-                COUNT(*) as total,
-                SUM(CASE WHEN attendances.status = 'hadir' THEN 1 ELSE 0 END) as hadir,
-                SUM(CASE WHEN attendances.status = 'izin' THEN 1 ELSE 0 END) as izin,
-                SUM(CASE WHEN attendances.status = 'sakit' THEN 1 ELSE 0 END) as sakit,
-                SUM(CASE WHEN attendances.status = 'alpha' THEN 1 ELSE 0 END) as alpha
-            ")
-            ->first();
+        return cache()->remember("portal_stats_{$member->id}", 30, function () use ($member) {
+            $summary = $member->attendances()
+                ->join('meetings', 'meetings.id', '=', 'attendances.meeting_id')
+                ->where('meetings.status', 'completed')
+                ->selectRaw("
+                    COUNT(*) as total,
+                    SUM(CASE WHEN attendances.status = 'hadir' THEN 1 ELSE 0 END) as hadir,
+                    SUM(CASE WHEN attendances.status = 'izin' THEN 1 ELSE 0 END) as izin,
+                    SUM(CASE WHEN attendances.status = 'sakit' THEN 1 ELSE 0 END) as sakit,
+                    SUM(CASE WHEN attendances.status = 'alpha' THEN 1 ELSE 0 END) as alpha
+                ")
+                ->first();
 
-        $total = (int) ($summary->total ?? 0);
-        $hadir = (int) ($summary->hadir ?? 0);
+            $total = (int) ($summary->total ?? 0);
+            $hadir = (int) ($summary->hadir ?? 0);
 
-        return [
-            'total' => $total,
-            'hadir' => $hadir,
-            'izin' => (int) ($summary->izin ?? 0),
-            'sakit' => (int) ($summary->sakit ?? 0),
-            'alpha' => (int) ($summary->alpha ?? 0),
-            'percentage' => $total > 0 ? round(($hadir / $total) * 100, 1) : 0.0,
-        ];
+            return [
+                'total' => $total,
+                'hadir' => $hadir,
+                'izin' => (int) ($summary->izin ?? 0),
+                'sakit' => (int) ($summary->sakit ?? 0),
+                'alpha' => (int) ($summary->alpha ?? 0),
+                'percentage' => $total > 0 ? round(($hadir / $total) * 100, 1) : 0.0,
+            ];
+        });
     }
 
     public function announcements()
