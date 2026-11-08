@@ -6,7 +6,6 @@ use App\Services\SpService;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\File;
 
 class Member extends Authenticatable
 {
@@ -114,9 +113,7 @@ class Member extends Authenticatable
             return null;
         }
 
-        $path = public_path('uploads/profiles/'.$this->profile_photo);
-
-        return File::exists($path) ? asset('uploads/profiles/'.$this->profile_photo) : null;
+        return asset('uploads/profiles/'.$this->profile_photo);
     }
 
     public function hasAccount(): bool

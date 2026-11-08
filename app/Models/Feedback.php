@@ -45,7 +45,7 @@ class Feedback extends Model
 
     public function getScreenshotUrlAttribute(): ?string
     {
-        if ($this->screenshot && file_exists(public_path('uploads/feedbacks/'.$this->screenshot))) {
+        if ($this->screenshot) {
             return asset('uploads/feedbacks/'.$this->screenshot);
         }
 
