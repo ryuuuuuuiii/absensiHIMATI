@@ -3,7 +3,6 @@
  * Sidebar Navigation — Admin Only
  * Absensi HIMA TI Politeknik Hasnur
  */
-
 $currentUser = getCurrentUser();
 $currentFile = basename($_SERVER['PHP_SELF'], '.php');
 $currentDir = basename(dirname($_SERVER['PHP_SELF']));
@@ -18,21 +17,21 @@ $logo3 = getSetting('logo_3', '');
     <!-- Sidebar Header with Logos -->
     <div class="sidebar-header">
         <div class="sidebar-logos">
-            <?php if ($logo1): ?>
+            <?php if ($logo1) { ?>
                 <img src="<?= BASE_URL ?>/uploads/logos/<?= $logo1 ?>" alt="Logo 1">
-            <?php else: ?>
+            <?php } else { ?>
                 <div class="login-logos"><span class="logo-placeholder"><i class="fas fa-image"></i></span></div>
-            <?php endif; ?>
-            <?php if ($logo2): ?>
+            <?php } ?>
+            <?php if ($logo2) { ?>
                 <img src="<?= BASE_URL ?>/uploads/logos/<?= $logo2 ?>" alt="Logo 2">
-            <?php else: ?>
+            <?php } else { ?>
                 <div class="login-logos"><span class="logo-placeholder"><i class="fas fa-image"></i></span></div>
-            <?php endif; ?>
-            <?php if ($logo3): ?>
+            <?php } ?>
+            <?php if ($logo3) { ?>
                 <img src="<?= BASE_URL ?>/uploads/logos/<?= $logo3 ?>" alt="Logo 3">
-            <?php else: ?>
+            <?php } else { ?>
                 <div class="login-logos"><span class="logo-placeholder"><i class="fas fa-image"></i></span></div>
-            <?php endif; ?>
+            <?php } ?>
         </div>
         <div class="sidebar-brand">
             <?= APP_NAME ?>

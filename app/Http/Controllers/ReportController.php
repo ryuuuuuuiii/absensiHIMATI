@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Meeting;
-use App\Models\Member;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -12,8 +10,8 @@ class ReportController extends Controller
     public function index(Request $request)
     {
         $filterMonth = (int) $request->query('month', now()->month);
-        $filterYear  = (int) $request->query('year', now()->year);
-        $filterDept  = $request->query('dept', '');
+        $filterYear = (int) $request->query('year', now()->year);
+        $filterDept = $request->query('dept', '');
 
         $departments = config('himati.departments', []);
 
@@ -57,7 +55,14 @@ class ReportController extends Controller
             );
 
         if ($filterDept) {
-            $query->where('u.departemen', $filterDept);
+            if ($filterDept === 'BPH') {
+                $query->where(function ($q) {
+                    $q->where('u.departemen', 'Inti')
+                        ->orWhere('u.is_bph', true);
+                });
+            } else {
+                $query->where('u.departemen', $filterDept);
+            }
         }
 
         $reportData = $query->groupBy('u.id', 'u.nama_lengkap', 'u.departemen', 'u.jabatan')
@@ -68,7 +73,7 @@ class ReportController extends Controller
         $bulanList = [
             1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
             5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
         ];
 
         return view('reports.index', compact(

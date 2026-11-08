@@ -5,27 +5,27 @@
  * Bisa di-bookmark dan diakses kembali
  */
 
-require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__.'/../config/config.php';
+require_once __DIR__.'/../includes/functions.php';
 
 $token = sanitize($_GET['token'] ?? '');
 if (empty($token)) {
-    die('Link tidak valid.');
+    exit('Link tidak valid.');
 }
 
 $db = getDB();
 
-$stmt = $db->prepare("
+$stmt = $db->prepare('
     SELECT m.*, u.nama_lengkap as creator_name, u.departemen as creator_dept
     FROM meetings m 
     JOIN users u ON m.created_by = u.id 
     WHERE m.unique_link = ?
-");
+');
 $stmt->execute([$token]);
 $meeting = $stmt->fetch();
 
-if (!$meeting) {
-    die('Rapat tidak ditemukan.');
+if (! $meeting) {
+    exit('Rapat tidak ditemukan.');
 }
 
 // Get attendance counts
@@ -39,9 +39,9 @@ $stmt->execute([$meeting['id']]);
 $stats = $stmt->fetch();
 
 // URLs
-$scanUrl = BASE_URL . '/rapat/scanner.php?token=' . $meeting['unique_link'];
-$absentUrl = BASE_URL . '/meeting/absent_form.php?token=' . $meeting['absent_link'];
-$onlineUrl = BASE_URL . '/meeting/online_attend.php?token=' . $meeting['unique_link'];
+$scanUrl = BASE_URL.'/rapat/scanner.php?token='.$meeting['unique_link'];
+$absentUrl = BASE_URL.'/meeting/absent_form.php?token='.$meeting['absent_link'];
+$onlineUrl = BASE_URL.'/meeting/online_attend.php?token='.$meeting['unique_link'];
 
 // Get logos
 $logo1 = getSetting('logo_1', '');
@@ -96,12 +96,12 @@ $logo3 = getSetting('logo_3', '');
                     </div>
                 </div>
                 
-                <?php if ($meeting['fokus_bahasan'] || $meeting['nama_event']): ?>
+                <?php if ($meeting['fokus_bahasan'] || $meeting['nama_event']) { ?>
                 <div style="margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--dark-border);">
                     <label style="font-size: var(--font-xs); color: var(--text-muted);">Agenda / Fokus</label>
                     <p style="margin-top: var(--space-1);"><?= htmlspecialchars($meeting['fokus_bahasan'] ?: $meeting['nama_event']) ?></p>
                 </div>
-                <?php endif; ?>
+                <?php } ?>
                 
                 <div style="margin-top: var(--space-4); text-align: center;">
                     <div style="font-size: var(--font-2xl); font-weight: 800; color: var(--success);">
@@ -118,14 +118,14 @@ $logo3 = getSetting('logo_3', '');
                 </h3>
                 
                 <!-- Scanner Link -->
-                <?php if ($meeting['mode_rapat'] === 'offline'): ?>
+                <?php if ($meeting['mode_rapat'] === 'offline') { ?>
                 <a href="<?= $scanUrl ?>" class="btn btn-primary btn-lg btn-block mb-4" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
                     <i class="fas fa-qrcode"></i> Buka Scanner QR Code
                 </a>
-                <?php endif; ?>
+                <?php } ?>
                 
                 <!-- Online Attend Link -->
-                <?php if ($meeting['mode_rapat'] === 'online'): ?>
+                <?php if ($meeting['mode_rapat'] === 'online') { ?>
                 <div style="margin-bottom: var(--space-4);">
                     <label class="form-label" style="font-size: var(--font-xs);">
                         <i class="fas fa-link" style="color: var(--info);"></i> Link Absensi Online (share ke peserta)
@@ -135,7 +135,7 @@ $logo3 = getSetting('logo_3', '');
                         <button onclick="copyLink('<?= $onlineUrl ?>', this)"><i class="fas fa-copy"></i> Salin</button>
                     </div>
                 </div>
-                <?php endif; ?>
+                <?php } ?>
                 
                 <!-- Absent Link -->
                 <div>

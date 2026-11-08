@@ -158,7 +158,8 @@
                             {{ $m->fokus_bahasan ?? 'Rapat Kepanitiaan' }}
                         </a>
                         <div style="font-size: var(--font-xs); color: var(--text-muted); margin-top: 2px;">
-                            {{ $m->tanggal->format('d M Y') }} • {{ substr($m->waktu_mulai, 0, 5) }} WITA
+                            <i class="fas fa-calendar-alt" style="color: var(--blue-primary); font-size: 10px;"></i>
+                            {{ $m->tanggal->locale('id')->translatedFormat('d M Y') }} • {{ substr($m->waktu_mulai, 0, 5) }} WITA
                         </div>
                     </div>
                     @endforeach
@@ -206,14 +207,43 @@
                 <input type="hidden" name="division_id" id="targetDivId">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label class="form-label">Pilih Anggota <span class="required">*</span></label>
-                        <div style="max-height: 220px; overflow-y: auto; background: var(--dark-surface-2); padding: 10px; border-radius: var(--radius-md);">
-                            @foreach($allMembers as $m)
-                                <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; font-size: var(--font-sm);">
-                                    <input type="checkbox" name="user_ids[]" value="{{ $m->id }}">
-                                    <span>{{ $m->nama_lengkap }} <small style="color: var(--text-muted);">({{ $m->departemen }})</small></span>
+                        <div class="d-flex justify-between align-center mb-2">
+                            <label class="form-label mb-0">Pilih Anggota <span class="required">*</span></label>
+                            <span class="badge badge-info" style="font-size: var(--font-xs);" id="availableBadge">
+                                {{ $availableMembers->count() }} Anggota Tersedia
+                            </span>
+                        </div>
+
+                        @if($availableMembers->isNotEmpty())
+                        <div style="margin-bottom: var(--space-2);">
+                            <input type="text" id="memberSearchInput" class="form-control" placeholder="Cari nama atau departemen..." style="padding: 7px 12px; font-size: var(--font-sm);" onkeyup="filterMemberCheckboxes()">
+                        </div>
+                        <div class="d-flex justify-between align-center mb-2" style="font-size: var(--font-xs);">
+                            <span style="color: var(--text-muted);"><span id="selectedMemberCount">0</span> anggota dipilih</span>
+                            <div style="display: flex; gap: 8px;">
+                                <a href="javascript:void(0)" onclick="toggleSelectAllMembers(true)" style="color: var(--blue-primary); text-decoration: none; font-weight: 500;">Pilih Semua</a>
+                                <span style="color: var(--border-color);">|</span>
+                                <a href="javascript:void(0)" onclick="toggleSelectAllMembers(false)" style="color: var(--text-muted); text-decoration: none;">Batal Pilih</a>
+                            </div>
+                        </div>
+                        @endif
+
+                        <div id="memberListContainer" style="max-height: 220px; overflow-y: auto; background: var(--bg-surface-subtle); border: 1.5px solid var(--border-color); padding: 8px 12px; border-radius: var(--radius-md);">
+                            @forelse($availableMembers as $m)
+                                <label class="member-checkbox-row" data-name="{{ strtolower($m->nama_lengkap) }}" data-dept="{{ strtolower($m->departemen) }}" style="display: flex; align-items: center; gap: 10px; padding: 6px 4px; border-bottom: 1px solid var(--border-color); cursor: pointer; font-size: var(--font-sm); transition: background var(--transition-fast);">
+                                    <input type="checkbox" name="user_ids[]" value="{{ $m->id }}" onchange="updateSelectedCount()" style="width: 16px; height: 16px; accent-color: var(--blue-primary); cursor: pointer;">
+                                    <span style="font-weight: 500; color: var(--text-primary);">{{ $m->nama_lengkap }}</span>
+                                    <span class="badge badge-dept" style="margin-left: auto; font-size: 0.72rem; padding: 2px 8px;">
+                                        {{ $m->departemen }}
+                                    </span>
                                 </label>
-                            @endforeach
+                            @empty
+                                <div style="text-align: center; padding: var(--space-5); color: var(--text-muted);">
+                                    <i class="fas fa-check-circle" style="color: var(--success); font-size: 1.8rem; display: block; margin-bottom: 8px;"></i>
+                                    <strong>Semua Anggota Sudah Terdaftar</strong>
+                                    <p style="margin: 4px 0 0 0; font-size: var(--font-xs);">Tidak ada lagi anggota HIMA TI yang belum memiliki divisi di event ini.</p>
+                                </div>
+                            @endforelse
                         </div>
                     </div>
                     <div class="form-group">
@@ -223,7 +253,9 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('addMemberModal')">Batal</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Tambahkan</button>
+                    <button type="submit" class="btn btn-primary" id="btnSubmitMember" @if($availableMembers->isEmpty()) disabled @endif>
+                        <i class="fas fa-check"></i> Tambahkan
+                    </button>
                 </div>
             </form>
         </div>
@@ -237,6 +269,9 @@
         .event-detail-grid {
             grid-template-columns: 1fr !important;
         }
+    }
+    .member-checkbox-row:hover {
+        background: var(--blue-subtle);
     }
 </style>
 @endpush
@@ -252,7 +287,41 @@ function closeModal(id) {
 function openAddMemberModal(divId, divName) {
     document.getElementById('targetDivId').value = divId;
     document.getElementById('targetDivName').textContent = divName;
+    const searchInput = document.getElementById('memberSearchInput');
+    if (searchInput) {
+        searchInput.value = '';
+        filterMemberCheckboxes();
+    }
+    toggleSelectAllMembers(false);
     openModal('addMemberModal');
+}
+function updateSelectedCount() {
+    const checked = document.querySelectorAll('input[name="user_ids[]"]:checked').length;
+    const counter = document.getElementById('selectedMemberCount');
+    if (counter) counter.textContent = checked;
+}
+function toggleSelectAllMembers(selectAll) {
+    const rows = document.querySelectorAll('.member-checkbox-row');
+    rows.forEach(row => {
+        if (row.style.display !== 'none') {
+            const cb = row.querySelector('input[name="user_ids[]"]');
+            if (cb) cb.checked = selectAll;
+        }
+    });
+    updateSelectedCount();
+}
+function filterMemberCheckboxes() {
+    const query = (document.getElementById('memberSearchInput')?.value || '').toLowerCase().trim();
+    const rows = document.querySelectorAll('.member-checkbox-row');
+    rows.forEach(row => {
+        const name = row.getAttribute('data-name') || '';
+        const dept = row.getAttribute('data-dept') || '';
+        if (name.includes(query) || dept.includes(query)) {
+            row.style.display = 'flex';
+        } else {
+            row.style.display = 'none';
+        }
+    });
 }
 </script>
 @endpush

@@ -64,26 +64,52 @@
                     @foreach ($meetings as $m)
                     <tr>
                         <td>
-                            <div style="font-weight: 600;">{{ $m->tanggal->format('d M Y') }}</div>
-                            <small style="color: var(--text-muted);">{{ substr($m->waktu_mulai, 0, 5) }} WITA</small>
+                            <div style="font-weight: 600; color: var(--text-primary);">{{ $m->tanggal->locale('id')->translatedFormat('d M Y') }}</div>
+                            <small style="color: var(--text-muted); font-size: 0.8rem;">
+                                <i class="fas fa-clock" style="color: var(--blue-primary); font-size: 10px;"></i>
+                                {{ substr($m->waktu_mulai, 0, 5) }} WITA
+                            </small>
                         </td>
                         <td>
-                            <span class="badge badge-primary">{{ $m->jenis_label }}</span>
-                            @if($m->mode_rapat === 'online')
-                                <span class="badge badge-info" style="font-size: 10px; margin-left: 4px;">Online</span>
-                            @endif
+                            <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+                                <span class="badge badge-primary">{{ $m->jenis_label }}</span>
+                                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                    @if($m->mode_rapat === 'online')
+                                        <span class="badge badge-info" style="font-size: 10px;"><i class="fas fa-globe"></i> Online</span>
+                                    @else
+                                        <span class="badge badge-secondary" style="font-size: 10px;"><i class="fas fa-building"></i> Offline</span>
+                                    @endif
+                                    @if($m->departemen)
+                                        <span class="badge badge-orange" style="font-size: 10px;">{{ $m->departemen }}</span>
+                                    @endif
+                                    @if($m->nama_event)
+                                        <span class="badge badge-purple" style="font-size: 10px;">{{ $m->nama_event }}</span>
+                                    @endif
+                                </div>
+                            </div>
                         </td>
                         <td>
-                            <div style="font-weight: 500;">
+                            <div style="font-weight: 600; color: var(--text-primary);">
                                 {{ $m->fokus_bahasan ?? ($m->nama_event ?? '-') }}
                             </div>
                             @if($m->divisi_rapat)
-                                <small style="color: var(--text-muted);">Divisi: {{ $m->divisi_rapat }}</small>
+                                <div style="margin-top: 3px;">
+                                    <span class="badge badge-secondary" style="font-size: 10px; font-weight: 500;">
+                                        <i class="fas fa-sitemap"></i> Divisi: {{ $m->divisi_rapat }}
+                                    </span>
+                                </div>
                             @endif
                         </td>
-                        <td>{{ $m->creator ? $m->creator->nama_lengkap : 'Admin' }}</td>
                         <td>
-                            <strong style="color: var(--success);">{{ $m->jumlah_hadir }}</strong> / {{ $m->total_peserta }}
+                            <span style="font-weight: 500; color: var(--text-secondary);">
+                                {{ $m->creator ? $m->creator->nama_lengkap : 'Admin' }}
+                            </span>
+                        </td>
+                        <td>
+                            <div style="display: inline-flex; align-items: baseline; gap: 3px;">
+                                <span style="font-weight: 700; color: var(--success); font-size: 1rem;">{{ $m->jumlah_hadir }}</span>
+                                <span style="font-weight: 500; color: var(--text-muted); font-size: 0.85rem;">/ {{ $m->total_peserta }}</span>
+                            </div>
                         </td>
                         <td>
                             @if($m->status === 'scanning')

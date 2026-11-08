@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `admin` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
--- TABEL: users (Registry Anggota — tanpa password)
+-- TABEL: users (Registry Anggota + Akun Portal)
 -- ============================================
 CREATE TABLE IF NOT EXISTS `users` (
     `id` INT(11) NOT NULL AUTO_INCREMENT,
@@ -39,8 +39,12 @@ CREATE TABLE IF NOT EXISTS `users` (
     `departemen` VARCHAR(50) NOT NULL,
     `jabatan` VARCHAR(50) NOT NULL,
     `email` VARCHAR(100) DEFAULT NULL,
+    `password` VARCHAR(255) DEFAULT NULL,
     `qr_code` VARCHAR(255) NOT NULL UNIQUE,
     `qr_image` VARCHAR(255) DEFAULT NULL,
+    `profile_photo` VARCHAR(255) DEFAULT NULL,
+    `remember_token` VARCHAR(100) DEFAULT NULL,
+    `last_login_at` DATETIME DEFAULT NULL,
     `is_bph` TINYINT(1) NOT NULL DEFAULT 0,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,

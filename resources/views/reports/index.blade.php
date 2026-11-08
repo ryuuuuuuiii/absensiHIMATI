@@ -39,10 +39,10 @@
 <div class="stat-cards mb-6">
     @foreach ($deptSummary as $ds)
     <div class="stat-card">
-        <div class="stat-icon orange"><i class="fas fa-building"></i></div>
+        <div class="stat-icon blue"><i class="fas fa-building"></i></div>
         <div class="stat-info">
             <h3>{{ data_get($ds, 'avg_hadir', 0) }}%</h3>
-            <p>{{ data_get($ds, 'departemen', '-') }} ({{ data_get($ds, 'total_anggota', 0) }} org)</p>
+            <p>{{ data_get($ds, 'departemen', '-') }} • {{ data_get($ds, 'total_anggota', 0) }} orang</p>
         </div>
     </div>
     @endforeach

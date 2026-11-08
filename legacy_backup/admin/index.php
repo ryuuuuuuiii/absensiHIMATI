@@ -4,11 +4,11 @@
  * Absensi HIMA TI Politeknik Hasnur
  */
 
-require_once __DIR__ . '/../includes/auth_check.php';
+require_once __DIR__.'/../includes/auth_check.php';
 
-if (!isAdmin()) {
+if (! isAdmin()) {
     setFlash('danger', 'Anda tidak memiliki akses ke halaman ini.');
-    redirect(BASE_URL . '/dashboard/index.php');
+    redirect(BASE_URL.'/dashboard/index.php');
 }
 
 $pageTitle = 'Admin Dashboard';
@@ -42,11 +42,11 @@ for ($i = 5; $i >= 0; $i--) {
     $month = date('n', strtotime("-$i months"));
     $year = date('Y', strtotime("-$i months"));
     $label = date('M Y', strtotime("-$i months"));
-    
+
     $stmt = $db->prepare("SELECT COUNT(*) as total FROM meetings WHERE MONTH(tanggal) = ? AND YEAR(tanggal) = ? AND status = 'completed'");
     $stmt->execute([$month, $year]);
     $count = $stmt->fetch()['total'];
-    
+
     $monthlyData[] = ['label' => $label, 'count' => $count];
 }
 
@@ -79,7 +79,7 @@ $recentMeetings = $stmt->fetchAll();
 
 $extraJS = ['https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'];
 
-include __DIR__ . '/../includes/header.php';
+include __DIR__.'/../includes/header.php';
 ?>
 
 <!-- Stats -->
@@ -126,7 +126,7 @@ include __DIR__ . '/../includes/header.php';
     <!-- Top Attendees -->
     <div class="card">
         <h3 class="card-title mb-4"><i class="fas fa-trophy"></i> Kehadiran Terbaik</h3>
-        <?php foreach (array_slice($topAttendees, 0, 5) as $i => $att): ?>
+        <?php foreach (array_slice($topAttendees, 0, 5) as $i => $att) { ?>
         <div class="d-flex align-center gap-3 mb-4">
             <div style="width: 28px; height: 28px; border-radius: 50%; background: <?= $i === 0 ? 'var(--primary)' : 'var(--dark-surface-3)' ?>; display: flex; align-items: center; justify-content: center; font-size: var(--font-xs); font-weight: 700; color: white; flex-shrink: 0;">
                 <?= $i + 1 ?>
@@ -139,7 +139,7 @@ include __DIR__ . '/../includes/header.php';
             </div>
             <span class="badge badge-success"><?= $att['pct'] ?>%</span>
         </div>
-        <?php endforeach; ?>
+        <?php } ?>
     </div>
 </div>
 
@@ -162,7 +162,7 @@ include __DIR__ . '/../includes/header.php';
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($recentMeetings as $m): ?>
+                <?php foreach ($recentMeetings as $m) { ?>
                 <tr>
                     <td><?= formatTanggal($m['tanggal'], 'short') ?></td>
                     <td><span class="badge badge-primary"><?= getJenisRapatLabel($m['jenis_rapat']) ?></span></td>
@@ -175,7 +175,7 @@ include __DIR__ . '/../includes/header.php';
                         </a>
                     </td>
                 </tr>
-                <?php endforeach; ?>
+                <?php } ?>
             </tbody>
         </table>
     </div>
@@ -230,4 +230,4 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 </style>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__.'/../includes/footer.php'; ?>

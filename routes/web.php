@@ -1,29 +1,51 @@
 <?php
 
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\MeetingController;
+use App\Http\Controllers\MemberAccountController;
+use App\Http\Controllers\MemberAuthController;
 use App\Http\Controllers\MemberController;
+use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PublicAttendanceController;
 use App\Http\Controllers\PublicMeetingController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
+use App\Models\Meeting;
 use Illuminate\Support\Facades\Route;
 
 // ============================================
 // ROOT REDIRECT
 // ============================================
 Route::get('/', function () {
-    return auth()->check() ? redirect()->route('dashboard') : redirect()->route('public.meeting.create');
+    if (auth()->check()) {
+        return redirect()->route('dashboard');
+    }
+
+    if (auth('member')->check()) {
+        return redirect()->route('portal.dashboard');
+    }
+
+    return redirect()->route('login');
 });
 
 // ============================================
-// PUBLIC ROUTES
+// MEETING CREATION (Wajib Akun: Admin / Pengurus)
 // ============================================
-Route::get('/rapat', [PublicMeetingController::class, 'index'])->name('public.meeting.create');
-Route::post('/rapat', [PublicMeetingController::class, 'store'])->name('public.meeting.store');
+Route::middleware('auth:web,member')->group(function () {
+    Route::get('/rapat', [PublicMeetingController::class, 'index'])->name('public.meeting.create');
+    Route::post('/rapat', [PublicMeetingController::class, 'store'])->name('public.meeting.store');
+});
+
+// ============================================
+// PUBLIC ATTENDANCE & SCANNER ROUTES
+// ============================================
 Route::get('/rapat/{unique_link}/hasil', [PublicMeetingController::class, 'hasil'])->name('public.hasil');
+Route::post('/rapat/{unique_link}/finish', [PublicMeetingController::class, 'finish'])->name('public.meeting.finish');
+Route::post('/rapat/{unique_link}/cancel', [PublicMeetingController::class, 'cancel'])->name('public.meeting.cancel');
 Route::get('/rapat/{unique_link}/scanner', [PublicMeetingController::class, 'scanner'])->name('public.scanner');
 
 Route::get('/rapat/{unique_link}/online', [PublicAttendanceController::class, 'onlineAttend'])->name('public.online');
@@ -42,12 +64,48 @@ Route::get('/hasil/{unique_link}', [PublicMeetingController::class, 'hasil']);
 Route::get('/my-qr', [MemberController::class, 'myQr'])->name('public.my_qr');
 Route::get('/my-qr/{id}/download', [MemberController::class, 'downloadSingleQr'])->name('public.my_qr.download');
 
+// Event data API (for dynamic meeting form)
+Route::get('/api/events/{event}/data', [MeetingController::class, 'getEventData'])->name('api.events.data');
+Route::get('/meeting/process/get_event_data.php', [MeetingController::class, 'getEventData']);
+
 // ============================================
 // AUTHENTICATION
 // ============================================
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// ============================================
+// MEMBER PORTAL (PORTAL PENGURUS)
+// ============================================
+Route::prefix('portal')->name('portal.')->group(function () {
+    Route::get('/login', [MemberAuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [MemberAuthController::class, 'login'])->name('login.submit');
+
+    Route::middleware('auth:member')->group(function () {
+        Route::post('/logout', [MemberAuthController::class, 'logout'])->name('logout');
+
+        Route::get('/', [PortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('/riwayat', [PortalController::class, 'attendance'])->name('attendance');
+        Route::get('/qr', [PortalController::class, 'qr'])->name('qr');
+        Route::get('/qr/download', [PortalController::class, 'downloadQr'])->name('qr.download');
+        Route::get('/absen', [PortalController::class, 'absenceForm'])->name('absence.create');
+        Route::post('/absen', [PortalController::class, 'submitAbsence'])->name('absence.store');
+        Route::post('/presensi/{attendance}', [PortalController::class, 'submitPresence'])->name('presence.store');
+        Route::get('/profil', [PortalController::class, 'profile'])->name('profile');
+        Route::put('/profil', [PortalController::class, 'updateProfile'])->name('profile.update');
+        Route::put('/profil/password', [PortalController::class, 'updatePassword'])->name('profile.password');
+        Route::post('/feedback', [PortalController::class, 'storeFeedback'])->name('feedback.store');
+
+        // Notifikasi & Pengumuman Admin
+        Route::prefix('notifikasi')->name('announcements.')->group(function () {
+            Route::get('/', [PortalController::class, 'announcements'])->name('index');
+            Route::post('/{announcement}/read', [PortalController::class, 'readAnnouncement'])->name('read');
+            Route::post('/{announcement}/dismiss', [PortalController::class, 'dismissAnnouncement'])->name('dismiss');
+            Route::post('/read-all', [PortalController::class, 'readAllAnnouncements'])->name('read_all');
+        });
+    });
+});
 
 // ============================================
 // ADMIN PROTECTED ROUTES
@@ -64,15 +122,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/{meeting}/scan', [MeetingController::class, 'scan'])->name('scan');
         Route::post('/{meeting}/scan', [MeetingController::class, 'processScan'])->name('process_scan');
         Route::post('/{meeting}/finish', [MeetingController::class, 'finish'])->name('finish');
+        Route::post('/{meeting}/cancel', [MeetingController::class, 'cancel'])->name('cancel');
         Route::post('/{meeting}/photo', [MeetingController::class, 'savePhoto'])->name('save_photo');
         Route::post('/{meeting}/sync-sheets', [MeetingController::class, 'syncSheets'])->name('sync_sheets');
         Route::post('/{meeting}/attendances/{attendance}', [MeetingController::class, 'updateAttendanceStatus'])->name('update_attendance');
         Route::delete('/{meeting}', [MeetingController::class, 'destroy'])->name('destroy');
     });
-
-    // API endpoints
-    Route::get('/api/events/{event}/data', [MeetingController::class, 'getEventData'])->name('api.events.data');
-    Route::get('/meeting/process/get_event_data.php', [MeetingController::class, 'getEventData']);
 
     // Members
     Route::prefix('members')->name('members.')->group(function () {
@@ -82,6 +137,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/generate-qr', [MemberController::class, 'generateQrIndex'])->name('generate_qr');
         Route::post('/generate-qr/all', [MemberController::class, 'generateAllQr'])->name('generate_qr.all');
         Route::get('/download-qr-zip', [MemberController::class, 'downloadQrZip'])->name('download_qr_zip');
+
+        // Member login accounts
+        Route::get('/accounts', [MemberAccountController::class, 'index'])->name('accounts');
+        Route::post('/accounts/generate', [MemberAccountController::class, 'generateMissing'])->name('accounts.generate');
+        Route::post('/accounts/{member}/reset-password', [MemberAccountController::class, 'resetPassword'])->name('accounts.reset');
+        Route::post('/accounts/{member}/disable', [MemberAccountController::class, 'disable'])->name('accounts.disable');
+
+        // Surat Peringatan (SP 1 - SP 3)
+        Route::post('/{member}/sp/add', [MemberController::class, 'addSp'])->name('sp.add');
+        Route::post('/{member}/sp/remove', [MemberController::class, 'removeSp'])->name('sp.remove');
+        Route::post('/{member}/sp/set', [MemberController::class, 'setSp'])->name('sp.set');
+
         Route::get('/{member}/download-qr', [MemberController::class, 'downloadSingleQr'])->name('download_qr_single');
         Route::get('/{member}/edit', [MemberController::class, 'edit'])->name('edit');
         Route::put('/{member}', [MemberController::class, 'update'])->name('update');
@@ -111,12 +178,28 @@ Route::middleware('auth')->group(function () {
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 
+    // Feedbacks
+    Route::prefix('feedbacks')->name('feedbacks.')->group(function () {
+        Route::get('/', [FeedbackController::class, 'index'])->name('index');
+        Route::put('/{feedback}', [FeedbackController::class, 'update'])->name('update');
+        Route::delete('/{feedback}', [FeedbackController::class, 'destroy'])->name('destroy');
+    });
+
+    // Announcements & Messages from Admin
+    Route::prefix('announcements')->name('announcements.')->group(function () {
+        Route::get('/', [AnnouncementController::class, 'index'])->name('index');
+        Route::post('/', [AnnouncementController::class, 'store'])->name('store');
+        Route::put('/{announcement}', [AnnouncementController::class, 'update'])->name('update');
+        Route::post('/{announcement}/toggle-status', [AnnouncementController::class, 'toggleStatus'])->name('toggle_status');
+        Route::post('/{announcement}/toggle-pin', [AnnouncementController::class, 'togglePin'])->name('toggle_pin');
+        Route::delete('/{announcement}', [AnnouncementController::class, 'destroy'])->name('destroy');
+    });
+
     // Settings
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::get('/', [SettingController::class, 'index'])->name('index');
         Route::post('/general', [SettingController::class, 'updateGeneral'])->name('general');
         Route::post('/google', [SettingController::class, 'updateGoogle'])->name('google');
-        Route::post('/logo', [SettingController::class, 'uploadLogo'])->name('logo');
     });
 });
 
@@ -143,4 +226,3 @@ Route::get('/meeting/absent_form.php', function () {
 Route::get('/meeting/online_attend.php', function () {
     return redirect()->route('public.online', request('token'));
 });
-

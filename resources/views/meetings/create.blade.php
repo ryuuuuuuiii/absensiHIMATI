@@ -66,8 +66,8 @@
                     <div class="rapat-type-card" onclick="selectRapatType('internal_dept', this)">
                         <div class="type-icon icon-dept"><i class="fas fa-building"></i></div>
                         <div>
-                            <div class="type-name">Internal Departemen</div>
-                            <div class="type-desc">Rapat per departemen</div>
+                            <div class="type-name">Internal Departemen & BPH</div>
+                            <div class="type-desc">Rapat per departemen / BPH</div>
                         </div>
                     </div>
                     
@@ -84,14 +84,6 @@
                         <div>
                             <div class="type-name">Kepanitiaan / Even</div>
                             <div class="type-desc">Rapat event & kepanitiaan</div>
-                        </div>
-                    </div>
-                    
-                    <div class="rapat-type-card" onclick="selectRapatType('bph', this)">
-                        <div class="type-icon icon-bph"><i class="fas fa-crown"></i></div>
-                        <div>
-                            <div class="type-name">BPH / Inti</div>
-                            <div class="type-desc">Badan Pengurus Harian</div>
                         </div>
                     </div>
                     
@@ -162,14 +154,20 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Tipe Rapat <span class="required">*</span></label>
-                        <div style="display: flex; gap: var(--space-4);">
-                            <label class="form-check">
+                        <div class="segmented-control">
+                            <label class="segmented-option">
                                 <input type="radio" name="tipe_divisi" value="semua" onchange="toggleDivisiField()" checked>
-                                <span class="form-check-label">Semua Divisi</span>
+                                <span class="segmented-btn">
+                                    <i class="fas fa-users"></i>
+                                    <span>Semua Divisi</span>
+                                </span>
                             </label>
-                            <label class="form-check">
+                            <label class="segmented-option">
                                 <input type="radio" name="tipe_divisi" value="perdivisi" onchange="toggleDivisiField()">
-                                <span class="form-check-label">Per Divisi</span>
+                                <span class="segmented-btn">
+                                    <i class="fas fa-layer-group"></i>
+                                    <span>Per Divisi</span>
+                                </span>
                             </label>
                         </div>
                     </div>
@@ -185,13 +183,6 @@
                     </div>
                 </div>
                 
-                <!-- BPH / Inti -->
-                <div id="fields_bph" class="dynamic-fields" style="display: none;">
-                    <div class="form-group">
-                        <label class="form-label">Fokus Bahasan <span class="required">*</span></label>
-                        <textarea name="fokus_bahasan_bph" class="form-control" placeholder="Tuliskan fokus bahasan rapat BPH..." rows="3"></textarea>
-                    </div>
-                </div>
                 
                 <!-- Lintas Departemen -->
                 <div id="fields_lintas_dept" class="dynamic-fields" style="display: none;">
@@ -213,7 +204,7 @@
                 </div>
                 
                 <!-- Tanggal & Waktu -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-top: var(--space-4);">
+                <div class="meeting-datetime-grid">
                     <div class="form-group">
                         <label class="form-label">Tanggal <span class="required">*</span></label>
                         <input type="date" name="tanggal" class="form-control" value="{{ date('Y-m-d') }}" required>
@@ -241,7 +232,7 @@
                 </h3>
                 
                 <div class="mode-selection">
-                    <div class="mode-card active" onclick="selectMode('offline', this)">
+                    <div class="mode-card selected" onclick="selectMode('offline', this)">
                         <div class="mode-icon"><i class="fas fa-users"></i></div>
                         <div class="mode-title">Rapat Offline</div>
                         <div class="mode-desc">Absensi tatap muka langsung menggunakan Scanner Kamera QR Code</div>
@@ -265,11 +256,19 @@
             
             <!-- ========== STEP 4: Konfirmasi ========== -->
             <div class="step-content" id="step4">
-                <h3 style="margin-bottom: var(--space-6); text-align: center; color: var(--text-secondary);">
-                    Konfirmasi Data Rapat
-                </h3>
+                <div style="text-align: center; margin-bottom: var(--space-6);">
+                    <div style="width: 48px; height: 48px; background: rgba(37,99,235,0.08); color: var(--blue-primary); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 1.35rem; margin-bottom: 10px;">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <h3 style="margin-bottom: 4px; color: var(--text-primary); font-weight: 700; font-size: 1.25rem;">
+                        Konfirmasi Data Rapat
+                    </h3>
+                    <p style="color: var(--text-muted); font-size: 0.875rem; margin: 0;">
+                        Periksa kembali data rapat sebelum disimpan dan dimulai
+                    </p>
+                </div>
                 
-                <div class="card" style="background: var(--dark-surface-2); margin-bottom: var(--space-6);" id="summaryCard">
+                <div id="confirmGrid" style="margin-bottom: var(--space-6);">
                     <!-- Populated dynamically by meeting-form.js -->
                 </div>
                 
@@ -288,5 +287,5 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('assets/js/meeting-form.js') }}"></script>
+<script src="{{ asset('assets/js/meeting-form.js') }}?v={{ filemtime(public_path('assets/js/meeting-form.js')) }}"></script>
 @endpush

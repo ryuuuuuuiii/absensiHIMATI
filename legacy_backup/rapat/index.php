@@ -5,8 +5,8 @@
  * URL: /Absensi-HIMATI-new/rapat/
  */
 
-require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__.'/../config/config.php';
+require_once __DIR__.'/../includes/functions.php';
 
 $db = getDB();
 
@@ -19,7 +19,7 @@ $logo3 = getSetting('logo_3', '');
 $departemenList = json_decode(DEPARTEMEN_LIST, true);
 
 // Get all users for creator selection
-$stmt = $db->query("SELECT id, nama_lengkap, departemen, jabatan, is_bph FROM users ORDER BY departemen, nama_lengkap");
+$stmt = $db->query('SELECT id, nama_lengkap, departemen, jabatan, is_bph FROM users ORDER BY departemen, nama_lengkap');
 $allUsers = $stmt->fetchAll();
 
 // Group users by departemen
@@ -51,21 +51,21 @@ foreach ($allUsers as $u) {
             <!-- Header with Logos -->
             <div class="public-card" style="margin-bottom: var(--space-6);">
                 <div class="login-logos" style="margin-bottom: var(--space-4);">
-                    <?php if ($logo1): ?>
+                    <?php if ($logo1) { ?>
                         <img src="<?= BASE_URL ?>/uploads/logos/<?= $logo1 ?>" alt="Logo 1">
-                    <?php else: ?>
+                    <?php } else { ?>
                         <span class="logo-placeholder"><i class="fas fa-university"></i></span>
-                    <?php endif; ?>
-                    <?php if ($logo2): ?>
+                    <?php } ?>
+                    <?php if ($logo2) { ?>
                         <img src="<?= BASE_URL ?>/uploads/logos/<?= $logo2 ?>" alt="Logo 2">
-                    <?php else: ?>
+                    <?php } else { ?>
                         <span class="logo-placeholder"><i class="fas fa-laptop-code"></i></span>
-                    <?php endif; ?>
-                    <?php if ($logo3): ?>
+                    <?php } ?>
+                    <?php if ($logo3) { ?>
                         <img src="<?= BASE_URL ?>/uploads/logos/<?= $logo3 ?>" alt="Logo 3">
-                    <?php else: ?>
+                    <?php } else { ?>
                         <span class="logo-placeholder"><i class="fas fa-users"></i></span>
-                    <?php endif; ?>
+                    <?php } ?>
                 </div>
                 <div class="login-title" style="margin-bottom: 0;">
                     <h1 style="font-size: var(--font-xl);"><?= APP_NAME ?></h1>
@@ -117,15 +117,15 @@ foreach ($allUsers as $u) {
                             <label class="form-label">Pilih Nama Anda <span class="required">*</span></label>
                             <select name="created_by" class="form-control" id="selectCreator" required>
                                 <option value="">— Pilih Nama Anda —</option>
-                                <?php foreach ($usersByDept as $dept => $users): ?>
+                                <?php foreach ($usersByDept as $dept => $users) { ?>
                                     <optgroup label="<?= $dept ?>">
-                                        <?php foreach ($users as $u): ?>
+                                        <?php foreach ($users as $u) { ?>
                                             <option value="<?= $u['id'] ?>" data-dept="<?= htmlspecialchars($u['departemen']) ?>" data-jabatan="<?= htmlspecialchars($u['jabatan']) ?>">
                                                 <?= htmlspecialchars($u['nama_lengkap']) ?> — <?= $u['jabatan'] ?>
                                             </option>
-                                        <?php endforeach; ?>
+                                        <?php } ?>
                                     </optgroup>
-                                <?php endforeach; ?>
+                                <?php } ?>
                             </select>
                         </div>
                         
@@ -210,9 +210,9 @@ foreach ($allUsers as $u) {
                                 <label class="form-label">Departemen <span class="required">*</span></label>
                                 <select name="departemen" class="form-control" id="selectDepartemen">
                                     <option value="">— Pilih Departemen —</option>
-                                    <?php foreach ($departemenList as $key => $label): ?>
+                                    <?php foreach ($departemenList as $key => $label) { ?>
                                         <option value="<?= $key ?>"><?= $label ?></option>
-                                    <?php endforeach; ?>
+                                    <?php } ?>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -271,12 +271,12 @@ foreach ($allUsers as $u) {
                             <div class="form-group">
                                 <label class="form-label">Departemen yang Berkolaborasi <span class="required">*</span></label>
                                 <div class="checkbox-group">
-                                    <?php foreach ($departemenList as $key => $label): ?>
+                                    <?php foreach ($departemenList as $key => $label) { ?>
                                         <label class="form-check">
                                             <input type="checkbox" name="departemen_collab[]" value="<?= $key ?>">
                                             <span class="form-check-label"><?= $label ?></span>
                                         </label>
-                                    <?php endforeach; ?>
+                                    <?php } ?>
                                 </div>
                             </div>
                             <div class="form-group">

@@ -7,28 +7,32 @@ return [
     'timezone' => 'Asia/Makassar',
 
     'departments' => [
-        'Inti'     => 'Departemen Inti',
-        'PSDM'     => 'Departemen PSDM',
-        'Medinfo'  => 'Departemen Medinfo',
-        'Afkers'   => 'Departemen Afkers',
+        'Inti' => 'Pengurus Inti',
+        'BPH' => 'BPH (Pengurus Inti & Kepala Departemen)',
+        'PSDM' => 'Departemen PSDM',
+        'Medinfo' => 'Departemen Medinfo',
+        'Afkers' => 'Departemen Afkers',
         'Industif' => 'Departemen Industif',
     ],
 
     'meeting_types' => [
         'internal_dept' => 'Rapat Internal Departemen',
-        'perdana'       => 'Rapat Perdana',
-        'kepanitiaan'   => 'Rapat Kepanitiaan / Even',
-        'bph'           => 'Rapat BPH / Inti',
-        'lintas_dept'   => 'Rapat Lintas Departemen',
+        'perdana' => 'Rapat Perdana',
+        'kepanitiaan' => 'Rapat Kepanitiaan / Even',
+        'bph' => 'Rapat BPH / Inti',
+        'lintas_dept' => 'Rapat Lintas Departemen',
     ],
 
     'attendance_statuses' => [
         'hadir' => 'Hadir',
-        'izin'  => 'Izin',
+        'izin' => 'Izin',
         'sakit' => 'Sakit',
         'alpha' => 'Alpha',
     ],
 
     'max_photo_size' => 5 * 1024 * 1024, // 5MB
     'online_link_expiry_hours' => 3,
+
+    // Password awal saat admin membuat / mereset akun pengurus.
+    'default_member_password' => env('MEMBER_DEFAULT_PASSWORD', 'himati123'),
 ];

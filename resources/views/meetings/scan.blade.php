@@ -8,32 +8,79 @@
 
 @section('content')
 <!-- Meeting Info Banner -->
-<div class="card mb-6" style="border-left: 4px solid var(--primary);">
-    <div class="d-flex align-center justify-between flex-wrap gap-4">
-        <div>
-            <h3 style="color: var(--primary); margin-bottom: var(--space-1);">
-                <i class="fas fa-broadcast-tower"></i> 
-                {{ $meeting->jenis_label }}
-            </h3>
-            <p style="font-size: var(--font-sm); color: var(--text-muted);">
-                {{ $meeting->tanggal->format('d M Y') }} • {{ substr($meeting->waktu_mulai, 0, 5) }} WITA
-            </p>
+<div class="card mb-6 meeting-header-banner">
+    <div class="meeting-header-content">
+        <div class="meeting-header-details">
+            <div class="meeting-type-badge-row">
+                @if($meeting->mode_rapat === 'online')
+                    <span class="badge badge-info"><i class="fas fa-video"></i> Online</span>
+                @else
+                    <span class="badge badge-secondary"><i class="fas fa-building"></i> Offline</span>
+                @endif
+
+                @if($meeting->status === 'scanning')
+                    <span class="badge badge-success badge-pulse"><span class="pulse-dot"></span> Presensi Aktif</span>
+                @elseif($meeting->status === 'completed')
+                    <span class="badge badge-secondary"><i class="fas fa-check"></i> Selesai</span>
+                @endif
+
+                @if($meeting->nama_event)
+                    <span class="badge badge-primary"><i class="fas fa-calendar-check"></i> {{ $meeting->jenis_label }}</span>
+                @endif
+
+                @if(!empty($meeting->departemen_collab))
+                    <span class="badge badge-purple"><i class="fas fa-handshake"></i> Kolaborasi</span>
+                @endif
+            </div>
+
+            <h2 class="meeting-banner-title">
+                @if($meeting->nama_event)
+                    {{ $meeting->nama_event }}{{ $meeting->divisi_rapat ? ' — Divisi ' . $meeting->divisi_rapat : '' }}
+                @elseif($meeting->departemen)
+                    {{ $meeting->jenis_label }} — {{ $meeting->departemen }}
+                @else
+                    {{ $meeting->jenis_label }}
+                @endif
+            </h2>
+
+            <div class="meeting-meta-row">
+                <span class="meta-item">
+                    <i class="far fa-calendar-alt"></i>
+                    <span>{{ $meeting->tanggal->locale('id')->translatedFormat('d F Y') }}</span>
+                </span>
+                <span class="meta-separator">•</span>
+                <span class="meta-item">
+                    <i class="far fa-clock"></i>
+                    <span>{{ substr($meeting->waktu_mulai, 0, 5) }} WITA{{ $meeting->waktu_selesai ? ' - ' . substr($meeting->waktu_selesai, 0, 5) . ' WITA' : '' }}</span>
+                </span>
+                @if($meeting->creator)
+                    <span class="meta-separator">•</span>
+                    <span class="meta-item">
+                        <i class="far fa-user"></i>
+                        <span>Oleh: <strong>{{ $meeting->creator->nama_lengkap }}</strong></span>
+                    </span>
+                @endif
+            </div>
+
             @if ($meeting->fokus_bahasan)
-                <p style="font-size: var(--font-sm); color: var(--text-secondary); margin-top: var(--space-2);">
-                    <i class="fas fa-bookmark"></i> {{ $meeting->fokus_bahasan }}
-                </p>
-            @endif
-            @if ($meeting->nama_event)
-                <p style="font-size: var(--font-sm); color: var(--text-secondary); margin-top: var(--space-2);">
-                    <i class="fas fa-calendar-star"></i> {{ $meeting->nama_event }}
-                </p>
+                <div class="meeting-agenda-note">
+                    <i class="fas fa-align-left agenda-icon"></i>
+                    <div class="agenda-body">
+                        <span class="agenda-label">Agenda:</span>
+                        <span class="agenda-text">{{ $meeting->fokus_bahasan }}</span>
+                    </div>
+                </div>
             @endif
         </div>
-        <div class="text-center">
-            <div style="font-size: var(--font-3xl); font-weight: 800; color: var(--success);">
-                <span id="hadirCounter">{{ $hadirCount }}</span>/<span id="totalCounter">{{ $attendances->count() }}</span>
+
+        <div class="meeting-attendance-counter-card">
+            <div class="counter-label"><i class="fas fa-users"></i> Kehadiran</div>
+            <div class="counter-number">
+                <span id="hadirCounter" class="counter-hadir">{{ $hadirCount }}</span>
+                <span class="counter-divider">/</span>
+                <span id="totalCounter" class="counter-total">{{ $attendances->count() }}</span>
             </div>
-            <small style="color: var(--text-muted);">Kehadiran Tercatat</small>
+            <div class="counter-subtext">Peserta Tercatat</div>
         </div>
     </div>
 </div>
@@ -55,12 +102,38 @@
             
             <!-- Scanner Actions -->
             <div class="scan-actions mt-4">
-                <button class="btn btn-secondary" onclick="capturePhoto()" id="btnPhoto">
-                    <i class="fas fa-camera-retro"></i> Foto Dokumentasi
+                <button class="btn btn-secondary {{ !empty($docPhotos) ? 'btn-has-doc' : '' }}" onclick="capturePhoto()" id="btnPhoto">
+                    @if(!empty($docPhotos))
+                        <i class="fas fa-camera"></i> <span id="btnPhotoText">Ambil Ulang</span>
+                    @else
+                        <i class="fas fa-camera-retro"></i> <span id="btnPhotoText">Foto Dokumentasi</span>
+                    @endif
                 </button>
                 <button class="btn btn-success" onclick="finishAttendance()" id="btnFinish">
                     <i class="fas fa-check-circle"></i> Selesai Absensi
                 </button>
+            </div>
+
+            <!-- Dokumentasi Foto (Minimal Chip) -->
+            <div id="docPhotoSection" class="doc-minimal-chip mt-3" onclick="openLatestDocPhoto()" style="{{ empty($docPhotos) ? 'display: none;' : '' }}" title="Ketuk untuk melihat foto dokumentasi">
+                <div class="doc-chip-left">
+                    <div class="doc-chip-thumbs" id="docPhotoThumbnails">
+                        @if(!empty($docPhotos))
+                            <img src="{{ end($docPhotos) }}" alt="Dokumentasi" class="doc-chip-thumb">
+                        @endif
+                    </div>
+                    <div class="doc-chip-meta">
+                        <div class="doc-chip-title">
+                            <i class="fas fa-check-circle"></i> Foto Dokumentasi Tersimpan
+                        </div>
+                        <div class="doc-chip-sub" id="docChipSub">
+                            {{ count($docPhotos ?? []) > 1 ? count($docPhotos) . ' foto tersimpan • Ketuk untuk lihat' : 'Ketuk untuk melihat ukuran penuh' }}
+                        </div>
+                    </div>
+                </div>
+                <div class="doc-chip-right">
+                    <span class="doc-chip-btn-view"><i class="fas fa-eye"></i> Lihat</span>
+                </div>
             </div>
         </div>
         
@@ -105,9 +178,11 @@
         <div class="card">
             <div class="scanned-list-header">
                 <h3>
-                    <i class="fas fa-users"></i> Daftar Hadir Masuk
+                    <i class="fas fa-user-check" style="color: var(--blue-primary);"></i> Daftar Hadir Masuk
                 </h3>
-                <span class="scanned-count" id="scannedCount">{{ $hadirCount }} hadir</span>
+                <span class="scanned-count" id="scannedCount">
+                    <i class="fas fa-check-circle"></i> {{ $hadirCount }} hadir
+                </span>
             </div>
             
             <div id="scannedList" style="max-height: 520px; overflow-y: auto;">
@@ -118,11 +193,28 @@
                             <i class="fas fa-check"></i>
                         </div>
                         <div class="scanned-item-info">
-                            <h4>{{ $a->member ? $a->member->nama_lengkap : 'Unknown' }}</h4>
-                            <p>{{ $a->member ? $a->member->departemen : '-' }} • {{ $a->member ? $a->member->jabatan : '' }}</p>
+                            <h4 style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                <span>{{ $a->member ? $a->member->nama_lengkap : 'Unknown' }}</span>
+                                @if($a->member && $a->member->sp_level == 1)
+                                    <span class="badge badge-sp-1" style="font-size: 10px; padding: 1px 6px;"><i class="fas fa-exclamation-triangle"></i> SP 1</span>
+                                @elseif($a->member && $a->member->sp_level == 2)
+                                    <span class="badge badge-sp-2" style="font-size: 10px; padding: 1px 6px;"><i class="fas fa-exclamation-circle"></i> SP 2</span>
+                                @elseif($a->member && $a->member->sp_level >= 3)
+                                    <span class="badge badge-sp-3" style="font-size: 10px; padding: 1px 6px;"><i class="fas fa-user-times"></i> SP 3</span>
+                                @endif
+                            </h4>
+                            <p>
+                                <span class="badge badge-dept" style="font-size: 11px; padding: 2px 7px;">
+                                    {{ $a->member ? $a->member->departemen : '-' }}
+                                </span>
+                                @if($a->member && $a->member->jabatan)
+                                    <span>{{ $a->member->jabatan }}</span>
+                                @endif
+                            </p>
                         </div>
                         <span class="scanned-item-time">
-                            {{ $a->scanned_at ? $a->scanned_at->format('H:i') : '-' }}
+                            <i class="fas fa-clock" style="color: var(--text-muted); font-size: 10px;"></i>
+                            {{ $a->scanned_at ? $a->scanned_at->format('H:i') . ' WITA' : '-' }}
                         </span>
                     </div>
                     @endif
@@ -142,6 +234,25 @@
 
 <!-- Hidden Photo Capture -->
 <input type="file" id="photoInput" accept="image/*" capture="environment" style="display: none;">
+
+<!-- Doc Photo Preview Modal -->
+<div id="docPhotoModal" class="doc-modal-backdrop" style="display: none;" onclick="closeDocPhotoModal(event)">
+    <div class="doc-modal-content" onclick="event.stopPropagation()">
+        <div class="doc-modal-header">
+            <h4><i class="fas fa-image" style="color: var(--blue-primary);"></i> Foto Dokumentasi Rapat</h4>
+            <button type="button" class="doc-modal-close" onclick="closeDocPhotoModalDirect()">&times;</button>
+        </div>
+        <div class="doc-modal-body">
+            <img id="docModalImage" src="" alt="Preview Dokumentasi">
+        </div>
+        <div class="doc-modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeDocPhotoModalDirect()">Tutup</button>
+            <button type="button" class="btn btn-primary" onclick="closeDocPhotoModalDirect(); capturePhoto();">
+                <i class="fas fa-camera"></i> Ambil Ulang / Ganti Foto
+            </button>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('styles')
@@ -160,13 +271,16 @@
     const MEETING_ID = {{ $meeting->id }};
     const MEETING_DATA = {!! json_encode([
         'id'          => $meeting->id,
+        'unique_link' => $meeting->unique_link,
         'jenis_rapat' => $meeting->jenis_rapat,
         'tanggal'     => $meeting->tanggal->format('Y-m-d'),
         'status'      => $meeting->status,
     ]) !!};
     const SCANNED_USER_IDS = @json($scannedUserIds);
+    const DOC_PHOTOS = @json($docPhotos ?? []);
     const BASE_URL = '{{ url('/') }}';
     const CSRF_TOKEN = '{{ csrf_token() }}';
+    const PUBLIC_HASIL_URL = '{{ route('meetings.show', $meeting->id) }}';
 </script>
 <script src="{{ asset('assets/js/scanner.js') }}"></script>
 @endpush

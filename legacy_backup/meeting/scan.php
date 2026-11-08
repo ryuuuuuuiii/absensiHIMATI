@@ -4,37 +4,37 @@
  * Absensi HIMA TI Politeknik Hasnur
  */
 
-require_once __DIR__ . '/../includes/auth_check.php';
+require_once __DIR__.'/../includes/auth_check.php';
 
 $pageTitle = 'Scan Absensi';
 $pageIcon = 'fas fa-qrcode';
 
 $meetingId = intval($_GET['id'] ?? 0);
-if (!$meetingId) {
+if (! $meetingId) {
     setFlash('danger', 'ID rapat tidak valid.');
-    redirect(BASE_URL . '/dashboard/index.php');
+    redirect(BASE_URL.'/dashboard/index.php');
 }
 
 $db = getDB();
 
 // Get meeting data
-$stmt = $db->prepare("SELECT m.*, u.nama_lengkap as creator_name FROM meetings m JOIN users u ON m.created_by = u.id WHERE m.id = ?");
+$stmt = $db->prepare('SELECT m.*, u.nama_lengkap as creator_name FROM meetings m JOIN users u ON m.created_by = u.id WHERE m.id = ?');
 $stmt->execute([$meetingId]);
 $meeting = $stmt->fetch();
 
-if (!$meeting) {
+if (! $meeting) {
     setFlash('danger', 'Rapat tidak ditemukan.');
-    redirect(BASE_URL . '/dashboard/index.php');
+    redirect(BASE_URL.'/dashboard/index.php');
 }
 
 // Get attendance data
-$stmt = $db->prepare("
+$stmt = $db->prepare('
     SELECT a.*, u.nama_lengkap, u.departemen, u.jabatan 
     FROM attendances a 
     JOIN users u ON a.user_id = u.id 
     WHERE a.meeting_id = ?
     ORDER BY a.scanned_at DESC
-");
+');
 $stmt->execute([$meetingId]);
 $attendances = $stmt->fetchAll();
 
@@ -49,17 +49,17 @@ foreach ($attendances as $a) {
 }
 
 // Absent link URL
-$absentUrl = BASE_URL . '/meeting/absent_form.php?token=' . $meeting['absent_link'];
+$absentUrl = BASE_URL.'/meeting/absent_form.php?token='.$meeting['absent_link'];
 
 // Online attend link
-$onlineUrl = BASE_URL . '/meeting/online_attend.php?token=' . $meeting['unique_link'];
+$onlineUrl = BASE_URL.'/meeting/online_attend.php?token='.$meeting['unique_link'];
 
 $extraJS = [
     'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js',
-    BASE_URL . '/assets/js/scanner.js'
+    BASE_URL.'/assets/js/scanner.js',
 ];
 
-include __DIR__ . '/../includes/header.php';
+include __DIR__.'/../includes/header.php';
 ?>
 
 <!-- Meeting Info Banner -->
@@ -73,16 +73,16 @@ include __DIR__ . '/../includes/header.php';
             <p style="font-size: var(--font-sm); color: var(--text-muted);">
                 <?= formatTanggal($meeting['tanggal']) ?> • <?= formatWaktu($meeting['waktu_mulai']) ?>
             </p>
-            <?php if ($meeting['fokus_bahasan']): ?>
+            <?php if ($meeting['fokus_bahasan']) { ?>
                 <p style="font-size: var(--font-sm); color: var(--text-secondary); margin-top: var(--space-2);">
                     <i class="fas fa-bookmark"></i> <?= htmlspecialchars($meeting['fokus_bahasan']) ?>
                 </p>
-            <?php endif; ?>
-            <?php if ($meeting['nama_event']): ?>
+            <?php } ?>
+            <?php if ($meeting['nama_event']) { ?>
                 <p style="font-size: var(--font-sm); color: var(--text-secondary); margin-top: var(--space-2);">
                     <i class="fas fa-calendar-star"></i> <?= htmlspecialchars($meeting['nama_event']) ?>
                 </p>
-            <?php endif; ?>
+            <?php } ?>
         </div>
         <div class="text-center">
             <div style="font-size: var(--font-3xl); font-weight: 800; color: var(--success);">
@@ -140,7 +140,7 @@ include __DIR__ . '/../includes/header.php';
             </div>
             
             <!-- Online Attend Link (if online mode) -->
-            <?php if ($meeting['mode_rapat'] === 'online'): ?>
+            <?php if ($meeting['mode_rapat'] === 'online') { ?>
             <div>
                 <label class="form-label" style="font-size: var(--font-xs);">
                     <i class="fas fa-link" style="color: var(--info);"></i> Link Absensi Online
@@ -152,7 +152,7 @@ include __DIR__ . '/../includes/header.php';
                     </button>
                 </div>
             </div>
-            <?php endif; ?>
+            <?php } ?>
         </div>
     </div>
     
@@ -167,8 +167,8 @@ include __DIR__ . '/../includes/header.php';
             </div>
             
             <div id="scannedList" style="max-height: 500px; overflow-y: auto;">
-                <?php foreach ($attendances as $a): ?>
-                    <?php if ($a['status'] === 'hadir'): ?>
+                <?php foreach ($attendances as $a) { ?>
+                    <?php if ($a['status'] === 'hadir') { ?>
                     <div class="scanned-item" data-user-id="<?= $a['user_id'] ?>">
                         <div class="scanned-item-avatar">
                             <i class="fas fa-check"></i>
@@ -181,16 +181,16 @@ include __DIR__ . '/../includes/header.php';
                             <?= $a['scanned_at'] ? date('H:i', strtotime($a['scanned_at'])) : '-' ?>
                         </span>
                     </div>
-                    <?php endif; ?>
-                <?php endforeach; ?>
+                    <?php } ?>
+                <?php } ?>
                 
-                <?php if ($hadirCount === 0): ?>
+                <?php if ($hadirCount === 0) { ?>
                 <div class="empty-state" id="emptyState" style="padding: var(--space-8) var(--space-4);">
                     <i class="fas fa-qrcode"></i>
                     <h3>Belum Ada Scan</h3>
                     <p>Arahkan kamera ke QR Code peserta untuk mulai scan absensi</p>
                 </div>
-                <?php endif; ?>
+                <?php } ?>
             </div>
         </div>
     </div>
@@ -206,7 +206,7 @@ include __DIR__ . '/../includes/header.php';
         'id' => $meeting['id'],
         'jenis_rapat' => $meeting['jenis_rapat'],
         'tanggal' => $meeting['tanggal'],
-        'status' => $meeting['status']
+        'status' => $meeting['status'],
     ]) ?>;
     const SCANNED_USER_IDS = <?= json_encode($scannedIds) ?>;
     const BASE_URL = '<?= BASE_URL ?>';
@@ -221,4 +221,4 @@ include __DIR__ . '/../includes/header.php';
     }
 </style>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__.'/../includes/footer.php'; ?>

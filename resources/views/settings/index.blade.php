@@ -8,37 +8,6 @@
 
 @section('content')
 <div style="max-width: 750px; margin: 0 auto;">
-    <!-- Logo Upload -->
-    <div class="card mb-6">
-        <h3 class="card-title mb-6"><i class="fas fa-image"></i> Kelola Logo Instansi / Organisasi</h3>
-        
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4);" class="logo-grid-mobile">
-            @for ($slot = 1; $slot <= 3; $slot++)
-            @php
-                $slotVar = 'logo' . $slot;
-                $currentLogo = $$slotVar ?? null;
-            @endphp
-            <div style="text-align: center;">
-                <div style="width: 100%; aspect-ratio: 1; border-radius: var(--radius-md); border: 2px dashed var(--dark-border); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-3); overflow: hidden; background: var(--dark-surface-2);">
-                    @if ($currentLogo && file_exists(public_path('uploads/logos/' . $currentLogo)))
-                        <img src="{{ asset('uploads/logos/' . $currentLogo) }}" alt="Logo {{ $slot }}" style="width: 100%; height: 100%; object-fit: contain; padding: 8px;">
-                    @else
-                        <i class="fas fa-image" style="font-size: 2rem; color: var(--text-muted);"></i>
-                    @endif
-                </div>
-                <form action="{{ route('settings.logo') }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    <input type="hidden" name="logo_slot" value="logo_{{ $slot }}">
-                    <label class="btn btn-sm btn-secondary btn-block" style="cursor: pointer;">
-                        <i class="fas fa-upload"></i> Ganti Logo {{ $slot }}
-                        <input type="file" name="logo_file" accept="image/*" style="display: none;" onchange="this.form.submit()">
-                    </label>
-                </form>
-            </div>
-            @endfor
-        </div>
-    </div>
-    
     <!-- Google Integration -->
     <div class="card mb-6">
         <h3 class="card-title mb-6"><i class="fab fa-google"></i> Integrasi Google Sheets & Drive</h3>
@@ -107,13 +76,3 @@
     </div>
 </div>
 @endsection
-
-@push('styles')
-<style>
-    @media (max-width: 600px) {
-        .logo-grid-mobile {
-            grid-template-columns: 1fr !important;
-        }
-    }
-</style>
-@endpush

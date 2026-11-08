@@ -3,7 +3,7 @@
  * Meeting List Page
  */
 
-require_once __DIR__ . '/../includes/auth_check.php';
+require_once __DIR__.'/../includes/auth_check.php';
 
 $pageTitle = 'Riwayat Rapat';
 $pageIcon = 'fas fa-calendar-alt';
@@ -17,15 +17,15 @@ $perPage = 10;
 $offset = ($page - 1) * $perPage;
 
 // Build query
-$where = "1=1";
+$where = '1=1';
 $params = [];
 
 if ($filterJenis) {
-    $where .= " AND m.jenis_rapat = ?";
+    $where .= ' AND m.jenis_rapat = ?';
     $params[] = $filterJenis;
 }
 if ($filterStatus) {
-    $where .= " AND m.status = ?";
+    $where .= ' AND m.status = ?';
     $params[] = $filterStatus;
 }
 
@@ -51,7 +51,7 @@ $meetings = $stmt->fetchAll();
 
 $jenisRapatOptions = json_decode(JENIS_RAPAT, true);
 
-include __DIR__ . '/../includes/header.php';
+include __DIR__.'/../includes/header.php';
 ?>
 
 <!-- Filter Bar -->
@@ -63,9 +63,9 @@ include __DIR__ . '/../includes/header.php';
     
     <select class="form-control" style="max-width: 200px;" onchange="applyFilter('jenis', this.value)">
         <option value="">Semua Jenis</option>
-        <?php foreach ($jenisRapatOptions as $key => $label): ?>
+        <?php foreach ($jenisRapatOptions as $key => $label) { ?>
             <option value="<?= $key ?>" <?= $filterJenis === $key ? 'selected' : '' ?>><?= $label ?></option>
-        <?php endforeach; ?>
+        <?php } ?>
     </select>
     
     <select class="form-control" style="max-width: 160px;" onchange="applyFilter('status', this.value)">
@@ -82,13 +82,13 @@ include __DIR__ . '/../includes/header.php';
 
 <!-- Meeting Table -->
 <div class="card">
-    <?php if (empty($meetings)): ?>
+    <?php if (empty($meetings)) { ?>
         <div class="empty-state">
             <i class="fas fa-calendar-times"></i>
             <h3>Tidak Ada Rapat</h3>
             <p>Belum ada rapat yang ditemukan dengan filter ini.</p>
         </div>
-    <?php else: ?>
+    <?php } else { ?>
         <div class="table-wrapper">
             <table class="table" id="meetingTable">
                 <thead>
@@ -103,7 +103,7 @@ include __DIR__ . '/../includes/header.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($meetings as $m): ?>
+                    <?php foreach ($meetings as $m) { ?>
                     <tr>
                         <td>
                             <div style="font-weight: 600;"><?= formatTanggal($m['tanggal'], 'short') ?></div>
@@ -111,11 +111,13 @@ include __DIR__ . '/../includes/header.php';
                         </td>
                         <td><span class="badge badge-primary"><?= getJenisRapatLabel($m['jenis_rapat']) ?></span></td>
                         <td style="max-width: 200px;">
-                            <?php 
+                            <?php
                             $agenda = $m['fokus_bahasan'] ?: $m['nama_event'] ?: '-';
-                            echo htmlspecialchars(mb_substr($agenda, 0, 40));
-                            if (mb_strlen($agenda) > 40) echo '...';
-                            ?>
+                        echo htmlspecialchars(mb_substr($agenda, 0, 40));
+                        if (mb_strlen($agenda) > 40) {
+                            echo '...';
+                        }
+                        ?>
                         </td>
                         <td><?= $m['mode_rapat'] === 'offline' ? '🏢' : '🌐' ?></td>
                         <td>
@@ -128,33 +130,33 @@ include __DIR__ . '/../includes/header.php';
                                 <a href="<?= BASE_URL ?>/meeting/detail.php?id=<?= $m['id'] ?>" class="btn btn-ghost btn-sm" title="Detail">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <?php if ($m['status'] === 'scanning'): ?>
+                                <?php if ($m['status'] === 'scanning') { ?>
                                 <a href="<?= BASE_URL ?>/meeting/scan.php?id=<?= $m['id'] ?>" class="btn btn-ghost btn-sm" title="Scan">
                                     <i class="fas fa-qrcode"></i>
                                 </a>
-                                <?php endif; ?>
+                                <?php } ?>
                             </div>
                         </td>
                     </tr>
-                    <?php endforeach; ?>
+                    <?php } ?>
                 </tbody>
             </table>
         </div>
         
         <!-- Pagination -->
-        <?php if ($totalPages > 1): ?>
+        <?php if ($totalPages > 1) { ?>
         <div class="pagination">
-            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                <?php 
+            <?php for ($i = 1; $i <= $totalPages; $i++) { ?>
+                <?php
                 $queryParams = $_GET;
                 $queryParams['page'] = $i;
-                $url = '?' . http_build_query($queryParams);
+                $url = '?'.http_build_query($queryParams);
                 ?>
                 <a href="<?= $url ?>" class="<?= $i === $page ? 'active' : '' ?>"><?= $i ?></a>
-            <?php endfor; ?>
+            <?php } ?>
         </div>
-        <?php endif; ?>
-    <?php endif; ?>
+        <?php } ?>
+    <?php } ?>
 </div>
 
 <script>
@@ -179,4 +181,4 @@ function filterTable() {
 }
 </script>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__.'/../includes/footer.php'; ?>

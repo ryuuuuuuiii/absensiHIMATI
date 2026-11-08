@@ -20,10 +20,10 @@
 <!-- Tabs -->
 <div class="tabs mb-6">
     <button class="tab-btn active" onclick="switchEventTab('active', this)">
-        Event Aktif ({{ $activeEvents->count() }})
+        <i class="fas fa-calendar-check"></i> Event Aktif <span class="tab-badge">{{ $activeEvents->count() }}</span>
     </button>
     <button class="tab-btn" onclick="switchEventTab('archived', this)">
-        Arsip ({{ $archivedEvents->count() }})
+        <i class="fas fa-archive"></i> Arsip <span class="tab-badge">{{ $archivedEvents->count() }}</span>
     </button>
 </div>
 
@@ -41,26 +41,29 @@
             <div class="card">
                 <div class="d-flex justify-between align-center mb-3">
                     <span class="badge badge-success"><i class="fas fa-circle" style="font-size: 8px;"></i> Aktif</span>
-                    <small style="color: var(--text-muted);">{{ $evt->created_at ? $evt->created_at->format('d M Y') : '' }}</small>
+                    <small style="color: var(--text-muted); font-size: 0.8rem;">
+                        <i class="fas fa-calendar-alt" style="color: var(--blue-primary); font-size: 10px;"></i>
+                        {{ $evt->created_at ? $evt->created_at->locale('id')->translatedFormat('d M Y') : '' }}
+                    </small>
                 </div>
-                <h3 style="font-size: var(--font-lg); margin-bottom: var(--space-2); color: var(--primary);">
+                <h3 style="font-size: var(--font-lg); font-weight: 700; margin-bottom: var(--space-2); color: var(--text-primary);">
                     {{ $evt->nama_event }}
                 </h3>
                 <p style="font-size: var(--font-sm); color: var(--text-secondary); min-height: 40px; margin-bottom: var(--space-4);">
                     {{ $evt->deskripsi ?: 'Tidak ada deskripsi.' }}
                 </p>
                 
-                <div style="display: flex; gap: var(--space-4); margin-bottom: var(--space-4); padding: var(--space-3); background: var(--dark-surface-2); border-radius: var(--radius-md);">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; gap: var(--space-2); margin-bottom: var(--space-4); padding: var(--space-3); background: var(--bg-surface-subtle); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
                     <div>
-                        <div style="font-size: var(--font-lg); font-weight: 700; color: var(--text-primary);">{{ $evt->divisions_count }}</div>
+                        <div style="font-size: var(--font-lg); font-weight: 700; color: var(--blue-primary);">{{ $evt->divisions_count }}</div>
                         <small style="color: var(--text-muted);">Divisi</small>
                     </div>
                     <div>
-                        <div style="font-size: var(--font-lg); font-weight: 700; color: var(--text-primary);">{{ $evt->members_count }}</div>
+                        <div style="font-size: var(--font-lg); font-weight: 700; color: var(--blue-primary);">{{ $evt->members_count }}</div>
                         <small style="color: var(--text-muted);">Panitia</small>
                     </div>
                     <div>
-                        <div style="font-size: var(--font-lg); font-weight: 700; color: var(--text-primary);">{{ $evt->meetings_count }}</div>
+                        <div style="font-size: var(--font-lg); font-weight: 700; color: var(--blue-primary);">{{ $evt->meetings_count }}</div>
                         <small style="color: var(--text-muted);">Rapat</small>
                     </div>
                 </div>

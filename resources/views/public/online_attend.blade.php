@@ -7,24 +7,85 @@
 
 @section('content')
 <!-- Meeting Info -->
-<div class="card mb-6" style="border-left: 4px solid var(--primary);">
-    <h3 style="color: var(--primary); margin-bottom: 4px;">{{ $meeting->jenis_label }}</h3>
-    <p style="font-size: var(--font-sm); color: var(--text-muted); margin: 0 0 var(--space-3) 0;">
-        {{ $meeting->tanggal->format('d M Y') }} • {{ substr($meeting->waktu_mulai, 0, 5) }} WITA
-        @if($meeting->creator) • Oleh: {{ $meeting->creator->nama_lengkap }} @endif
-    </p>
-    @if ($meeting->fokus_bahasan)
-        <p style="font-size: var(--font-sm); color: var(--text-secondary); margin: 0;">
-            <i class="fas fa-bookmark"></i> {{ $meeting->fokus_bahasan }}
-        </p>
-    @endif
+<!-- Meeting Info Banner -->
+<div class="card mb-6 meeting-header-banner">
+    <div class="meeting-header-content">
+        <div class="meeting-header-details">
+            <div class="meeting-type-badge-row">
+                <span class="badge badge-info"><i class="fas fa-video"></i> Online</span>
+
+                @if($meeting->status === 'scanning')
+                    <span class="badge badge-success badge-pulse"><span class="pulse-dot"></span> Presensi Aktif</span>
+                @elseif($meeting->status === 'completed')
+                    <span class="badge badge-secondary"><i class="fas fa-check"></i> Selesai</span>
+                @endif
+
+                @if($meeting->nama_event)
+                    <span class="badge badge-primary"><i class="fas fa-calendar-check"></i> {{ $meeting->jenis_label }}</span>
+                @endif
+
+                @if(!empty($meeting->departemen_collab))
+                    <span class="badge badge-purple"><i class="fas fa-handshake"></i> Kolaborasi</span>
+                @endif
+            </div>
+
+            <h2 class="meeting-banner-title">
+                @if($meeting->nama_event)
+                    {{ $meeting->nama_event }}{{ $meeting->divisi_rapat ? ' — Divisi ' . $meeting->divisi_rapat : '' }}
+                @elseif($meeting->departemen)
+                    {{ $meeting->jenis_label }} — {{ $meeting->departemen }}
+                @else
+                    {{ $meeting->jenis_label }}
+                @endif
+            </h2>
+
+            <div class="meeting-meta-row">
+                <span class="meta-item">
+                    <i class="far fa-calendar-alt"></i>
+                    <span>{{ $meeting->tanggal->locale('id')->translatedFormat('d F Y') }}</span>
+                </span>
+                <span class="meta-separator">•</span>
+                <span class="meta-item">
+                    <i class="far fa-clock"></i>
+                    <span>{{ substr($meeting->waktu_mulai, 0, 5) }} WITA{{ $meeting->waktu_selesai ? ' - ' . substr($meeting->waktu_selesai, 0, 5) . ' WITA' : '' }}</span>
+                </span>
+                @if($meeting->creator)
+                    <span class="meta-separator">•</span>
+                    <span class="meta-item">
+                        <i class="far fa-user"></i>
+                        <span>Oleh: <strong>{{ $meeting->creator->nama_lengkap }}</strong></span>
+                    </span>
+                @endif
+            </div>
+
+            @if ($meeting->fokus_bahasan)
+                <div class="meeting-agenda-note">
+                    <i class="fas fa-align-left agenda-icon"></i>
+                    <div class="agenda-body">
+                        <span class="agenda-label">Agenda:</span>
+                        <span class="agenda-text">{{ $meeting->fokus_bahasan }}</span>
+                    </div>
+                </div>
+            @endif
+        </div>
+    </div>
 </div>
 
 @if($isExpired)
     <div class="card text-center" style="padding: var(--space-8);">
-        <i class="fas fa-hourglass-end" style="font-size: 2.5rem; color: var(--danger); margin-bottom: var(--space-4);"></i>
-        <h3>Batas Waktu Absensi Telah Berakhir</h3>
-        <p style="color: var(--text-muted);">Link presensi untuk rapat ini sudah ditutup. Silakan hubungi admin atau pembuat rapat jika ada kendala.</p>
+        @if($meeting->status === 'completed')
+            <i class="fas fa-check-circle" style="font-size: 2.5rem; color: var(--blue-primary, #3b82f6); margin-bottom: var(--space-4);"></i>
+            <h3>Rapat Telah Selesai (Absensi Ditutup)</h3>
+            <p style="color: var(--text-muted);">Batas Waktu Absensi Telah Berakhir. Sesi absensi untuk rapat ini telah diselesaikan dan ditutup oleh pembuat rapat.</p>
+        @elseif($meeting->status === 'cancelled')
+            <i class="fas fa-times-circle" style="font-size: 2.5rem; color: var(--danger); margin-bottom: var(--space-4);"></i>
+            <h3>Rapat Dibatalkan</h3>
+            <p style="color: var(--text-muted);">Sesi absensi untuk rapat ini telah dibatalkan.</p>
+        @else
+            <i class="fas fa-hourglass-end" style="font-size: 2.5rem; color: var(--danger); margin-bottom: var(--space-4);"></i>
+            <h3>Batas Waktu Absensi Telah Berakhir</h3>
+            <p style="color: var(--text-muted);">Link presensi untuk rapat ini sudah ditutup karena telah melewati batas waktu absensi. Silakan hubungi admin atau pembuat rapat jika ada kendala.</p>
+        @endif
     </div>
 @else
     <div class="card mb-6">
@@ -35,15 +96,26 @@
 
             <div class="form-group">
                 <label class="form-label" for="user_id">Pilih Nama Anda <span class="required">*</span></label>
-                <select name="user_id" id="user_id" class="form-control" required>
-                    <option value="">— Cari & Pilih Nama Anda —</option>
+                <select name="user_id" id="user_id" class="form-control" required onchange="updateOnlineSpNotice(this)">
+                    <option value="" data-sp="0">— Cari & Pilih Nama Anda —</option>
                     @foreach($participants as $p)
-                        <option value="{{ $p->user_id }}" {{ old('user_id') == $p->user_id ? 'selected' : '' }}>
-                            {{ $p->member ? $p->member->nama_lengkap : 'Unknown' }} ({{ $p->member ? $p->member->departemen : '' }})
+                        @php
+                            $pSp = $p->member ? (int) $p->member->sp_level : 0;
+                            $pSpLabel = $p->member ? $p->member->sp_label : '';
+                            $pSpReason = $p->member ? $p->member->sp_reason : '';
+                        @endphp
+                        <option value="{{ $p->user_id }}"
+                                data-sp="{{ $pSp }}"
+                                data-sp-label="{{ $pSpLabel }}"
+                                data-sp-reason="{{ $pSpReason }}"
+                                {{ old('user_id') == $p->user_id ? 'selected' : '' }}>
+                            {{ $p->member ? $p->member->nama_lengkap : 'Unknown' }} ({{ $p->member ? $p->member->departemen : '' }}{{ !empty($p->member->jabatan) ? ' — ' . $p->member->jabatan : '' }}){{ !empty($p->is_optional_inti) ? ' [Pengurus Inti - Opsional]' : '' }}
+                            @if($pSp > 0) [{{ $pSpLabel }}] @endif
                             @if($p->status === 'hadir') [Sudah Hadir] @endif
                         </option>
                     @endforeach
                 </select>
+                <div id="onlineSpNotice" class="sp-attend-notice" style="display: none; margin-top: 10px;"></div>
             </div>
 
             <div class="form-group">
@@ -77,10 +149,41 @@
                 </small>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: var(--space-6);">
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnOnlineSubmit" style="margin-top: var(--space-6);">
                 <i class="fas fa-paper-plane"></i> Kirim Presensi
             </button>
         </form>
     </div>
+    <script>
+        function updateOnlineSpNotice(selectEl) {
+            const box = document.getElementById('onlineSpNotice');
+            const btn = document.getElementById('btnOnlineSubmit');
+            if (!box || !selectEl) return;
+            const opt = selectEl.options[selectEl.selectedIndex];
+            const sp = parseInt(opt?.getAttribute('data-sp') || '0', 10);
+            const label = opt?.getAttribute('data-sp-label') || '';
+            const reason = opt?.getAttribute('data-sp-reason') || '';
+
+            if (sp >= 3) {
+                box.style.display = 'flex';
+                box.className = 'alert alert-danger';
+                box.innerHTML = `<i class="fas fa-user-times"></i><div><strong>Status Akun: ${label}</strong><div style="font-size: 0.82rem;">Akun pengurus ini telah dinonaktifkan (Pemberhentian) dan tidak dapat melakukan presensi.</div></div>`;
+                if (btn) btn.disabled = true;
+            } else if (sp > 0) {
+                box.style.display = 'flex';
+                box.className = 'alert alert-warning';
+                box.innerHTML = `<i class="fas fa-exclamation-triangle"></i><div><strong>Informasi Status Akun: ${label}</strong><div style="font-size: 0.82rem;">${reason ? reason : 'Harap tingkatkan kedisiplinan kehadiran rapat Anda.'}</div></div>`;
+                if (btn) btn.disabled = false;
+            } else {
+                box.style.display = 'none';
+                box.innerHTML = '';
+                if (btn) btn.disabled = false;
+            }
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            const sel = document.getElementById('user_id');
+            if (sel && sel.value) updateOnlineSpNotice(sel);
+        });
+    </script>
 @endif
 @endsection

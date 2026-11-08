@@ -3,7 +3,6 @@
  * Header Template
  * Absensi HIMA TI Politeknik Hasnur
  */
-
 $currentUser = getCurrentUser();
 $currentPage = basename($_SERVER['PHP_SELF'], '.php');
 $pageTitle = $pageTitle ?? 'Dashboard';
@@ -31,18 +30,18 @@ $pageTitle = $pageTitle ?? 'Dashboard';
     <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
     
     <!-- Additional CSS -->
-    <?php if (isset($extraCSS)): ?>
-        <?php foreach ($extraCSS as $css): ?>
+    <?php if (isset($extraCSS)) { ?>
+        <?php foreach ($extraCSS as $css) { ?>
             <link rel="stylesheet" href="<?= $css ?>">
-        <?php endforeach; ?>
-    <?php endif; ?>
+        <?php } ?>
+    <?php } ?>
 </head>
 <body>
     <div class="bg-animated"></div>
     
     <div class="app-wrapper">
         <!-- Sidebar -->
-        <?php include __DIR__ . '/sidebar.php'; ?>
+        <?php include __DIR__.'/sidebar.php'; ?>
         
         <!-- Sidebar Overlay (Mobile) -->
         <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
@@ -56,9 +55,9 @@ $pageTitle = $pageTitle ?? 'Dashboard';
                         <i class="fas fa-bars"></i>
                     </button>
                     <div class="page-title">
-                        <?php if (isset($pageIcon)): ?>
+                        <?php if (isset($pageIcon)) { ?>
                             <i class="<?= $pageIcon ?>"></i>
-                        <?php endif; ?>
+                        <?php } ?>
                         <?= htmlspecialchars($pageTitle) ?>
                     </div>
                 </div>

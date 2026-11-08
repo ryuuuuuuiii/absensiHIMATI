@@ -3,9 +3,11 @@
  * Admin: Meetings Management
  */
 
-require_once __DIR__ . '/../includes/auth_check.php';
+require_once __DIR__.'/../includes/auth_check.php';
 
-if (!isAdmin()) { redirect(BASE_URL . '/dashboard/index.php'); }
+if (! isAdmin()) {
+    redirect(BASE_URL.'/dashboard/index.php');
+}
 
 $pageTitle = 'Kelola Rapat';
 $pageIcon = 'fas fa-clipboard-list';
@@ -19,17 +21,17 @@ if (isset($_GET['cancel']) && isset($_GET['csrf'])) {
         $stmt->execute([$cancelId]);
         setFlash('success', 'Rapat berhasil dibatalkan.');
     }
-    redirect(BASE_URL . '/admin/meetings.php');
+    redirect(BASE_URL.'/admin/meetings.php');
 }
 
 if (isset($_GET['delete']) && isset($_GET['csrf'])) {
     if (validateCSRF($_GET['csrf'])) {
         $deleteId = intval($_GET['delete']);
-        $stmt = $db->prepare("DELETE FROM meetings WHERE id = ?");
+        $stmt = $db->prepare('DELETE FROM meetings WHERE id = ?');
         $stmt->execute([$deleteId]);
         setFlash('success', 'Rapat berhasil dihapus.');
     }
-    redirect(BASE_URL . '/admin/meetings.php');
+    redirect(BASE_URL.'/admin/meetings.php');
 }
 
 // Get all meetings
@@ -43,7 +45,7 @@ $stmt = $db->prepare("
 $stmt->execute();
 $meetings = $stmt->fetchAll();
 
-include __DIR__ . '/../includes/header.php';
+include __DIR__.'/../includes/header.php';
 ?>
 
 <div class="card">
@@ -66,7 +68,7 @@ include __DIR__ . '/../includes/header.php';
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($meetings as $m): ?>
+                <?php foreach ($meetings as $m) { ?>
                 <tr>
                     <td>
                         <strong><?= formatTanggal($m['tanggal'], 'short') ?></strong>
@@ -82,12 +84,12 @@ include __DIR__ . '/../includes/header.php';
                             <a href="<?= BASE_URL ?>/meeting/detail.php?id=<?= $m['id'] ?>" class="btn btn-ghost btn-sm" title="Detail">
                                 <i class="fas fa-eye"></i>
                             </a>
-                            <?php if ($m['status'] === 'scanning'): ?>
+                            <?php if ($m['status'] === 'scanning') { ?>
                             <button class="btn btn-ghost btn-sm" title="Batalkan"
                                     onclick="confirmDelete('Batalkan rapat ini?', '<?= BASE_URL ?>/admin/meetings.php?cancel=<?= $m['id'] ?>&csrf=<?= $_SESSION['csrf_token'] ?>')">
                                 <i class="fas fa-ban" style="color: var(--warning);"></i>
                             </button>
-                            <?php endif; ?>
+                            <?php } ?>
                             <button class="btn btn-ghost btn-sm" title="Hapus"
                                     onclick="confirmDelete('Hapus rapat ini beserta semua data absensinya?', '<?= BASE_URL ?>/admin/meetings.php?delete=<?= $m['id'] ?>&csrf=<?= $_SESSION['csrf_token'] ?>')">
                                 <i class="fas fa-trash" style="color: var(--danger);"></i>
@@ -95,10 +97,10 @@ include __DIR__ . '/../includes/header.php';
                         </div>
                     </td>
                 </tr>
-                <?php endforeach; ?>
+                <?php } ?>
             </tbody>
         </table>
     </div>
 </div>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__.'/../includes/footer.php'; ?>

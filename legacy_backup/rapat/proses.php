@@ -1,14 +1,15 @@
 <?php
+
 /**
  * Process Public Meeting Creation
  * Tanpa auth — diakses via form publik
  */
 
-require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__.'/../config/config.php';
+require_once __DIR__.'/../includes/functions.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    redirect(BASE_URL . '/rapat');
+    redirect(BASE_URL.'/rapat');
 }
 
 $db = getDB();
@@ -24,15 +25,15 @@ $waktuMulai = sanitize($_POST['waktu_mulai'] ?? '');
 $validJenis = ['internal_dept', 'perdana', 'kepanitiaan', 'bph', 'lintas_dept'];
 $validMode = ['offline', 'online'];
 
-if (!$createdBy || !in_array($jenisRapat, $validJenis) || !in_array($modeRapat, $validMode) || empty($tanggal) || empty($waktuMulai)) {
-    die('<script>alert("Data tidak valid."); history.back();</script>');
+if (! $createdBy || ! in_array($jenisRapat, $validJenis) || ! in_array($modeRapat, $validMode) || empty($tanggal) || empty($waktuMulai)) {
+    exit('<script>alert("Data tidak valid."); history.back();</script>');
 }
 
 // Verify creator exists
-$stmt = $db->prepare("SELECT id FROM users WHERE id = ?");
+$stmt = $db->prepare('SELECT id FROM users WHERE id = ?');
 $stmt->execute([$createdBy]);
-if (!$stmt->fetch()) {
-    die('<script>alert("Pembuat rapat tidak valid."); history.back();</script>');
+if (! $stmt->fetch()) {
+    exit('<script>alert("Pembuat rapat tidak valid."); history.back();</script>');
 }
 
 // Type-specific data
@@ -79,30 +80,30 @@ try {
             tanggal, waktu_mulai, status, unique_link, absent_link
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'scanning', ?, ?)
     ");
-    
+
     $stmt->execute([
         $createdBy, $jenisRapat, $modeRapat, $departemen, $namaEvent,
         $divisiRapat, $tipeDivisi, $fokusBahasan, $departemenCollab,
-        $tanggal, $waktuMulai, $uniqueLink, $absentLink
+        $tanggal, $waktuMulai, $uniqueLink, $absentLink,
     ]);
-    
+
     $meetingId = $db->lastInsertId();
-    
+
     // Auto-create attendance records
     $participantQuery = '';
     $participantParams = [];
-    
+
     switch ($jenisRapat) {
         case 'internal_dept':
-            $participantQuery = "SELECT id FROM users WHERE departemen = ?";
+            $participantQuery = 'SELECT id FROM users WHERE departemen = ?';
             $participantParams = [$departemen];
             break;
         case 'perdana':
         case 'kepanitiaan':
-            $participantQuery = "SELECT id FROM users";
+            $participantQuery = 'SELECT id FROM users';
             break;
         case 'bph':
-            $participantQuery = "SELECT id FROM users WHERE is_bph = 1";
+            $participantQuery = 'SELECT id FROM users WHERE is_bph = 1';
             break;
         case 'lintas_dept':
             $depts = json_decode($departemenCollab, true);
@@ -111,25 +112,25 @@ try {
             $participantParams = $depts;
             break;
     }
-    
+
     if ($participantQuery) {
         $pStmt = $db->prepare($participantQuery);
         $pStmt->execute($participantParams);
         $participants = $pStmt->fetchAll();
-        
+
         $insertStmt = $db->prepare("INSERT INTO attendances (meeting_id, user_id, status) VALUES (?, ?, 'alpha')");
         foreach ($participants as $p) {
             $insertStmt->execute([$meetingId, $p['id']]);
         }
     }
-    
+
     // Redirect to result page with token
-    redirect(BASE_URL . '/rapat/hasil.php?token=' . $uniqueLink);
-    
+    redirect(BASE_URL.'/rapat/hasil.php?token='.$uniqueLink);
+
 } catch (PDOException $e) {
     if (APP_DEBUG) {
-        die('Database error: ' . $e->getMessage());
+        exit('Database error: '.$e->getMessage());
     } else {
-        die('<script>alert("Terjadi kesalahan."); history.back();</script>');
+        exit('<script>alert("Terjadi kesalahan."); history.back();</script>');
     }
 }

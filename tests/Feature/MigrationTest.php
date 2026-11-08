@@ -5,16 +5,16 @@ namespace Tests\Feature;
 use App\Models\Admin;
 use App\Models\Meeting;
 use App\Models\Member;
+use App\Models\Setting;
 use Tests\TestCase;
 
 class MigrationTest extends TestCase
 {
-
     public function test_login_page_is_accessible(): void
     {
         $response = $this->get('/login');
         $response->assertStatus(200);
-        $response->assertSee('Login Admin');
+        $response->assertSee('Masuk Akun Admin');
     }
 
     public function test_admin_authentication_and_dashboard(): void
@@ -46,12 +46,25 @@ class MigrationTest extends TestCase
         $this->get('/meetings/create')->assertStatus(200);
         $this->get('/events')->assertStatus(200);
         $this->get('/reports')->assertStatus(200);
-        $this->get('/settings')->assertStatus(200);
+
+        $settings = $this->get('/settings');
+        $settings->assertStatus(200);
+        $settings->assertDontSee('Kelola Logo Instansi');
+        $settings->assertDontSee('Ganti Logo');
+
+        $this->assertNotNull(Setting::getLogo1Url());
+        $this->assertNotNull(Setting::getLogo2Url());
     }
 
     public function test_public_routes_accessible(): void
     {
-        $this->get('/rapat')->assertStatus(200);
+        $this->get('/rapat')->assertRedirect(route('login'));
+
+        $member = Member::first();
+        if ($member) {
+            $this->actingAs($member, 'member')->get('/rapat')->assertStatus(200);
+        }
+
         $this->get('/my-qr')->assertStatus(200);
 
         $meeting = Meeting::first();

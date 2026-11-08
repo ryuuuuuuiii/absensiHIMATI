@@ -4,7 +4,7 @@
  * Absensi HIMA TI Politeknik Hasnur
  */
 
-require_once __DIR__ . '/../includes/auth_check.php';
+require_once __DIR__.'/../includes/auth_check.php';
 
 $pageTitle = 'QR Code Saya';
 $pageIcon = 'fas fa-qrcode';
@@ -12,29 +12,29 @@ $currentUser = getCurrentUser();
 
 // Get QR code data
 $db = getDB();
-$stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
+$stmt = $db->prepare('SELECT * FROM users WHERE id = ?');
 $stmt->execute([$currentUser['id']]);
 $user = $stmt->fetch();
 
 // QR Code data (encoded as JSON)
 $qrData = json_encode([
-    'id'         => $user['id'],
-    'qr_code'    => $user['qr_code'],
-    'nama'       => $user['nama_lengkap'],
+    'id' => $user['id'],
+    'qr_code' => $user['qr_code'],
+    'nama' => $user['nama_lengkap'],
     'departemen' => $user['departemen'],
-    'jabatan'    => $user['jabatan']
+    'jabatan' => $user['jabatan'],
 ]);
 
 // Generate QR Code URL using online API
-$qrImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' . urlencode($qrData) . '&bgcolor=ffffff&color=1A1A2E';
+$qrImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data='.urlencode($qrData).'&bgcolor=ffffff&color=1A1A2E';
 
 // Check if local QR exists
 $localQR = '';
-if ($user['qr_image'] && file_exists(QR_PATH . $user['qr_image'])) {
-    $localQR = BASE_URL . '/assets/img/qrcodes/' . $user['qr_image'];
+if ($user['qr_image'] && file_exists(QR_PATH.$user['qr_image'])) {
+    $localQR = BASE_URL.'/assets/img/qrcodes/'.$user['qr_image'];
 }
 
-include __DIR__ . '/../includes/header.php';
+include __DIR__.'/../includes/header.php';
 ?>
 
 <div style="max-width: 500px; margin: 0 auto;">
@@ -150,4 +150,4 @@ function shareQR() {
 }
 </script>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__.'/../includes/footer.php'; ?>

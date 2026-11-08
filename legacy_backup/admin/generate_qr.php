@@ -4,9 +4,11 @@
  * Generates QR codes for all members using online API
  */
 
-require_once __DIR__ . '/../includes/auth_check.php';
+require_once __DIR__.'/../includes/auth_check.php';
 
-if (!isAdmin()) { redirect(BASE_URL . '/dashboard/index.php'); }
+if (! isAdmin()) {
+    redirect(BASE_URL.'/dashboard/index.php');
+}
 
 $pageTitle = 'Generate QR Code';
 $pageIcon = 'fas fa-qrcode';
@@ -16,26 +18,26 @@ $message = '';
 $generated = 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && validateCSRF($_POST['csrf_token'] ?? '')) {
-    $stmt = $db->query("SELECT id, nama_lengkap, departemen, jabatan, qr_code FROM users ORDER BY departemen, nama_lengkap");
+    $stmt = $db->query('SELECT id, nama_lengkap, departemen, jabatan, qr_code FROM users ORDER BY departemen, nama_lengkap');
     $users = $stmt->fetchAll();
-    
+
     foreach ($users as $user) {
         $res = ensureMemberQrImage($user);
         if ($res) {
             $generated++;
         }
     }
-    
-    $message = "Berhasil generate $generated QR Code dari " . count($users) . " anggota.";
+
+    $message = "Berhasil generate $generated QR Code dari ".count($users).' anggota.';
     setFlash('success', $message);
-    redirect(BASE_URL . '/admin/generate_qr.php');
+    redirect(BASE_URL.'/admin/generate_qr.php');
 }
 
 // Get all members with QR status
-$stmt = $db->query("SELECT id, nama_lengkap, departemen, jabatan, qr_code, qr_image FROM users ORDER BY departemen, nama_lengkap");
+$stmt = $db->query('SELECT id, nama_lengkap, departemen, jabatan, qr_code, qr_image FROM users ORDER BY departemen, nama_lengkap');
 $members = $stmt->fetchAll();
 
-include __DIR__ . '/../includes/header.php';
+include __DIR__.'/../includes/header.php';
 ?>
 
 <div style="max-width: 800px; margin: 0 auto;">
@@ -87,18 +89,18 @@ include __DIR__ . '/../includes/header.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($members as $m): ?>
-                    <?php $hasFile = ($m['qr_image'] && file_exists(QR_PATH . $m['qr_image'])); ?>
+                    <?php foreach ($members as $m) { ?>
+                    <?php $hasFile = ($m['qr_image'] && file_exists(QR_PATH.$m['qr_image'])); ?>
                     <tr>
                         <td><strong><?= htmlspecialchars($m['nama_lengkap']) ?></strong></td>
                         <td><span class="badge badge-dept"><?= $m['departemen'] ?></span></td>
                         <td style="font-size: var(--font-xs); font-family: monospace;"><?= $m['qr_code'] ?></td>
                         <td>
-                            <?php if ($hasFile): ?>
+                            <?php if ($hasFile) { ?>
                                 <span class="badge badge-success"><i class="fas fa-check"></i> Siap</span>
-                            <?php else: ?>
+                            <?php } else { ?>
                                 <span class="badge badge-warning"><i class="fas fa-clock"></i> Belum dibuat</span>
-                            <?php endif; ?>
+                            <?php } ?>
                         </td>
                         <td>
                             <a href="<?= BASE_URL ?>/admin/download_qr.php?id=<?= $m['id'] ?>" class="btn btn-sm btn-outline-primary" download title="Download file QR">
@@ -106,12 +108,12 @@ include __DIR__ . '/../includes/header.php';
                             </a>
                         </td>
                     </tr>
-                    <?php endforeach; ?>
+                    <?php } ?>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__.'/../includes/footer.php'; ?>
 

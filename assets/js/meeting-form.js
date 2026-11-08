@@ -193,9 +193,13 @@ function selectRapatType(jenis, card) {
 }
 
 function selectMode(mode, card) {
-    const step3Cards = document.querySelectorAll('#step3 .rapat-type-card');
-    step3Cards.forEach(c => c.classList.remove('selected'));
+    const step3Cards = document.querySelectorAll('#step3 .mode-card');
+    step3Cards.forEach(c => {
+        c.classList.remove('selected');
+        c.classList.remove('active');
+    });
     card.classList.add('selected');
+    card.classList.add('active');
     
     selectedMode = mode;
     document.getElementById('modeRapat').value = mode;
@@ -239,19 +243,29 @@ function fetchEventDivisions(eventId) {
         return;
     }
     
-    fetch(`${BASE_URL}/meeting/process/get_event_data.php?event_id=${eventId}`)
-        .then(response => response.json())
+    const baseUrl = window.BASE_URL || '';
+    fetch(`${baseUrl}/api/events/${eventId}/data`)
+        .then(response => {
+            if (!response.ok) {
+                return fetch(`${baseUrl}/meeting/process/get_event_data.php?event_id=${eventId}`).then(r => r.json());
+            }
+            return response.json();
+        })
         .then(res => {
             if (res.success) {
                 // Update total count
-                eventMembersCount = res.data.event.total_members;
+                eventMembersCount = res.data.event?.total_members || 0;
                 countLabel.innerHTML = `<i class="fas fa-users text-primary"></i> Total panitia terdaftar: <b>${eventMembersCount} orang</b>`;
                 
                 // Populate divisions
                 selectDivisi.innerHTML = '<option value="">— Pilih Divisi —</option>';
-                res.data.divisions.forEach(div => {
-                    selectDivisi.innerHTML += `<option value="${div.id}" data-count="${div.total_member}">${div.nama_divisi} (${div.total_member} panitia)</option>`;
-                });
+                if (!res.data.divisions || res.data.divisions.length === 0) {
+                    selectDivisi.innerHTML += '<option value="" disabled>Belum ada divisi pada event ini</option>';
+                } else {
+                    res.data.divisions.forEach(div => {
+                        selectDivisi.innerHTML += `<option value="${div.id}" data-count="${div.total_member}">${div.nama_divisi} (${div.total_member} panitia)</option>`;
+                    });
+                }
             } else {
                 showToast('danger', 'Error', res.message || 'Gagal mengambil data event');
             }
@@ -267,118 +281,275 @@ function fetchEventDivisions(eventId) {
 // ============================================
 // CONFIRMATION POPULATION
 // ============================================
+function parseCreatorInfo(creatorOpt) {
+    if (!creatorOpt || !creatorOpt.value) {
+        return { name: '-', role: '', dept: '', initials: 'SA' };
+    }
+    const text = creatorOpt.text || '';
+    let name = text;
+    let role = creatorOpt.dataset?.jabatan || '';
+    let dept = creatorOpt.dataset?.dept || '';
+
+    if (!dept && creatorOpt.parentElement && creatorOpt.parentElement.label) {
+        dept = creatorOpt.parentElement.label;
+    }
+
+    if (text.includes('(') && text.includes(')')) {
+        const match = text.match(/^(.*?)\s*\((.*?)\)$/);
+        if (match) {
+            name = match[1].trim();
+            if (!role) role = match[2].trim();
+        }
+    } else if (text.includes('—') || text.includes(' - ')) {
+        const parts = text.split(/ — | - /);
+        name = parts[0]?.trim() || text;
+        if (!role) role = parts[1]?.trim() || '';
+    }
+
+    let initials = 'SA';
+    if (name && name !== '-') {
+        const cleanName = name.replace(/^(kak|bang|pak|bu|dr|ir)\.?\s+/i, '');
+        const words = cleanName.trim().split(/\s+/).filter(Boolean);
+        if (words.length >= 2) {
+            initials = (words[0][0] + words[1][0]).toUpperCase();
+        } else if (words.length === 1 && words[0].length >= 1) {
+            initials = words[0].slice(0, 2).toUpperCase();
+        }
+    }
+
+    return { name, role, dept, initials };
+}
+
 function populateConfirmation() {
-    document.getElementById('confirmJenis').textContent = JENIS_RAPAT_LABELS[selectedJenis] || selectedJenis;
-    document.getElementById('confirmMode').textContent = selectedMode === 'offline' ? '🏢 Offline (Scan QR)' : '🌐 Online (Link)';
-    
-    const tanggal = document.querySelector('[name="tanggal"]').value;
-    document.getElementById('confirmTanggal').textContent = formatDate(tanggal);
-    
-    const waktu = document.querySelector('[name="waktu_mulai"]').value;
-    document.getElementById('confirmWaktu').textContent = waktu + ' WITA';
-    
-    let detailsHTML = '';
-    
-    switch(selectedJenis) {
-        case 'internal_dept':
+    const confirmGrid = document.getElementById('confirmGrid');
+    if (!confirmGrid) return;
+
+    // 1. Pembuat Rapat (Penanggung Jawab)
+    const creatorSelect = document.getElementById('created_by') || document.getElementById('selectCreator');
+    const creatorOpt = creatorSelect && creatorSelect.selectedIndex >= 0 ? creatorSelect.options[creatorSelect.selectedIndex] : null;
+    const { name: creatorName, role: creatorJabatan, dept: creatorDept, initials } = parseCreatorInfo(creatorOpt);
+
+    // 2. Jenis Rapat & Mode
+    const jenisLabel = (typeof JENIS_RAPAT_LABELS !== 'undefined' && JENIS_RAPAT_LABELS[selectedJenis]) ? JENIS_RAPAT_LABELS[selectedJenis] : selectedJenis;
+
+    const jenisIcons = {
+        'internal_dept': 'fa-building',
+        'perdana': 'fa-flag',
+        'kepanitiaan': 'fa-calendar-check',
+        'bph': 'fa-crown',
+        'lintas_dept': 'fa-people-arrows'
+    };
+    const jenisIcon = jenisIcons[selectedJenis] || 'fa-layer-group';
+
+    const modeHtml = selectedMode === 'offline'
+        ? `<span class="confirm-hero-mode offline"><span class="confirm-mode-dot"></span><i class="fas fa-qrcode"></i> Offline (Scan QR)</span>`
+        : `<span class="confirm-hero-mode online"><span class="confirm-mode-dot"></span><i class="fas fa-globe"></i> Online (Link Presensi)</span>`;
+
+    // 3. Tanggal & Waktu
+    const tanggal = document.querySelector('[name="tanggal"]')?.value || '';
+    const waktu = document.querySelector('[name="waktu_mulai"]')?.value || '';
+    let formattedDate = '-';
+    if (tanggal) {
+        if (typeof formatDate === 'function') {
+            formattedDate = formatDate(tanggal);
+        } else {
+            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            const d = new Date(tanggal);
+            formattedDate = !isNaN(d.getTime()) ? `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}` : tanggal;
+        }
+    }
+    const formattedTime = waktu ? `${escapeHtml(waktu)} WITA` : '-';
+
+    // 4. Spesifik per jenis rapat
+    let heroTitle = '';
+    let heroSubtitle = '';
+    let targetHtml = '';
+    let fokusText = '';
+
+    switch (selectedJenis) {
+        case 'internal_dept': {
             const dept = document.getElementById('selectDepartemen');
-            const deptLabel = dept.options[dept.selectedIndex].text;
-            const fokusInt = document.querySelector('[name="fokus_bahasan_internal"]').value;
-            detailsHTML = `
-                <div class="meeting-info-item">
-                    <label>Departemen</label>
-                    <p>${deptLabel}</p>
+            const deptText = (dept && dept.selectedIndex >= 0 && dept.value) ? dept.options[dept.selectedIndex].text : '-';
+            const deptVal = (dept && dept.value) ? dept.value.toLowerCase() : '';
+            fokusText = document.querySelector('[name="fokus_bahasan_internal"]')?.value.trim() || '';
+            heroTitle = deptText;
+
+            let iconClass = 'fa-building';
+            let subtitle = 'Rapat Internal Anggota Departemen';
+            let targetDesc = 'Anggota & koor departemen wajib hadir (+ Pengurus Inti hadir opsional)';
+
+            if (deptVal === 'inti') {
+                iconClass = 'fa-user-tie';
+                subtitle = 'Rapat Khusus Pengurus Inti';
+                targetDesc = 'Khusus Pengurus Inti (Wajib hadir, tidak hadir = alpha)';
+            } else if (deptVal === 'bph') {
+                iconClass = 'fa-crown';
+                subtitle = 'Rapat Koordinasi BPH';
+                targetDesc = 'Pengurus Inti & seluruh Kepala Departemen (Wajib hadir, tidak hadir = alpha)';
+            }
+
+            heroSubtitle = subtitle;
+            targetHtml = `
+                <div class="confirm-target-box">
+                    <i class="fas ${iconClass} text-primary" style="font-size: 1.15rem;"></i>
+                    <div>
+                        <strong class="confirm-target-title">${escapeHtml(deptText)}</strong>
+                        <div class="confirm-target-desc">${targetDesc}</div>
+                    </div>
                 </div>
-                <div class="meeting-info-item" style="margin-top: var(--space-3);">
-                    <label>Fokus Pembahasan</label>
-                    <p>${escapeHtml(fokusInt)}</p>
-                </div>`;
+            `;
             break;
-            
-        case 'perdana':
-            const agendaPerdana = document.querySelector('[name="nama_event_perdana"]').value;
-            detailsHTML = `
-                <div class="meeting-info-item">
-                    <label>Nama / Agenda</label>
-                    <p>${escapeHtml(agendaPerdana)}</p>
+        }
+        case 'perdana': {
+            const agendaPerdana = document.querySelector('[name="nama_event_perdana"]')?.value.trim() || '';
+            fokusText = agendaPerdana;
+            heroTitle = agendaPerdana || 'Rapat Perdana HIMA TI';
+            heroSubtitle = 'Rapat Pleno Seluruh Anggota HIMA TI';
+            targetHtml = `
+                <div class="confirm-target-box">
+                    <i class="fas fa-users text-primary" style="font-size: 1.15rem;"></i>
+                    <div>
+                        <strong class="confirm-target-title">Seluruh Anggota HIMA TI</strong>
+                        <div class="confirm-target-desc">Wajib dihadiri seluruh pengurus & anggota aktif (${typeof TOTAL_USERS !== 'undefined' ? TOTAL_USERS : 'semua'} orang)</div>
+                    </div>
                 </div>
-                <div class="meeting-info-item" style="margin-top: var(--space-3);">
-                    <label>Peserta</label>
-                    <p>Seluruh Anggota (${TOTAL_USERS} orang)</p>
-                </div>`;
+            `;
             break;
-            
-        case 'kepanitiaan':
+        }
+        case 'kepanitiaan': {
             const eventSelect = document.getElementById('selectEvent');
-            const namaEvent = eventSelect.options[eventSelect.selectedIndex].text;
-            
-            const tipeDivisi = document.querySelector('[name="tipe_divisi"]:checked').value;
-            
-            let targetDivisi = 'Semua Divisi';
-            let targetCount = eventMembersCount;
-            
-            if (tipeDivisi === 'perdivisi') {
+            const namaEvent = (eventSelect && eventSelect.selectedIndex >= 0 && eventSelect.value) ? eventSelect.options[eventSelect.selectedIndex].text : '-';
+            const td = document.querySelector('[name="tipe_divisi"]:checked')?.value || 'semua';
+            let divisiLabel = 'Semua Divisi (Seluruh Panitia)';
+            let countLabel = eventMembersCount ? `${eventMembersCount} orang panitia` : 'Seluruh panitia terdaftar';
+            if (td === 'perdivisi') {
                 const selectDiv = document.getElementById('selectDivisi');
-                if (selectDiv.selectedIndex > 0) {
-                    targetDivisi = selectDiv.options[selectDiv.selectedIndex].text.split(' (')[0];
-                    targetCount = selectDiv.options[selectDiv.selectedIndex].dataset.count || 0;
+                if (selectDiv && selectDiv.selectedIndex > 0) {
+                    divisiLabel = 'Divisi ' + selectDiv.options[selectDiv.selectedIndex].text.split(' (')[0];
+                    const divCount = selectDiv.options[selectDiv.selectedIndex].dataset.count;
+                    if (divCount) countLabel = `${divCount} orang panitia divisi`;
                 }
             }
-            
-            const fokusKep = document.querySelector('[name="fokus_bahasan_kepanitiaan"]').value;
-            
-            detailsHTML = `
-                <div class="meeting-info-item">
-                    <label>Event / Kepanitiaan</label>
-                    <p>${escapeHtml(namaEvent)}</p>
+            fokusText = document.querySelector('[name="fokus_bahasan_kepanitiaan"]')?.value.trim() || '';
+            heroTitle = namaEvent;
+            heroSubtitle = `Kepanitiaan • ${divisiLabel}`;
+            targetHtml = `
+                <div class="confirm-target-box">
+                    <i class="fas fa-sitemap text-primary" style="font-size: 1.15rem;"></i>
+                    <div>
+                        <strong class="confirm-target-title">${escapeHtml(divisiLabel)}</strong>
+                        <div class="confirm-target-desc">Event: ${escapeHtml(namaEvent)} (${countLabel} + Pengurus Inti opsional)</div>
+                    </div>
                 </div>
-                <div class="meeting-info-item" style="margin-top: var(--space-3);">
-                    <label>Tipe Rapat</label>
-                    <p>${tipeDivisi === 'perdivisi' ? 'Per Divisi: ' + escapeHtml(targetDivisi) : 'Seluruh Panitia Event'}</p>
-                </div>
-                <div class="meeting-info-item" style="margin-top: var(--space-3);">
-                    <label>Agenda</label>
-                    <p>${escapeHtml(fokusKep)}</p>
-                </div>
-                <div class="meeting-info-item" style="margin-top: var(--space-3);">
-                    <label>Peserta Rapat (Otomatis)</label>
-                    <p style="color: var(--primary); font-weight: 600;">
-                        <i class="fas fa-users"></i> ${targetCount} orang
-                    </p>
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;">+ Semua BPH (Opsional)</small>
-                </div>`;
+            `;
             break;
-            
-        case 'bph':
-            const fokusBph = document.querySelector('[name="fokus_bahasan_bph"]').value;
-            detailsHTML = `
-                <div class="meeting-info-item">
-                    <label>Fokus Bahasan</label>
-                    <p>${escapeHtml(fokusBph)}</p>
+        }
+        case 'bph': {
+            fokusText = document.querySelector('[name="fokus_bahasan_bph"]')?.value.trim() || '';
+            heroTitle = 'Rapat Koordinasi BPH';
+            heroSubtitle = 'Badan Pengurus Harian & Kepala Departemen';
+            targetHtml = `
+                <div class="confirm-target-box">
+                    <i class="fas fa-crown text-primary" style="font-size: 1.15rem;"></i>
+                    <div>
+                        <strong class="confirm-target-title">BPH Inti & Ketua Departemen</strong>
+                        <div class="confirm-target-desc">Badan Pengurus Harian HIMA TI</div>
+                    </div>
                 </div>
-                <div class="meeting-info-item" style="margin-top: var(--space-3);">
-                    <label>Peserta</label>
-                    <p>Seluruh BPH (Inti + Kepala Departemen)</p>
-                </div>`;
+            `;
             break;
-            
-        case 'lintas_dept':
-            const checkedDepts = document.querySelectorAll('[name="departemen_collab[]"]:checked');
-            const deptNames = Array.from(checkedDepts).map(cb => DEPARTEMEN_LABELS[cb.value] || cb.value);
-            const fokusLintas = document.querySelector('[name="fokus_bahasan_lintas"]').value;
-            detailsHTML = `
-                <div class="meeting-info-item">
-                    <label>Departemen Kolaborasi</label>
-                    <p>${deptNames.join(', ')}</p>
+        }
+        case 'lintas_dept': {
+            const checkedBoxes = Array.from(document.querySelectorAll('[name="departemen_collab[]"]:checked'));
+            const depts = checkedBoxes.map(cb => (typeof DEPARTEMEN_LABELS !== 'undefined' && DEPARTEMEN_LABELS[cb.value]) ? DEPARTEMEN_LABELS[cb.value] : cb.value);
+            const deptsText = depts.length > 0 ? depts.join(', ') : '-';
+            fokusText = document.querySelector('[name="fokus_bahasan_lintas"]')?.value.trim() || '';
+            heroTitle = 'Kolaborasi Lintas Departemen';
+            heroSubtitle = deptsText;
+            targetHtml = `
+                <div class="confirm-target-box">
+                    <i class="fas fa-people-arrows text-primary" style="font-size: 1.15rem;"></i>
+                    <div>
+                        <strong class="confirm-target-title">${escapeHtml(deptsText)}</strong>
+                        <div class="confirm-target-desc">Anggota dari ${checkedBoxes.length} departemen yang berkolaborasi</div>
+                    </div>
                 </div>
-                <div class="meeting-info-item" style="margin-top: var(--space-3);">
-                    <label>Agenda / Bahasan</label>
-                    <p>${escapeHtml(fokusLintas)}</p>
-                </div>`;
+            `;
             break;
+        }
     }
-    
-    document.getElementById('confirmDetails').innerHTML = detailsHTML;
+
+    const html = `
+        <div class="confirm-summary-container">
+            <!-- Hero Header Card -->
+            <div class="confirm-hero-card">
+                <div class="confirm-hero-header">
+                    <span class="confirm-hero-type"><i class="fas ${jenisIcon}"></i> ${escapeHtml(jenisLabel)}</span>
+                    ${modeHtml}
+                </div>
+                <h4 class="confirm-hero-title">${escapeHtml(heroTitle)}</h4>
+                <div class="confirm-target-desc" style="font-size: 0.85rem; font-weight: 500;">
+                    ${escapeHtml(heroSubtitle)}
+                </div>
+            </div>
+
+            <!-- Detail Cards Grid -->
+            <div class="confirm-cards-grid">
+                <!-- Pembuat Rapat -->
+                <div class="confirm-card">
+                    <div class="confirm-card-label">
+                        <i class="fas fa-user-circle"></i> PEMBUAT RAPAT
+                    </div>
+                    <div class="confirm-profile-row">
+                        <div class="confirm-profile-avatar">${escapeHtml(initials)}</div>
+                        <div class="confirm-profile-info">
+                            <span class="confirm-profile-name">${escapeHtml(creatorName)}</span>
+                            <div class="confirm-profile-sub">
+                                ${creatorJabatan ? `<span class="confirm-badge-role"><i class="fas fa-id-badge"></i> ${escapeHtml(creatorJabatan)}</span>` : ''}
+                                ${creatorDept ? `<span class="confirm-badge-dept"><i class="fas fa-building"></i> ${escapeHtml(creatorDept)}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Jadwal Tanggal & Waktu -->
+                <div class="confirm-card">
+                    <div class="confirm-card-label">
+                        <i class="fas fa-calendar-alt"></i> TANGGAL & WAKTU
+                    </div>
+                    <div class="confirm-schedule-box">
+                        <div class="confirm-date-display">
+                            <i class="far fa-calendar-check text-primary"></i>
+                            <span>${escapeHtml(formattedDate)}</span>
+                        </div>
+                        <span class="confirm-time-pill">
+                            <i class="far fa-clock"></i> ${escapeHtml(formattedTime)}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Target Peserta (Full Width) -->
+                <div class="confirm-card full-width">
+                    <div class="confirm-card-label">
+                        <i class="fas fa-users"></i> TARGET PESERTA
+                    </div>
+                    ${targetHtml}
+                </div>
+
+                <!-- Fokus Bahasan / Agenda (Full Width) -->
+                <div class="confirm-card full-width">
+                    <div class="confirm-card-label">
+                        <i class="fas fa-bookmark"></i> FOKUS BAHASAN & AGENDA RAPAT
+                    </div>
+                    <div class="confirm-agenda-container">
+                        <p class="confirm-agenda-text">${fokusText ? escapeHtml(fokusText) : '<span style="color: #94a3b8; font-style: italic;">Tidak ada agenda bahasan khusus yang dicantumkan.</span>'}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    confirmGrid.innerHTML = html;
 }
 
 function escapeHtml(str) {

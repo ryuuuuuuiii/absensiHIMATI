@@ -3,9 +3,11 @@
  * Admin: Reports
  */
 
-require_once __DIR__ . '/../includes/auth_check.php';
+require_once __DIR__.'/../includes/auth_check.php';
 
-if (!isAdmin()) { redirect(BASE_URL . '/dashboard/index.php'); }
+if (! isAdmin()) {
+    redirect(BASE_URL.'/dashboard/index.php');
+}
 
 $pageTitle = 'Laporan Absensi';
 $pageIcon = 'fas fa-chart-bar';
@@ -17,7 +19,7 @@ $filterDept = sanitize($_GET['dept'] ?? '');
 $departemenList = json_decode(DEPARTEMEN_LIST, true);
 
 // Per-user attendance
-$deptWhere = $filterDept ? " AND u.departemen = ?" : "";
+$deptWhere = $filterDept ? ' AND u.departemen = ?' : '';
 $deptParams = $filterDept ? [$filterMonth, $filterYear, $filterDept] : [$filterMonth, $filterYear];
 
 $stmt = $db->prepare("
@@ -51,36 +53,36 @@ $stmt = $db->prepare("
 $stmt->execute([$filterMonth, $filterYear]);
 $deptSummary = $stmt->fetchAll();
 
-$bulanList = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+$bulanList = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
-include __DIR__ . '/../includes/header.php';
+include __DIR__.'/../includes/header.php';
 ?>
 
 <!-- Filter -->
 <div class="filter-bar">
     <select class="form-control" style="max-width: 150px;" onchange="applyReportFilter('month', this.value)">
-        <?php for ($m = 1; $m <= 12; $m++): ?>
+        <?php for ($m = 1; $m <= 12; $m++) { ?>
             <option value="<?= $m ?>" <?= $filterMonth === $m ? 'selected' : '' ?>><?= $bulanList[$m] ?></option>
-        <?php endfor; ?>
+        <?php } ?>
     </select>
     
     <select class="form-control" style="max-width: 120px;" onchange="applyReportFilter('year', this.value)">
-        <?php for ($y = date('Y'); $y >= date('Y') - 2; $y--): ?>
+        <?php for ($y = date('Y'); $y >= date('Y') - 2; $y--) { ?>
             <option value="<?= $y ?>" <?= $filterYear === $y ? 'selected' : '' ?>><?= $y ?></option>
-        <?php endfor; ?>
+        <?php } ?>
     </select>
     
     <select class="form-control" style="max-width: 200px;" onchange="applyReportFilter('dept', this.value)">
         <option value="">Semua Departemen</option>
-        <?php foreach ($departemenList as $key => $label): ?>
+        <?php foreach ($departemenList as $key => $label) { ?>
             <option value="<?= $key ?>" <?= $filterDept === $key ? 'selected' : '' ?>><?= $label ?></option>
-        <?php endforeach; ?>
+        <?php } ?>
     </select>
 </div>
 
 <!-- Department Summary -->
 <div class="stat-cards mb-6">
-    <?php foreach ($deptSummary as $ds): ?>
+    <?php foreach ($deptSummary as $ds) { ?>
     <div class="stat-card">
         <div class="stat-icon orange"><i class="fas fa-building"></i></div>
         <div class="stat-info">
@@ -88,7 +90,7 @@ include __DIR__ . '/../includes/header.php';
             <p><?= $ds['departemen'] ?> (<?= $ds['total_anggota'] ?> org)</p>
         </div>
     </div>
-    <?php endforeach; ?>
+    <?php } ?>
 </div>
 
 <!-- Detail Table -->
@@ -114,7 +116,7 @@ include __DIR__ . '/../includes/header.php';
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($reportData as $i => $r): ?>
+                <?php foreach ($reportData as $i => $r) { ?>
                 <?php $pct = $r['total_rapat'] > 0 ? round(($r['hadir'] / $r['total_rapat']) * 100) : 0; ?>
                 <tr>
                     <td><?= $i + 1 ?></td>
@@ -132,7 +134,7 @@ include __DIR__ . '/../includes/header.php';
                         </span>
                     </td>
                 </tr>
-                <?php endforeach; ?>
+                <?php } ?>
             </tbody>
         </table>
     </div>
@@ -150,4 +152,4 @@ function applyReportFilter(key, value) {
 }
 </script>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__.'/../includes/footer.php'; ?>

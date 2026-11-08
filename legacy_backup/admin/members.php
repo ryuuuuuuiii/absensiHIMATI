@@ -4,11 +4,11 @@
  * CRUD operations for HIMA TI members
  */
 
-require_once __DIR__ . '/../includes/auth_check.php';
+require_once __DIR__.'/../includes/auth_check.php';
 
-if (!isAdmin()) {
+if (! isAdmin()) {
     setFlash('danger', 'Akses ditolak.');
-    redirect(BASE_URL . '/dashboard/index.php');
+    redirect(BASE_URL.'/dashboard/index.php');
 }
 
 $pageTitle = 'Kelola Anggota';
@@ -19,26 +19,26 @@ $db = getDB();
 if (isset($_GET['delete']) && isset($_GET['csrf'])) {
     if (validateCSRF($_GET['csrf'])) {
         $deleteId = intval($_GET['delete']);
-        $stmt = $db->prepare("DELETE FROM users WHERE id = ?");
+        $stmt = $db->prepare('DELETE FROM users WHERE id = ?');
         $stmt->execute([$deleteId]);
         setFlash('success', 'Anggota berhasil dihapus.');
     }
-    redirect(BASE_URL . '/admin/members.php');
+    redirect(BASE_URL.'/admin/members.php');
 }
 
 // Filters
 $filterDept = sanitize($_GET['dept'] ?? '');
 $search = sanitize($_GET['q'] ?? '');
 
-$where = "1=1";
+$where = '1=1';
 $params = [];
 
 if ($filterDept) {
-    $where .= " AND departemen = ?";
+    $where .= ' AND departemen = ?';
     $params[] = $filterDept;
 }
 if ($search) {
-    $where .= " AND (nama_lengkap LIKE ? OR email LIKE ?)";
+    $where .= ' AND (nama_lengkap LIKE ? OR email LIKE ?)';
     $params[] = "%$search%";
     $params[] = "%$search%";
 }
@@ -49,7 +49,7 @@ $members = $stmt->fetchAll();
 
 $departemenList = json_decode(DEPARTEMEN_LIST, true);
 
-include __DIR__ . '/../includes/header.php';
+include __DIR__.'/../includes/header.php';
 ?>
 
 <!-- Filter Bar -->
@@ -57,14 +57,14 @@ include __DIR__ . '/../includes/header.php';
     <form method="GET" class="search-input-wrapper">
         <i class="fas fa-search"></i>
         <input type="text" name="q" class="form-control" placeholder="Cari nama atau email..." value="<?= htmlspecialchars($search) ?>">
-        <?php if ($filterDept): ?><input type="hidden" name="dept" value="<?= $filterDept ?>"><?php endif; ?>
+        <?php if ($filterDept) { ?><input type="hidden" name="dept" value="<?= $filterDept ?>"><?php } ?>
     </form>
     
-    <select class="form-control" style="max-width: 200px;" onchange="location.href='?dept='+this.value+'<?= $search ? '&q=' . urlencode($search) : '' ?>'">
+    <select class="form-control" style="max-width: 200px;" onchange="location.href='?dept='+this.value+'<?= $search ? '&q='.urlencode($search) : '' ?>'">
         <option value="">Semua Departemen</option>
-        <?php foreach ($departemenList as $key => $label): ?>
+        <?php foreach ($departemenList as $key => $label) { ?>
             <option value="<?= $key ?>" <?= $filterDept === $key ? 'selected' : '' ?>><?= $label ?></option>
-        <?php endforeach; ?>
+        <?php } ?>
     </select>
     
     <a href="<?= BASE_URL ?>/admin/add_member.php" class="btn btn-primary">
@@ -102,7 +102,7 @@ include __DIR__ . '/../includes/header.php';
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($members as $i => $m): ?>
+                <?php foreach ($members as $i => $m) { ?>
                 <tr>
                     <td><?= $i + 1 ?></td>
                     <td><strong><?= htmlspecialchars($m['nama_lengkap']) ?></strong></td>
@@ -111,7 +111,7 @@ include __DIR__ . '/../includes/header.php';
                     <td><?= htmlspecialchars($m['jabatan']) ?></td>
                     <td><?= $m['is_bph'] ? '<i class="fas fa-check text-success"></i>' : '-' ?></td>
                     <td>
-                        <?php if ($m['qr_code']): ?>
+                        <?php if ($m['qr_code']) { ?>
                             <button type="button" class="btn btn-xs btn-outline-primary" style="padding: 4px 10px; font-size: var(--font-xs); border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: 5px;"
                                     onclick='openQrModal(<?= json_encode([
                                         'id' => $m['id'],
@@ -119,13 +119,13 @@ include __DIR__ . '/../includes/header.php';
                                         'email' => $m['email'] ?? '',
                                         'departemen' => $m['departemen'],
                                         'jabatan' => $m['jabatan'],
-                                        'qr_code' => $m['qr_code']
+                                        'qr_code' => $m['qr_code'],
                                     ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>
                                 <i class="fas fa-qrcode"></i> Lihat QR
                             </button>
-                        <?php else: ?>
+                        <?php } else { ?>
                             <span class="badge badge-danger"><i class="fas fa-times"></i> Belum ada</span>
-                        <?php endif; ?>
+                        <?php } ?>
                     </td>
                     <td>
                         <div class="btn-group">
@@ -142,7 +142,7 @@ include __DIR__ . '/../includes/header.php';
                         </div>
                     </td>
                 </tr>
-                <?php endforeach; ?>
+                <?php } ?>
             </tbody>
         </table>
     </div>
@@ -348,5 +348,5 @@ function printQrCard() {
 }
 </script>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__.'/../includes/footer.php'; ?>
 

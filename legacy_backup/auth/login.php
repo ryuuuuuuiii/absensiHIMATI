@@ -4,12 +4,12 @@
  * Absensi HIMA TI Politeknik Hasnur
  */
 
-require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__.'/../config/config.php';
+require_once __DIR__.'/../includes/functions.php';
 
 // Redirect if already logged in
 if (isLoggedIn()) {
-    redirect(BASE_URL . '/dashboard/index.php');
+    redirect(BASE_URL.'/dashboard/index.php');
 }
 
 // Get logos
@@ -39,23 +39,23 @@ $logo3 = getSetting('logo_3', '');
             <div class="login-card">
                 <!-- 3 Logo Space -->
                 <div class="login-logos">
-                    <?php if ($logo1): ?>
+                    <?php if ($logo1) { ?>
                         <img src="<?= BASE_URL ?>/uploads/logos/<?= $logo1 ?>" alt="Logo 1">
-                    <?php else: ?>
+                    <?php } else { ?>
                         <span class="logo-placeholder"><i class="fas fa-university"></i></span>
-                    <?php endif; ?>
+                    <?php } ?>
                     
-                    <?php if ($logo2): ?>
+                    <?php if ($logo2) { ?>
                         <img src="<?= BASE_URL ?>/uploads/logos/<?= $logo2 ?>" alt="Logo 2">
-                    <?php else: ?>
+                    <?php } else { ?>
                         <span class="logo-placeholder"><i class="fas fa-laptop-code"></i></span>
-                    <?php endif; ?>
+                    <?php } ?>
                     
-                    <?php if ($logo3): ?>
+                    <?php if ($logo3) { ?>
                         <img src="<?= BASE_URL ?>/uploads/logos/<?= $logo3 ?>" alt="Logo 3">
-                    <?php else: ?>
+                    <?php } else { ?>
                         <span class="logo-placeholder"><i class="fas fa-users"></i></span>
-                    <?php endif; ?>
+                    <?php } ?>
                 </div>
                 
                 <!-- Title -->

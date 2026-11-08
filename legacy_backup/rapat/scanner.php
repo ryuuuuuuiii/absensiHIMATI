@@ -4,39 +4,39 @@
  * Diamankan via meeting unique_link token di URL
  */
 
-require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__.'/../config/config.php';
+require_once __DIR__.'/../includes/functions.php';
 
 $token = sanitize($_GET['token'] ?? '');
 if (empty($token)) {
-    die('Link tidak valid.');
+    exit('Link tidak valid.');
 }
 
 $db = getDB();
 
 // Get meeting by token
-$stmt = $db->prepare("
+$stmt = $db->prepare('
     SELECT m.*, u.nama_lengkap as creator_name 
     FROM meetings m JOIN users u ON m.created_by = u.id 
     WHERE m.unique_link = ?
-");
+');
 $stmt->execute([$token]);
 $meeting = $stmt->fetch();
 
-if (!$meeting) {
-    die('Rapat tidak ditemukan.');
+if (! $meeting) {
+    exit('Rapat tidak ditemukan.');
 }
 
 $meetingId = $meeting['id'];
 
 // Get attendance data
-$stmt = $db->prepare("
+$stmt = $db->prepare('
     SELECT a.*, u.nama_lengkap, u.departemen, u.jabatan 
     FROM attendances a 
     JOIN users u ON a.user_id = u.id 
     WHERE a.meeting_id = ?
     ORDER BY a.scanned_at DESC
-");
+');
 $stmt->execute([$meetingId]);
 $attendances = $stmt->fetchAll();
 
@@ -50,13 +50,15 @@ foreach ($attendances as $a) {
     }
 }
 
-$absentUrl = BASE_URL . '/meeting/absent_form.php?token=' . $meeting['absent_link'];
-$onlineUrl = BASE_URL . '/meeting/online_attend.php?token=' . $meeting['unique_link'];
-$hasilUrl = BASE_URL . '/rapat/hasil.php?token=' . $meeting['unique_link'];
+$absentUrl = BASE_URL.'/meeting/absent_form.php?token='.$meeting['absent_link'];
+$onlineUrl = BASE_URL.'/meeting/online_attend.php?token='.$meeting['unique_link'];
+$hasilUrl = BASE_URL.'/rapat/hasil.php?token='.$meeting['unique_link'];
 
 // Generate CSRF for API calls
-if (session_status() === PHP_SESSION_NONE) session_start();
-if (!isset($_SESSION['csrf_token'])) {
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (! isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
@@ -126,7 +128,7 @@ $logo3 = getSetting('logo_3', '');
                             <button onclick="copyToClipboard('<?= $absentUrl ?>', this)"><i class="fas fa-copy"></i></button>
                         </div>
                     </div>
-                    <?php if ($meeting['mode_rapat'] === 'online'): ?>
+                    <?php if ($meeting['mode_rapat'] === 'online') { ?>
                     <div>
                         <label class="form-label" style="font-size: var(--font-xs);"><i class="fas fa-link" style="color: var(--info);"></i> Link Absensi Online</label>
                         <div class="share-link-box">
@@ -134,7 +136,7 @@ $logo3 = getSetting('logo_3', '');
                             <button onclick="copyToClipboard('<?= $onlineUrl ?>', this)"><i class="fas fa-copy"></i></button>
                         </div>
                     </div>
-                    <?php endif; ?>
+                    <?php } ?>
                 </div>
             </div>
             
@@ -146,8 +148,8 @@ $logo3 = getSetting('logo_3', '');
                         <span class="scanned-count" id="scannedCount"><?= $hadirCount ?> hadir</span>
                     </div>
                     <div id="scannedList" style="max-height: 500px; overflow-y: auto;">
-                        <?php foreach ($attendances as $a): ?>
-                            <?php if ($a['status'] === 'hadir'): ?>
+                        <?php foreach ($attendances as $a) { ?>
+                            <?php if ($a['status'] === 'hadir') { ?>
                             <div class="scanned-item" data-user-id="<?= $a['user_id'] ?>">
                                 <div class="scanned-item-avatar"><i class="fas fa-check"></i></div>
                                 <div class="scanned-item-info">
@@ -156,15 +158,15 @@ $logo3 = getSetting('logo_3', '');
                                 </div>
                                 <span class="scanned-item-time"><?= $a['scanned_at'] ? date('H:i', strtotime($a['scanned_at'])) : '-' ?></span>
                             </div>
-                            <?php endif; ?>
-                        <?php endforeach; ?>
-                        <?php if ($hadirCount === 0): ?>
+                            <?php } ?>
+                        <?php } ?>
+                        <?php if ($hadirCount === 0) { ?>
                         <div class="empty-state" id="emptyState" style="padding: var(--space-8) var(--space-4);">
                             <i class="fas fa-qrcode"></i>
                             <h3>Belum Ada Scan</h3>
                             <p>Arahkan kamera ke QR Code peserta</p>
                         </div>
-                        <?php endif; ?>
+                        <?php } ?>
                     </div>
                 </div>
             </div>

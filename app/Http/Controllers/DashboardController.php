@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Meeting;
 use App\Models\Member;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -39,7 +38,7 @@ class DashboardController extends Controller
                 'attendances as total_peserta',
                 'attendances as jumlah_hadir' => function ($query) {
                     $query->where('status', 'hadir');
-                }
+                },
             ])
             ->orderBy('tanggal', 'desc')
             ->orderBy('waktu_mulai', 'desc')
@@ -52,7 +51,7 @@ class DashboardController extends Controller
                 'attendances as total_peserta',
                 'attendances as jumlah_hadir' => function ($query) {
                     $query->where('status', 'hadir');
-                }
+                },
             ])
             ->where('status', 'scanning')
             ->orderBy('created_at', 'desc')

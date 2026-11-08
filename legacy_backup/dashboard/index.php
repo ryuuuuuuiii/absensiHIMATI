@@ -4,7 +4,7 @@
  * Absensi HIMA TI Politeknik Hasnur
  */
 
-require_once __DIR__ . '/../includes/auth_check.php';
+require_once __DIR__.'/../includes/auth_check.php';
 
 $pageTitle = 'Dashboard';
 $pageIcon = 'fas fa-th-large';
@@ -35,7 +35,7 @@ $stmt = $db->query("
 $avgAttendance = $stmt->fetch()['avg_pct'] ?? 0;
 
 // Public link
-$publicLink = BASE_URL . '/rapat';
+$publicLink = BASE_URL.'/rapat';
 
 // 5 Rapat terakhir
 $stmt = $db->prepare("
@@ -48,7 +48,7 @@ $stmt = $db->prepare("
 $stmt->execute();
 $rapatTerakhir = $stmt->fetchAll();
 
-include __DIR__ . '/../includes/header.php';
+include __DIR__.'/../includes/header.php';
 ?>
 
 <!-- Stat Cards -->
@@ -136,13 +136,13 @@ include __DIR__ . '/../includes/header.php';
         <a href="<?= BASE_URL ?>/admin/meetings.php" class="btn btn-ghost btn-sm">Lihat Semua <i class="fas fa-arrow-right"></i></a>
     </div>
     
-    <?php if (empty($rapatTerakhir)): ?>
+    <?php if (empty($rapatTerakhir)) { ?>
         <div class="empty-state">
             <i class="fas fa-calendar-times"></i>
             <h3>Belum Ada Rapat</h3>
             <p>Pengurus bisa membuat rapat melalui link publik.</p>
         </div>
-    <?php else: ?>
+    <?php } else { ?>
         <div class="table-wrapper">
             <table class="table">
                 <thead>
@@ -156,7 +156,7 @@ include __DIR__ . '/../includes/header.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($rapatTerakhir as $rapat): ?>
+                    <?php foreach ($rapatTerakhir as $rapat) { ?>
                     <tr>
                         <td>
                             <div style="font-weight: 600;"><?= formatTanggal($rapat['tanggal'], 'short') ?></div>
@@ -170,11 +170,11 @@ include __DIR__ . '/../includes/header.php';
                             <a href="<?= BASE_URL ?>/meeting/detail.php?id=<?= $rapat['id'] ?>" class="btn btn-ghost btn-sm"><i class="fas fa-eye"></i></a>
                         </td>
                     </tr>
-                    <?php endforeach; ?>
+                    <?php } ?>
                 </tbody>
             </table>
         </div>
-    <?php endif; ?>
+    <?php } ?>
 </div>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__.'/../includes/footer.php'; ?>

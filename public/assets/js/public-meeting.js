@@ -1,52 +1,59 @@
 /**
- * Public Meeting Form — Multi-Step Controller
- * Absensi HIMA TI — Halaman Publik (tanpa login)
+ * Meeting Form — Multi-Step Controller
+ * Absensi HIMA TI — Khusus Pengurus & Admin
  */
 
 let currentStep = 1;
 let selectedJenis = '';
 let selectedMode = 'offline';
-const totalSteps = 5;
-
-// ============================================
-// CREATOR SELECTION
-// ============================================
-document.getElementById('selectCreator')?.addEventListener('change', function() {
-    const opt = this.options[this.selectedIndex];
-    const infoDiv = document.getElementById('creatorInfo');
-    
-    if (this.value) {
-        document.getElementById('creatorName').textContent = opt.text.split(' — ')[0];
-        document.getElementById('creatorDetail').textContent = opt.dataset.dept + ' • ' + opt.dataset.jabatan;
-        infoDiv.style.display = 'block';
-    } else {
-        infoDiv.style.display = 'none';
-    }
-});
+let eventMembersCount = 0;
+let isRestoringDraft = false;
+let isSubmittingForm = false;
+const totalSteps = 4;
 
 // ============================================
 // STEP NAVIGATION
 // ============================================
+function goToStep(targetStep) {
+    const stepNum = Math.min(Math.max(parseInt(targetStep, 10) || 1, 1), totalSteps);
+
+    for (let i = 1; i <= totalSteps; i++) {
+        const stepContent = document.getElementById('step' + i);
+        const stepItem = document.getElementById('stepItem' + i);
+        const connector = document.getElementById('connector' + i);
+
+        if (stepContent) {
+            stepContent.classList.toggle('active', i === stepNum);
+        }
+
+        if (stepItem) {
+            stepItem.classList.remove('active', 'completed');
+            if (i < stepNum) {
+                stepItem.classList.add('completed');
+            } else if (i === stepNum) {
+                stepItem.classList.add('active');
+            }
+        }
+
+        if (connector) {
+            connector.classList.toggle('completed', i < stepNum);
+        }
+    }
+
+    currentStep = stepNum;
+    if (currentStep === totalSteps) {
+        populateConfirmation();
+    }
+}
+
 function nextStep(from) {
     if (!validateStep(from)) return;
     
     const next = from + 1;
     if (next > totalSteps) return;
     
-    document.getElementById('step' + from).classList.remove('active');
-    document.getElementById('step' + next).classList.add('active');
-    
-    document.getElementById('stepItem' + from).classList.remove('active');
-    document.getElementById('stepItem' + from).classList.add('completed');
-    document.getElementById('stepItem' + next).classList.add('active');
-    
-    if (document.getElementById('connector' + from)) {
-        document.getElementById('connector' + from).classList.add('completed');
-    }
-    
-    if (next === totalSteps) populateConfirmation();
-    
-    currentStep = next;
+    goToStep(next);
+    saveMeetingDraft();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -54,18 +61,8 @@ function prevStep(from) {
     const prev = from - 1;
     if (prev < 1) return;
     
-    document.getElementById('step' + from).classList.remove('active');
-    document.getElementById('step' + prev).classList.add('active');
-    
-    document.getElementById('stepItem' + from).classList.remove('active');
-    document.getElementById('stepItem' + prev).classList.remove('completed');
-    document.getElementById('stepItem' + prev).classList.add('active');
-    
-    if (document.getElementById('connector' + prev)) {
-        document.getElementById('connector' + prev).classList.remove('completed');
-    }
-    
-    currentStep = prev;
+    goToStep(prev);
+    saveMeetingDraft();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -74,26 +71,20 @@ function prevStep(from) {
 // ============================================
 function validateStep(step) {
     switch(step) {
-        case 1:
-            if (!document.getElementById('selectCreator').value) {
-                document.getElementById('step1Error').style.display = 'block';
+        case 1: {
+            const err = document.getElementById('step1Error');
+            if (!selectedJenis) {
+                if (err) err.style.display = 'block';
                 return false;
             }
-            document.getElementById('step1Error').style.display = 'none';
+            if (err) err.style.display = 'none';
             return true;
+        }
             
         case 2:
-            if (!selectedJenis) {
-                document.getElementById('step2Error').style.display = 'block';
-                return false;
-            }
-            document.getElementById('step2Error').style.display = 'none';
-            return true;
+            return validateStep2();
             
         case 3:
-            return validateStep3();
-            
-        case 4:
             return true;
             
         default:
@@ -101,7 +92,7 @@ function validateStep(step) {
     }
 }
 
-function validateStep3() {
+function validateStep2() {
     switch(selectedJenis) {
         case 'internal_dept':
             if (!document.getElementById('selectDepartemen').value) {
@@ -120,18 +111,21 @@ function validateStep3() {
             }
             break;
         case 'kepanitiaan':
-            if (!document.querySelector('[name="nama_event"]').value.trim()) {
-                showToast('warning', 'Peringatan', 'Silakan isi nama event.');
+            if (!document.getElementById('selectEvent')?.value) {
+                showToast('warning', 'Peringatan', 'Silakan pilih event aktif.');
                 return false;
             }
             const tipeDivisi = document.querySelector('[name="tipe_divisi"]:checked');
             if (!tipeDivisi) {
-                showToast('warning', 'Peringatan', 'Pilih tipe rapat (Per Divisi / Semua).');
+                showToast('warning', 'Peringatan', 'Pilih tipe rapat (Per Divisi / Semua Divisi).');
                 return false;
             }
-            if (tipeDivisi.value === 'perdivisi' && !document.querySelector('[name="divisi_rapat"]').value.trim()) {
-                showToast('warning', 'Peringatan', 'Silakan isi nama divisi.');
-                return false;
+            if (tipeDivisi.value === 'perdivisi') {
+                const selectDiv = document.getElementById('selectDivisi');
+                if (!selectDiv || !selectDiv.value) {
+                    showToast('warning', 'Peringatan', 'Silakan pilih divisi.');
+                    return false;
+                }
             }
             if (!document.querySelector('[name="fokus_bahasan_kepanitiaan"]').value.trim()) {
                 showToast('warning', 'Peringatan', 'Silakan isi agenda rapat.');
@@ -161,6 +155,7 @@ function validateStep3() {
         showToast('warning', 'Peringatan', 'Tanggal dan waktu harus diisi.');
         return false;
     }
+    
     return true;
 }
 
@@ -168,81 +163,656 @@ function validateStep3() {
 // TYPE & MODE SELECTION
 // ============================================
 function selectRapatType(jenis, card) {
-    document.querySelectorAll('#step2 .rapat-type-card').forEach(c => c.classList.remove('selected'));
-    card.classList.add('selected');
+    document.querySelectorAll('.rapat-type-card').forEach(c => c.classList.remove('selected'));
+    if (card) card.classList.add('selected');
     selectedJenis = jenis;
-    document.getElementById('jenisRapat').value = jenis;
-    document.getElementById('step2Error').style.display = 'none';
+    const jenisInput = document.getElementById('jenisRapat');
+    if (jenisInput) jenisInput.value = jenis;
+    const err = document.getElementById('step1Error');
+    if (err) err.style.display = 'none';
     
     document.querySelectorAll('.dynamic-fields').forEach(f => f.style.display = 'none');
     const fieldGroup = document.getElementById('fields_' + jenis);
     if (fieldGroup) fieldGroup.style.display = 'block';
+
+    if (jenis === 'kepanitiaan' && !isRestoringDraft) {
+        const eventId = document.getElementById('selectEvent')?.value;
+        const selectDivisi = document.getElementById('selectDivisi');
+        if (eventId && selectDivisi && selectDivisi.options.length <= 1) {
+            fetchEventDivisions(eventId);
+        }
+    }
+
+    saveMeetingDraft();
 }
 
 function selectMode(mode, card) {
-    document.querySelectorAll('#step4 .rapat-type-card').forEach(c => c.classList.remove('selected'));
-    card.classList.add('selected');
+    document.querySelectorAll('.mode-selection .mode-card').forEach(c => {
+        c.classList.remove('selected');
+        c.classList.remove('active');
+    });
+    if (card) {
+        card.classList.add('selected');
+        card.classList.add('active');
+    }
     selectedMode = mode;
-    document.getElementById('modeRapat').value = mode;
+    const modeInput = document.getElementById('modeRapat');
+    if (modeInput) modeInput.value = mode;
+    saveMeetingDraft();
 }
 
 function toggleDivisiField() {
     const tipeDivisi = document.querySelector('[name="tipe_divisi"]:checked');
     const fieldDivisi = document.getElementById('fieldDivisiName');
-    fieldDivisi.style.display = (tipeDivisi && tipeDivisi.value === 'perdivisi') ? 'block' : 'none';
+    const selectDivisi = document.getElementById('selectDivisi');
+    
+    if (tipeDivisi && tipeDivisi.value === 'perdivisi') {
+        if (fieldDivisi) fieldDivisi.style.display = 'block';
+        if (selectDivisi) selectDivisi.disabled = false;
+
+        if (!isRestoringDraft) {
+            const eventId = document.getElementById('selectEvent')?.value;
+            if (eventId && selectDivisi && selectDivisi.options.length <= 1) {
+                fetchEventDivisions(eventId);
+            }
+        }
+    } else {
+        if (fieldDivisi) fieldDivisi.style.display = 'none';
+        if (selectDivisi) selectDivisi.disabled = true;
+    }
+
+    saveMeetingDraft();
+}
+
+function fetchEventDivisions(eventId, preselectDivisiId = null) {
+    const selectDivisi = document.getElementById('selectDivisi');
+    const countLabel = document.getElementById('eventMemberCount');
+    if (!selectDivisi) return;
+
+    selectDivisi.innerHTML = '<option value="">— Loading divisi... —</option>';
+    if (countLabel) countLabel.innerHTML = 'Memuat data panitia...';
+    eventMembersCount = 0;
+
+    if (!eventId) {
+        selectDivisi.innerHTML = '<option value="">— Pilih Event Dulu —</option>';
+        if (countLabel) countLabel.innerHTML = 'Pilih event untuk melihat divisi dan panitia.';
+        saveMeetingDraft();
+        return;
+    }
+
+    const rawBaseUrl = window.BASE_URL || '';
+    const baseUrl = rawBaseUrl.replace(/\/+$/, '');
+    const apiUrl = baseUrl ? `${baseUrl}/api/events/${eventId}/data` : `/api/events/${eventId}/data`;
+    const fallbackUrl = baseUrl ? `${baseUrl}/meeting/process/get_event_data.php?event_id=${eventId}` : `/meeting/process/get_event_data.php?event_id=${eventId}`;
+
+    function renderDivisions(data) {
+        eventMembersCount = data.event?.total_members || 0;
+        if (countLabel) {
+            countLabel.innerHTML = `<i class="fas fa-users text-primary"></i> Total panitia terdaftar: <b>${eventMembersCount} orang</b>`;
+        }
+
+        selectDivisi.innerHTML = '<option value="">— Pilih Divisi —</option>';
+        if (!data.divisions || data.divisions.length === 0) {
+            selectDivisi.innerHTML += '<option value="" disabled>Belum ada divisi pada event ini</option>';
+        } else {
+            data.divisions.forEach(div => {
+                selectDivisi.innerHTML += `<option value="${div.id}" data-count="${div.total_member}">${escapeHtml(div.nama_divisi)} (${div.total_member} panitia)</option>`;
+            });
+        }
+
+        const tipeDivisi = document.querySelector('[name="tipe_divisi"]:checked');
+        if (tipeDivisi && tipeDivisi.value === 'perdivisi') {
+            selectDivisi.disabled = false;
+        }
+
+        if (preselectDivisiId) {
+            selectDivisi.value = String(preselectDivisiId);
+        }
+
+        if (currentStep === totalSteps) {
+            populateConfirmation();
+        }
+    }
+
+    fetch(apiUrl)
+        .then(response => {
+            if (!response.ok) {
+                return fetch(fallbackUrl).then(res => res.json());
+            }
+            return response.json();
+        })
+        .then(res => {
+            if (res.success) {
+                renderDivisions(res.data);
+            } else {
+                showToast('danger', 'Error', res.message || 'Gagal mengambil data event');
+                selectDivisi.innerHTML = '<option value="">— Gagal Memuat Divisi —</option>';
+            }
+        })
+        .catch(err => {
+            console.warn('API fetch failed, trying relative path...', err);
+            fetch(`/api/events/${eventId}/data`)
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        renderDivisions(res.data);
+                    } else {
+                        showToast('danger', 'Error', res.message || 'Gagal mengambil data event');
+                        selectDivisi.innerHTML = '<option value="">— Gagal Memuat Divisi —</option>';
+                    }
+                })
+                .catch(err2 => {
+                    console.error('All division fetch attempts failed:', err2);
+                    showToast('danger', 'Error', 'Gagal memuat divisi event.');
+                    selectDivisi.innerHTML = '<option value="">— Gagal Memuat Data —</option>';
+                    if (countLabel) countLabel.innerHTML = 'Gagal memuat data event.';
+                });
+        });
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 // ============================================
 // CONFIRMATION
 // ============================================
-function populateConfirmation() {
-    const creatorSelect = document.getElementById('selectCreator');
-    const creatorOpt = creatorSelect.options[creatorSelect.selectedIndex];
-    document.getElementById('confirmCreator').textContent = creatorOpt.text;
-    
-    document.getElementById('confirmJenis').textContent = JENIS_RAPAT_LABELS[selectedJenis] || selectedJenis;
-    document.getElementById('confirmMode').textContent = selectedMode === 'offline' ? '🏢 Offline (Scan QR)' : '🌐 Online (Link)';
-    
-    const tanggal = document.querySelector('[name="tanggal"]').value;
-    const waktu = document.querySelector('[name="waktu_mulai"]').value;
-    document.getElementById('confirmTanggal').textContent = formatDate(tanggal) + ' • ' + waktu + ' WITA';
-    
-    let detailsHTML = '';
-    switch(selectedJenis) {
-        case 'internal_dept':
-            const dept = document.getElementById('selectDepartemen');
-            detailsHTML = `<div class="meeting-info-item"><label>Departemen</label><p>${dept.options[dept.selectedIndex].text}</p></div>
-                <div class="meeting-info-item" style="margin-top:var(--space-3)"><label>Fokus</label><p>${esc(document.querySelector('[name="fokus_bahasan_internal"]').value)}</p></div>`;
-            break;
-        case 'perdana':
-            detailsHTML = `<div class="meeting-info-item"><label>Agenda</label><p>${esc(document.querySelector('[name="nama_event_perdana"]').value)}</p></div>`;
-            break;
-        case 'kepanitiaan':
-            const td = document.querySelector('[name="tipe_divisi"]:checked')?.value || '';
-            detailsHTML = `<div class="meeting-info-item"><label>Event</label><p>${esc(document.querySelector('[name="nama_event"]').value)}</p></div>
-                <div class="meeting-info-item" style="margin-top:var(--space-3)"><label>Tipe</label><p>${td === 'perdivisi' ? 'Divisi: ' + esc(document.querySelector('[name="divisi_rapat"]').value) : 'Semua'}</p></div>`;
-            break;
-        case 'bph':
-            detailsHTML = `<div class="meeting-info-item"><label>Fokus</label><p>${esc(document.querySelector('[name="fokus_bahasan_bph"]').value)}</p></div>`;
-            break;
-        case 'lintas_dept':
-            const depts = Array.from(document.querySelectorAll('[name="departemen_collab[]"]:checked')).map(cb => DEPARTEMEN_LABELS[cb.value] || cb.value);
-            detailsHTML = `<div class="meeting-info-item"><label>Departemen</label><p>${depts.join(', ')}</p></div>
-                <div class="meeting-info-item" style="margin-top:var(--space-3)"><label>Agenda</label><p>${esc(document.querySelector('[name="fokus_bahasan_lintas"]').value)}</p></div>`;
-            break;
+function parseCreatorInfo(creatorOpt) {
+    if (!creatorOpt || !creatorOpt.value) {
+        return { name: '-', role: '', dept: '', initials: 'SA' };
     }
-    document.getElementById('confirmDetails').innerHTML = detailsHTML;
+    let name = creatorOpt.dataset?.name || '';
+    let role = creatorOpt.dataset?.jabatan || '';
+    let dept = creatorOpt.dataset?.dept || '';
+    const text = creatorOpt.text || '';
+
+    if (!name && text) {
+        if (text.includes('(') && text.includes(')')) {
+            const match = text.match(/^(.*?)\s*\((.*?)\)$/);
+            if (match) {
+                name = match[1].trim();
+                if (!role) role = match[2].trim();
+            }
+        } else if (text.includes('—') || text.includes(' - ')) {
+            const parts = text.split(/ — | - /);
+            name = parts[0]?.trim() || text;
+            if (!role) role = parts[1]?.trim() || '';
+        } else {
+            name = text;
+        }
+    }
+
+    if (!dept && creatorOpt.parentElement && creatorOpt.parentElement.label) {
+        dept = creatorOpt.parentElement.label;
+    }
+
+    let initials = 'SA';
+    if (name && name !== '-') {
+        const cleanName = name.replace(/^(kak|bang|pak|bu|dr|ir)\.?\s+/i, '');
+        const words = cleanName.trim().split(/\s+/).filter(Boolean);
+        if (words.length >= 2) {
+            initials = (words[0][0] + words[1][0]).toUpperCase();
+        } else if (words.length === 1 && words[0].length >= 1) {
+            initials = words[0].slice(0, 2).toUpperCase();
+        }
+    }
+
+    return { name, role, dept, initials };
+}
+
+function populateConfirmation() {
+    const confirmGrid = document.getElementById('confirmGrid');
+    if (!confirmGrid) return;
+
+    // 1. Pembuat Rapat
+    const creatorEl = document.getElementById('selectCreator');
+    const creatorOpt = (creatorEl && creatorEl.tagName === 'SELECT' && creatorEl.selectedIndex >= 0)
+        ? creatorEl.options[creatorEl.selectedIndex]
+        : creatorEl;
+    const { name: creatorName, role: creatorJabatan, dept: creatorDept, initials } = parseCreatorInfo(creatorOpt);
+
+    // 2. Jenis Rapat & Mode
+    const jenisLabel = (typeof JENIS_RAPAT_LABELS !== 'undefined' && JENIS_RAPAT_LABELS[selectedJenis]) ? JENIS_RAPAT_LABELS[selectedJenis] : selectedJenis;
+
+    const jenisIcons = {
+        'internal_dept': 'fa-building',
+        'perdana': 'fa-flag',
+        'kepanitiaan': 'fa-calendar-check',
+        'bph': 'fa-crown',
+        'lintas_dept': 'fa-people-arrows'
+    };
+    const jenisIcon = jenisIcons[selectedJenis] || 'fa-layer-group';
+
+    const modeHtml = selectedMode === 'offline'
+        ? `<span class="confirm-hero-mode offline"><span class="confirm-mode-dot"></span><i class="fas fa-qrcode"></i> Offline (Scan QR)</span>`
+        : `<span class="confirm-hero-mode online"><span class="confirm-mode-dot"></span><i class="fas fa-globe"></i> Online (Link Presensi)</span>`;
+
+    // 3. Tanggal & Waktu
+    const tanggal = document.querySelector('[name="tanggal"]')?.value || '';
+    const waktu = document.querySelector('[name="waktu_mulai"]')?.value || '';
+    let formattedDate = '-';
+    if (tanggal) {
+        if (typeof formatDate === 'function') {
+            formattedDate = formatDate(tanggal);
+        } else {
+            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            const d = new Date(tanggal);
+            formattedDate = !isNaN(d.getTime()) ? `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}` : tanggal;
+        }
+    }
+    const formattedTime = waktu ? `${escapeHtml(waktu)} WITA` : '-';
+
+    // 4. Spesifik per jenis rapat
+    let heroTitle = '';
+    let heroSubtitle = '';
+    let targetHtml = '';
+    let fokusText = '';
+
+    switch (selectedJenis) {
+        case 'internal_dept': {
+            const dept = document.getElementById('selectDepartemen');
+            const deptText = (dept && dept.selectedIndex >= 0 && dept.value) ? dept.options[dept.selectedIndex].text : '-';
+            const deptVal = (dept && dept.value) ? dept.value.toLowerCase() : '';
+            fokusText = document.querySelector('[name="fokus_bahasan_internal"]')?.value.trim() || '';
+            heroTitle = deptText;
+
+            let iconClass = 'fa-building';
+            let subtitle = 'Rapat Internal Anggota Departemen';
+            let targetDesc = 'Anggota & koor departemen wajib hadir (+ Pengurus Inti hadir opsional)';
+
+            if (deptVal === 'inti') {
+                iconClass = 'fa-user-tie';
+                subtitle = 'Rapat Khusus Pengurus Inti';
+                targetDesc = 'Khusus Pengurus Inti (Wajib hadir, tidak hadir = alpha)';
+            } else if (deptVal === 'bph') {
+                iconClass = 'fa-crown';
+                subtitle = 'Rapat Koordinasi BPH';
+                targetDesc = 'Pengurus Inti & seluruh Kepala Departemen (Wajib hadir, tidak hadir = alpha)';
+            }
+
+            heroSubtitle = subtitle;
+            targetHtml = `
+                <div class="confirm-target-box">
+                    <i class="fas ${iconClass} text-primary" style="font-size: 1.15rem;"></i>
+                    <div>
+                        <strong class="confirm-target-title">${escapeHtml(deptText)}</strong>
+                        <div class="confirm-target-desc">${targetDesc}</div>
+                    </div>
+                </div>
+            `;
+            break;
+        }
+        case 'perdana': {
+            const agendaPerdana = document.querySelector('[name="nama_event_perdana"]')?.value.trim() || '';
+            fokusText = agendaPerdana;
+            heroTitle = agendaPerdana || 'Rapat Perdana HIMA TI';
+            heroSubtitle = 'Rapat Pleno Seluruh Anggota HIMA TI';
+            targetHtml = `
+                <div class="confirm-target-box">
+                    <i class="fas fa-users text-primary" style="font-size: 1.15rem;"></i>
+                    <div>
+                        <strong class="confirm-target-title">Seluruh Anggota HIMA TI</strong>
+                        <div class="confirm-target-desc">Wajib dihadiri seluruh pengurus & anggota aktif</div>
+                    </div>
+                </div>
+            `;
+            break;
+        }
+        case 'kepanitiaan': {
+            const eventSelect = document.getElementById('selectEvent');
+            const namaEvent = (eventSelect && eventSelect.selectedIndex >= 0 && eventSelect.value) ? eventSelect.options[eventSelect.selectedIndex].text : '-';
+            const td = document.querySelector('[name="tipe_divisi"]:checked')?.value || 'semua';
+            let divisiLabel = 'Semua Divisi (Seluruh Panitia)';
+            if (td === 'perdivisi') {
+                const selectDiv = document.getElementById('selectDivisi');
+                if (selectDiv && selectDiv.selectedIndex > 0) {
+                    divisiLabel = 'Divisi ' + selectDiv.options[selectDiv.selectedIndex].text.split(' (')[0];
+                }
+            }
+            fokusText = document.querySelector('[name="fokus_bahasan_kepanitiaan"]')?.value.trim() || '';
+            heroTitle = namaEvent;
+            heroSubtitle = `Kepanitiaan • ${divisiLabel}`;
+            targetHtml = `
+                <div class="confirm-target-box">
+                    <i class="fas fa-sitemap text-primary" style="font-size: 1.15rem;"></i>
+                    <div>
+                        <strong class="confirm-target-title">${escapeHtml(divisiLabel)}</strong>
+                        <div class="confirm-target-desc">Event: ${escapeHtml(namaEvent)} (+ Pengurus Inti hadir opsional)</div>
+                    </div>
+                </div>
+            `;
+            break;
+        }
+        case 'bph': {
+            fokusText = document.querySelector('[name="fokus_bahasan_bph"]')?.value.trim() || '';
+            heroTitle = 'Rapat Koordinasi BPH';
+            heroSubtitle = 'Badan Pengurus Harian & Kepala Departemen';
+            targetHtml = `
+                <div class="confirm-target-box">
+                    <i class="fas fa-crown text-primary" style="font-size: 1.15rem;"></i>
+                    <div>
+                        <strong class="confirm-target-title">BPH Inti & Ketua Departemen</strong>
+                        <div class="confirm-target-desc">Badan Pengurus Harian HIMA TI</div>
+                    </div>
+                </div>
+            `;
+            break;
+        }
+        case 'lintas_dept': {
+            const checkedBoxes = Array.from(document.querySelectorAll('[name="departemen_collab[]"]:checked'));
+            const depts = checkedBoxes.map(cb => (typeof DEPARTEMEN_LABELS !== 'undefined' && DEPARTEMEN_LABELS[cb.value]) ? DEPARTEMEN_LABELS[cb.value] : cb.value);
+            const deptsText = depts.length > 0 ? depts.join(', ') : '-';
+            fokusText = document.querySelector('[name="fokus_bahasan_lintas"]')?.value.trim() || '';
+            heroTitle = 'Kolaborasi Lintas Departemen';
+            heroSubtitle = deptsText;
+            targetHtml = `
+                <div class="confirm-target-box">
+                    <i class="fas fa-people-arrows text-primary" style="font-size: 1.15rem;"></i>
+                    <div>
+                        <strong class="confirm-target-title">${escapeHtml(deptsText)}</strong>
+                        <div class="confirm-target-desc">Anggota dari ${checkedBoxes.length} departemen yang berkolaborasi</div>
+                    </div>
+                </div>
+            `;
+            break;
+        }
+    }
+
+    const html = `
+        <div class="confirm-summary-container">
+            <!-- Hero Header Card -->
+            <div class="confirm-hero-card">
+                <div class="confirm-hero-header">
+                    <span class="confirm-hero-type"><i class="fas ${jenisIcon}"></i> ${escapeHtml(jenisLabel)}</span>
+                    ${modeHtml}
+                </div>
+                <h4 class="confirm-hero-title">${escapeHtml(heroTitle)}</h4>
+                <div class="confirm-target-desc" style="font-size: 0.85rem; font-weight: 500;">
+                    ${escapeHtml(heroSubtitle)}
+                </div>
+            </div>
+
+            <!-- Detail Cards Grid -->
+            <div class="confirm-cards-grid">
+                <!-- Pembuat Rapat -->
+                <div class="confirm-card">
+                    <div class="confirm-card-label">
+                        <i class="fas fa-user-circle"></i> PEMBUAT RAPAT
+                    </div>
+                    <div class="confirm-profile-row">
+                        <div class="confirm-profile-avatar">${escapeHtml(initials)}</div>
+                        <div class="confirm-profile-info">
+                            <span class="confirm-profile-name">${escapeHtml(creatorName)}</span>
+                            <div class="confirm-profile-sub">
+                                ${creatorJabatan ? `<span class="confirm-badge-role"><i class="fas fa-id-badge"></i> ${escapeHtml(creatorJabatan)}</span>` : ''}
+                                ${creatorDept ? `<span class="confirm-badge-dept"><i class="fas fa-building"></i> ${escapeHtml(creatorDept)}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Jadwal Tanggal & Waktu -->
+                <div class="confirm-card">
+                    <div class="confirm-card-label">
+                        <i class="fas fa-calendar-alt"></i> TANGGAL & WAKTU
+                    </div>
+                    <div class="confirm-schedule-box">
+                        <div class="confirm-date-display">
+                            <i class="far fa-calendar-check text-primary"></i>
+                            <span>${escapeHtml(formattedDate)}</span>
+                        </div>
+                        <span class="confirm-time-pill">
+                            <i class="far fa-clock"></i> ${escapeHtml(formattedTime)}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Target Peserta (Full Width) -->
+                <div class="confirm-card full-width">
+                    <div class="confirm-card-label">
+                        <i class="fas fa-users"></i> TARGET PESERTA
+                    </div>
+                    ${targetHtml}
+                </div>
+
+                <!-- Fokus Bahasan / Agenda (Full Width) -->
+                <div class="confirm-card full-width">
+                    <div class="confirm-card-label">
+                        <i class="fas fa-bookmark"></i> FOKUS BAHASAN & AGENDA RAPAT
+                    </div>
+                    <div class="confirm-agenda-container">
+                        <p class="confirm-agenda-text">${fokusText ? escapeHtml(fokusText) : '<span style="color: #94a3b8; font-style: italic;">Tidak ada agenda bahasan khusus yang dicantumkan.</span>'}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    confirmGrid.innerHTML = html;
 }
 
 function esc(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    return escapeHtml(str);
 }
+
+// ============================================
+// DRAFT PERSISTENCE (Auto-Save & Restore)
+// ============================================
+function getDraftStorageKey() {
+    const creatorEl = document.getElementById('selectCreator');
+    const creatorId = (creatorEl && creatorEl.tagName !== 'SELECT' && creatorEl.value) ? creatorEl.value : 'default';
+    return 'himati_meeting_draft_' + creatorId;
+}
+
+function saveMeetingDraft() {
+    if (isRestoringDraft || isSubmittingForm) return;
+    const form = document.getElementById('meetingForm');
+    if (!form) return;
+
+    try {
+        const collabChecked = Array.from(form.querySelectorAll('[name="departemen_collab[]"]:checked')).map(cb => cb.value);
+        const tipeDivisiEl = form.querySelector('[name="tipe_divisi"]:checked');
+        const creatorEl = document.getElementById('selectCreator');
+
+        const draft = {
+            currentStep: currentStep,
+            selectedJenis: selectedJenis,
+            selectedMode: selectedMode,
+            created_by: (creatorEl && creatorEl.tagName === 'SELECT') ? creatorEl.value : undefined,
+            departemen: document.getElementById('selectDepartemen')?.value || '',
+            fokus_bahasan_internal: form.querySelector('[name="fokus_bahasan_internal"]')?.value || '',
+            nama_event_perdana: form.querySelector('[name="nama_event_perdana"]')?.value || '',
+            event_id: document.getElementById('selectEvent')?.value || '',
+            tipe_divisi: tipeDivisiEl ? tipeDivisiEl.value : 'semua',
+            divisi_id: document.getElementById('selectDivisi')?.value || '',
+            fokus_bahasan_kepanitiaan: form.querySelector('[name="fokus_bahasan_kepanitiaan"]')?.value || '',
+            departemen_collab: collabChecked,
+            fokus_bahasan_lintas: form.querySelector('[name="fokus_bahasan_lintas"]')?.value || '',
+            tanggal: form.querySelector('[name="tanggal"]')?.value || '',
+            waktu_mulai: form.querySelector('[name="waktu_mulai"]')?.value || '',
+            updatedAt: Date.now()
+        };
+
+        localStorage.setItem(getDraftStorageKey(), JSON.stringify(draft));
+    } catch (e) {
+        console.warn('Gagal menyimpan draft rapat:', e);
+    }
+}
+
+function clearMeetingDraft() {
+    try {
+        localStorage.removeItem(getDraftStorageKey());
+    } catch (e) {}
+}
+
+function restoreMeetingDraft() {
+    const form = document.getElementById('meetingForm');
+    if (!form) return;
+
+    let draft = null;
+    try {
+        const raw = localStorage.getItem(getDraftStorageKey());
+        if (!raw) return;
+        draft = JSON.parse(raw);
+    } catch (e) {
+        return;
+    }
+
+    if (!draft || typeof draft !== 'object') return;
+
+    isRestoringDraft = true;
+    try {
+        const creatorEl = document.getElementById('selectCreator');
+        if (creatorEl && creatorEl.tagName === 'SELECT' && draft.created_by) {
+            creatorEl.value = draft.created_by;
+        }
+
+        if (draft.departemen !== undefined && draft.departemen !== '') {
+            const deptSelect = document.getElementById('selectDepartemen');
+            if (deptSelect) deptSelect.value = draft.departemen;
+        }
+
+        if (draft.fokus_bahasan_internal !== undefined) {
+            const el = form.querySelector('[name="fokus_bahasan_internal"]');
+            if (el) el.value = draft.fokus_bahasan_internal;
+        }
+
+        if (draft.nama_event_perdana !== undefined) {
+            const el = form.querySelector('[name="nama_event_perdana"]');
+            if (el) el.value = draft.nama_event_perdana;
+        }
+
+        if (draft.tipe_divisi) {
+            const radio = form.querySelector(`[name="tipe_divisi"][value="${draft.tipe_divisi}"]`);
+            if (radio) radio.checked = true;
+        }
+
+        if (draft.event_id !== undefined && draft.event_id !== '') {
+            const evtSelect = document.getElementById('selectEvent');
+            if (evtSelect) evtSelect.value = draft.event_id;
+        }
+
+        toggleDivisiField();
+        if (draft.event_id) {
+            fetchEventDivisions(draft.event_id, draft.divisi_id || null);
+        }
+
+        if (draft.fokus_bahasan_kepanitiaan !== undefined) {
+            const el = form.querySelector('[name="fokus_bahasan_kepanitiaan"]');
+            if (el) el.value = draft.fokus_bahasan_kepanitiaan;
+        }
+
+        if (Array.isArray(draft.departemen_collab)) {
+            form.querySelectorAll('[name="departemen_collab[]"]').forEach(cb => {
+                cb.checked = draft.departemen_collab.includes(cb.value);
+            });
+        }
+
+        if (draft.fokus_bahasan_lintas !== undefined) {
+            const el = form.querySelector('[name="fokus_bahasan_lintas"]');
+            if (el) el.value = draft.fokus_bahasan_lintas;
+        }
+
+        // Cek dan pulihkan tanggal: hanya gunakan tanggal draft jika tanggalnya hari ini atau di masa depan
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+        const currentHours = String(now.getHours()).padStart(2, '0');
+        const currentMinutes = String(now.getMinutes()).padStart(2, '0');
+        const currentTimeStr = `${currentHours}:${currentMinutes}`;
+
+        const tanggalEl = form.querySelector('[name="tanggal"]');
+        if (tanggalEl) {
+            if (draft.tanggal && draft.tanggal >= todayStr) {
+                tanggalEl.value = draft.tanggal;
+            } else {
+                tanggalEl.value = todayStr;
+            }
+        }
+
+        // Cek dan pulihkan waktu_mulai:
+        // Jika tanggal rapat di masa depan, gunakan waktu draft.
+        // Jika tanggal rapat hari ini, jangan biarkan waktu mulai sudah lewat lama (> 60 menit) agar rapat baru tidak langsung expired.
+        const waktuEl = form.querySelector('[name="waktu_mulai"]');
+        if (waktuEl) {
+            let useCurrentTime = true;
+            if (draft.tanggal && draft.tanggal > todayStr && draft.waktu_mulai) {
+                waktuEl.value = draft.waktu_mulai;
+                useCurrentTime = false;
+            } else if ((draft.tanggal === todayStr || !draft.tanggal) && draft.waktu_mulai) {
+                const parts = draft.waktu_mulai.split(':');
+                if (parts.length >= 2) {
+                    const draftMinutes = (parseInt(parts[0], 10) * 60) + parseInt(parts[1], 10);
+                    const nowMinutes = (now.getHours() * 60) + now.getMinutes();
+                    // Jika waktu draft masih dalam 60 menit terakhir atau jam mendatang hari ini
+                    if (nowMinutes - draftMinutes <= 60) {
+                        waktuEl.value = draft.waktu_mulai;
+                        useCurrentTime = false;
+                    }
+                }
+            }
+            if (useCurrentTime) {
+                waktuEl.value = currentTimeStr;
+            }
+        }
+
+        if (draft.selectedJenis) {
+            const jenisCard = document.querySelector(`.rapat-type-card[data-jenis="${draft.selectedJenis}"]`)
+                || document.querySelector(`.rapat-type-card[onclick*="'${draft.selectedJenis}'"]`);
+            selectRapatType(draft.selectedJenis, jenisCard);
+        }
+
+        if (draft.selectedMode) {
+            const modeCard = document.querySelector(`.mode-card[data-mode="${draft.selectedMode}"]`)
+                || document.querySelector(`.mode-card[onclick*="'${draft.selectedMode}'"]`);
+            selectMode(draft.selectedMode, modeCard);
+        }
+
+        if (draft.currentStep && draft.currentStep > 1 && draft.selectedJenis) {
+            goToStep(draft.currentStep);
+        } else {
+            goToStep(1);
+        }
+    } finally {
+        isRestoringDraft = false;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('meetingForm');
+    if (!form) return;
+
+    restoreMeetingDraft();
+
+    form.addEventListener('input', saveMeetingDraft);
+    form.addEventListener('change', saveMeetingDraft);
+});
+
+window.addEventListener('pagehide', function() {
+    saveMeetingDraft();
+});
+
+window.addEventListener('pageshow', function(e) {
+    if (e.persisted) {
+        restoreMeetingDraft();
+    }
+});
 
 // Submit handler
 document.getElementById('meetingForm')?.addEventListener('submit', function(e) {
+    isSubmittingForm = true;
+    clearMeetingDraft();
     const btn = document.getElementById('btnSubmit');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Memproses...';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Memproses...';
+    }
 });

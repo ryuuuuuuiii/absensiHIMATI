@@ -4,49 +4,49 @@
  * Absensi HIMA TI Politeknik Hasnur
  */
 
-require_once __DIR__ . '/../includes/auth_check.php';
+require_once __DIR__.'/../includes/auth_check.php';
 
 $eventId = intval($_GET['id'] ?? 0);
-if (!$eventId) {
+if (! $eventId) {
     setFlash('danger', 'ID Event tidak valid.');
-    redirect(BASE_URL . '/admin/events.php');
+    redirect(BASE_URL.'/admin/events.php');
 }
 
 $db = getDB();
 
 // Get event
-$stmt = $db->prepare("SELECT * FROM events WHERE id = ?");
+$stmt = $db->prepare('SELECT * FROM events WHERE id = ?');
 $stmt->execute([$eventId]);
 $event = $stmt->fetch();
 
-if (!$event) {
+if (! $event) {
     setFlash('danger', 'Event tidak ditemukan.');
-    redirect(BASE_URL . '/admin/events.php');
+    redirect(BASE_URL.'/admin/events.php');
 }
 
 $pageTitle = htmlspecialchars($event['nama_event']);
 $pageIcon = 'fas fa-calendar-star';
 
 // Get divisions and members count
-$stmtDivisions = $db->prepare("
+$stmtDivisions = $db->prepare('
     SELECT d.*, 
            (SELECT COUNT(*) FROM event_members WHERE division_id = d.id) as total_member
     FROM event_divisions d 
     WHERE d.event_id = ?
     ORDER BY d.nama_divisi ASC
-");
+');
 $stmtDivisions->execute([$eventId]);
 $divisions = $stmtDivisions->fetchAll();
 
 // Get all members grouped by division
-$stmtMembers = $db->prepare("
+$stmtMembers = $db->prepare('
     SELECT em.*, u.nama_lengkap, u.departemen, d.nama_divisi
     FROM event_members em
     JOIN users u ON em.user_id = u.id
     JOIN event_divisions d ON em.division_id = d.id
     WHERE em.event_id = ?
     ORDER BY d.nama_divisi ASC, u.nama_lengkap ASC
-");
+');
 $stmtMembers->execute([$eventId]);
 $membersRaw = $stmtMembers->fetchAll();
 
@@ -56,10 +56,10 @@ foreach ($membersRaw as $m) {
 }
 
 // Get all users for assignment dropdown (excluding those already in the specific division)
-$stmtUsers = $db->query("SELECT id, nama_lengkap, departemen FROM users ORDER BY departemen ASC, nama_lengkap ASC");
+$stmtUsers = $db->query('SELECT id, nama_lengkap, departemen FROM users ORDER BY departemen ASC, nama_lengkap ASC');
 $allUsers = $stmtUsers->fetchAll();
 
-include __DIR__ . '/../includes/header.php';
+include __DIR__.'/../includes/header.php';
 ?>
 
 <!-- Header Info -->
@@ -72,9 +72,9 @@ include __DIR__ . '/../includes/header.php';
             <i class="fas fa-arrow-left"></i> Kembali
         </a>
     </div>
-    <?php if ($event['deskripsi']): ?>
+    <?php if ($event['deskripsi']) { ?>
         <p style="color: var(--text-secondary); margin-bottom: 0;"><?= htmlspecialchars($event['deskripsi']) ?></p>
-    <?php endif; ?>
+    <?php } ?>
 </div>
 
 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: var(--space-6);">
@@ -89,14 +89,14 @@ include __DIR__ . '/../includes/header.php';
             </div>
             
             <div class="card-body p-0">
-                <?php if (empty($divisions)): ?>
+                <?php if (empty($divisions)) { ?>
                 <div class="empty-state" style="padding: var(--space-6) var(--space-4);">
                     <i class="fas fa-sitemap text-muted"></i>
                     <p style="margin-top: var(--space-2); color: var(--text-muted);">Belum ada divisi.</p>
                 </div>
-                <?php else: ?>
+                <?php } else { ?>
                 <ul class="list-group list-group-flush">
-                    <?php foreach ($divisions as $div): ?>
+                    <?php foreach ($divisions as $div) { ?>
                     <li class="list-group-item d-flex justify-between align-center" style="padding: var(--space-3) var(--space-4);">
                         <div>
                             <div style="font-weight: 600; color: var(--text-primary);">
@@ -126,9 +126,9 @@ include __DIR__ . '/../includes/header.php';
                             </div>
                         </div>
                     </li>
-                    <?php endforeach; ?>
+                    <?php } ?>
                 </ul>
-                <?php endif; ?>
+                <?php } ?>
             </div>
         </div>
     </div>
@@ -138,21 +138,21 @@ include __DIR__ . '/../includes/header.php';
         <div class="card h-100">
             <div class="card-header d-flex justify-between align-center">
                 <h3 class="card-title"><i class="fas fa-users"></i> Susunan Panitia</h3>
-                <?php if (!empty($divisions)): ?>
+                <?php if (! empty($divisions)) { ?>
                 <button class="btn btn-success btn-sm" onclick="openModal('addMemberModal')">
                     <i class="fas fa-user-plus"></i> Tambah Panitia
                 </button>
-                <?php endif; ?>
+                <?php } ?>
             </div>
             
             <div class="card-body">
-                <?php if (empty($divisions)): ?>
+                <?php if (empty($divisions)) { ?>
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle"></i> Buat divisi terlebih dahulu sebelum menambahkan panitia.
                 </div>
-                <?php else: ?>
+                <?php } else { ?>
                     
-                    <?php foreach ($divisions as $div): ?>
+                    <?php foreach ($divisions as $div) { ?>
                     <div style="margin-bottom: var(--space-6);">
                         <div class="d-flex justify-between align-center mb-3" style="border-bottom: 1px solid var(--dark-border); padding-bottom: var(--space-2);">
                             <h4 style="color: var(--primary); font-size: var(--font-base);">
@@ -161,9 +161,9 @@ include __DIR__ . '/../includes/header.php';
                             <span class="badge badge-secondary"><?= $div['total_member'] ?></span>
                         </div>
                         
-                        <?php if (empty($membersByDiv[$div['id']])): ?>
+                        <?php if (empty($membersByDiv[$div['id']])) { ?>
                         <p style="color: var(--text-muted); font-size: var(--font-sm); font-style: italic;">Belum ada panitia di divisi ini.</p>
-                        <?php else: ?>
+                        <?php } else { ?>
                         <div class="table-responsive">
                             <table class="table table-sm">
                                 <thead>
@@ -175,7 +175,7 @@ include __DIR__ . '/../includes/header.php';
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($membersByDiv[$div['id']] as $m): ?>
+                                    <?php foreach ($membersByDiv[$div['id']] as $m) { ?>
                                     <tr>
                                         <td><strong><?= htmlspecialchars($m['nama_lengkap']) ?></strong></td>
                                         <td><span class="badge badge-dept"><?= htmlspecialchars($m['departemen']) ?></span></td>
@@ -192,15 +192,15 @@ include __DIR__ . '/../includes/header.php';
                                             </form>
                                         </td>
                                     </tr>
-                                    <?php endforeach; ?>
+                                    <?php } ?>
                                 </tbody>
                             </table>
                         </div>
-                        <?php endif; ?>
+                        <?php } ?>
                     </div>
-                    <?php endforeach; ?>
+                    <?php } ?>
                     
-                <?php endif; ?>
+                <?php } ?>
             </div>
         </div>
     </div>
@@ -251,9 +251,9 @@ include __DIR__ . '/../includes/header.php';
                     <label class="form-label">Pilih Divisi <span class="required">*</span></label>
                     <select name="division_id" class="form-control" required>
                         <option value="">— Pilih Divisi —</option>
-                        <?php foreach ($divisions as $div): ?>
+                        <?php foreach ($divisions as $div) { ?>
                             <option value="<?= $div['id'] ?>"><?= htmlspecialchars($div['nama_divisi']) ?></option>
-                        <?php endforeach; ?>
+                        <?php } ?>
                     </select>
                 </div>
                 
@@ -261,18 +261,22 @@ include __DIR__ . '/../includes/header.php';
                     <label class="form-label">Pilih Anggota <span class="required">*</span></label>
                     <!-- Simple implementation: multiple select. For better UX, consider Select2 later -->
                     <select name="user_ids[]" class="form-control" multiple required style="height: 200px;">
-                        <?php 
+                        <?php
                         $currentDept = '';
-                        foreach ($allUsers as $u) {
-                            if ($currentDept !== $u['departemen']) {
-                                if ($currentDept !== '') echo '</optgroup>';
-                                $currentDept = $u['departemen'];
-                                echo '<optgroup label="' . htmlspecialchars($currentDept) . '">';
-                            }
-                            echo '<option value="' . $u['id'] . '">' . htmlspecialchars($u['nama_lengkap']) . '</option>';
-                        }
-                        if ($currentDept !== '') echo '</optgroup>';
-                        ?>
+foreach ($allUsers as $u) {
+    if ($currentDept !== $u['departemen']) {
+        if ($currentDept !== '') {
+            echo '</optgroup>';
+        }
+        $currentDept = $u['departemen'];
+        echo '<optgroup label="'.htmlspecialchars($currentDept).'">';
+    }
+    echo '<option value="'.$u['id'].'">'.htmlspecialchars($u['nama_lengkap']).'</option>';
+}
+if ($currentDept !== '') {
+    echo '</optgroup>';
+}
+?>
                     </select>
                     <small style="color: var(--text-muted); display: block; margin-top: 4px;">Tahan tombol Ctrl (Windows) atau Command (Mac) untuk memilih lebih dari satu anggota.</small>
                 </div>
@@ -325,4 +329,4 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 </style>`);
 </script>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__.'/../includes/footer.php'; ?>

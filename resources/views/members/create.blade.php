@@ -47,7 +47,18 @@
 
             <div class="form-group">
                 <label class="form-label" for="email">Email</label>
-                <input type="email" id="email" name="email" class="form-control" placeholder="nama@himati.id (opsional)" value="{{ old('email') }}">
+                <input type="email" id="email" name="email" class="form-control" placeholder="nama@himati.id (wajib untuk akun login)" value="{{ old('email') }}">
+                <small style="color: var(--text-muted); display: block; margin-top: 4px;">
+                    Email ini akan menjadi username login Portal Pengurus.
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Password Akun Login</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="Minimal 8 karakter" autocomplete="new-password">
+                <small style="color: var(--text-muted); display: block; margin-top: 4px;">
+                    Kosongkan untuk memakai password awal: <strong>{{ config('himati.default_member_password') }}</strong>.
+                </small>
             </div>
 
             <div class="form-group">

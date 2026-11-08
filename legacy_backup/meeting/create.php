@@ -4,7 +4,7 @@
  * Absensi HIMA TI Politeknik Hasnur
  */
 
-require_once __DIR__ . '/../includes/auth_check.php';
+require_once __DIR__.'/../includes/auth_check.php';
 
 $pageTitle = 'Buat Rapat Baru';
 $pageIcon = 'fas fa-plus-circle';
@@ -15,7 +15,7 @@ $db = getDB();
 $departemenList = json_decode(DEPARTEMEN_LIST, true);
 
 // Get all users for participant selection
-$stmt = $db->query("SELECT id, nama_lengkap, departemen, jabatan, is_bph FROM users ORDER BY departemen, nama_lengkap");
+$stmt = $db->query('SELECT id, nama_lengkap, departemen, jabatan, is_bph FROM users ORDER BY departemen, nama_lengkap');
 $allUsers = $stmt->fetchAll();
 
 // Group users by department for the participant selector (masih dipakai untuk default/lintas)
@@ -29,10 +29,10 @@ $stmtEvents = $db->query("SELECT id, nama_event FROM events WHERE status = 'acti
 $activeEvents = $stmtEvents->fetchAll();
 
 $extraJS = [
-    BASE_URL . '/assets/js/meeting-form.js'
+    BASE_URL.'/assets/js/meeting-form.js',
 ];
 
-include __DIR__ . '/../includes/header.php';
+include __DIR__.'/../includes/header.php';
 ?>
 
 <div style="max-width: 700px; margin: 0 auto;">
@@ -143,9 +143,9 @@ include __DIR__ . '/../includes/header.php';
                         <label class="form-label">Departemen <span class="required">*</span></label>
                         <select name="departemen" class="form-control" id="selectDepartemen">
                             <option value="">— Pilih Departemen —</option>
-                            <?php foreach ($departemenList as $key => $label): ?>
+                            <?php foreach ($departemenList as $key => $label) { ?>
                                 <option value="<?= $key ?>"><?= $label ?></option>
-                            <?php endforeach; ?>
+                            <?php } ?>
                         </select>
                     </div>
                     <div class="form-group">
@@ -168,9 +168,9 @@ include __DIR__ . '/../includes/header.php';
                         <label class="form-label">Pilih Event <span class="required">*</span></label>
                         <select name="event_id" id="selectEvent" class="form-control" onchange="fetchEventDivisions(this.value)">
                             <option value="">— Pilih Event Aktif —</option>
-                            <?php foreach ($activeEvents as $evt): ?>
+                            <?php foreach ($activeEvents as $evt) { ?>
                                 <option value="<?= $evt['id'] ?>"><?= htmlspecialchars($evt['nama_event']) ?></option>
-                            <?php endforeach; ?>
+                            <?php } ?>
                         </select>
                         <small style="color: var(--text-muted); display: block; margin-top: 4px;" id="eventMemberCount">
                             Pilih event untuk melihat jumlah panitia.
@@ -214,12 +214,12 @@ include __DIR__ . '/../includes/header.php';
                     <div class="form-group">
                         <label class="form-label">Departemen yang Berkolaborasi <span class="required">*</span></label>
                         <div class="checkbox-group">
-                            <?php foreach ($departemenList as $key => $label): ?>
+                            <?php foreach ($departemenList as $key => $label) { ?>
                                 <label class="form-check">
                                     <input type="checkbox" name="departemen_collab[]" value="<?= $key ?>">
                                     <span class="form-check-label"><?= $label ?></span>
                                 </label>
-                            <?php endforeach; ?>
+                            <?php } ?>
                         </div>
                     </div>
                     <div class="form-group">
@@ -342,5 +342,5 @@ include __DIR__ . '/../includes/header.php';
     }
 </script>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__.'/../includes/footer.php'; ?>
 

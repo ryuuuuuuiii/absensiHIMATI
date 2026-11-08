@@ -61,13 +61,21 @@
                     @foreach($activeMeetings as $m)
                     <tr>
                         <td>
-                            <strong>{{ $m->jenis_label }}</strong>
-                            <div style="font-size: var(--font-xs); color: var(--text-muted);">
-                                {{ $m->fokus_bahasan ?? $m->nama_event }} • {{ $m->tanggal->format('d/m/Y') }}
+                            <strong style="color: var(--text-primary);">{{ $m->jenis_label }}</strong>
+                            <div style="font-size: var(--font-xs); color: var(--text-muted); margin-top: 3px;">
+                                <span>{{ $m->fokus_bahasan ?? $m->nama_event }}</span>
+                                <span style="margin: 0 4px;">•</span>
+                                <span><i class="fas fa-calendar-alt" style="color: var(--blue-primary);"></i> {{ $m->tanggal->locale('id')->translatedFormat('d M Y') }}</span>
+                                <span style="margin: 0 4px;">•</span>
+                                <span>{{ substr($m->waktu_mulai, 0, 5) }} WITA</span>
                             </div>
                         </td>
-                        <td>{{ $m->creator ? $m->creator->nama_lengkap : 'Admin' }}</td>
-                        <td><span class="badge badge-success">{{ $m->jumlah_hadir }}/{{ $m->total_peserta }}</span></td>
+                        <td><span style="font-weight: 500; color: var(--text-secondary);">{{ $m->creator ? $m->creator->nama_lengkap : 'Admin' }}</span></td>
+                        <td>
+                            <span class="badge badge-success" style="font-weight: 700;">
+                                <i class="fas fa-user-check"></i> {{ $m->jumlah_hadir }} / {{ $m->total_peserta }}
+                            </span>
+                        </td>
                         <td>
                             <a href="{{ route('meetings.scan', $m->id) }}" class="btn btn-sm btn-primary">
                                 <i class="fas fa-camera"></i> Buka Scanner
@@ -133,6 +141,10 @@
         <i class="fas fa-qrcode"></i>
         <span>Generate QR</span>
     </a>
+    <a href="{{ route('members.accounts') }}" class="quick-action-card">
+        <i class="fas fa-user-shield"></i>
+        <span>Akun Pengurus</span>
+    </a>
 </div>
 
 <!-- Rapat Terakhir -->
@@ -165,20 +177,30 @@
                     @foreach ($recentMeetings as $rapat)
                     <tr>
                         <td>
-                            <div style="font-weight: 600;">{{ $rapat->tanggal->format('d M Y') }}</div>
-                            <small style="color: var(--text-muted);">{{ substr($rapat->waktu_mulai, 0, 5) }} WITA</small>
+                            <div style="font-weight: 600; color: var(--text-primary);">{{ $rapat->tanggal->locale('id')->translatedFormat('d M Y') }}</div>
+                            <small style="color: var(--text-muted); font-size: 0.8rem;">
+                                <i class="fas fa-clock" style="color: var(--blue-primary); font-size: 10px;"></i>
+                                {{ substr($rapat->waktu_mulai, 0, 5) }} WITA
+                            </small>
                         </td>
                         <td>
                             <span class="badge badge-primary">{{ $rapat->jenis_label }}</span>
                             @if($rapat->fokus_bahasan)
-                                <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 2px;">
+                                <div style="font-size: var(--font-xs); color: var(--text-secondary); margin-top: 3px; font-weight: 500;">
                                     {{ Str::limit($rapat->fokus_bahasan, 40) }}
                                 </div>
                             @endif
                         </td>
-                        <td>{{ $rapat->creator ? $rapat->creator->nama_lengkap : 'Admin' }}</td>
                         <td>
-                            <strong style="color: var(--success);">{{ $rapat->jumlah_hadir }}</strong>/{{ $rapat->total_peserta }}
+                            <span style="font-weight: 500; color: var(--text-secondary);">
+                                {{ $rapat->creator ? $rapat->creator->nama_lengkap : 'Admin' }}
+                            </span>
+                        </td>
+                        <td>
+                            <div style="display: inline-flex; align-items: baseline; gap: 3px;">
+                                <span style="font-weight: 700; color: var(--success); font-size: 1rem;">{{ $rapat->jumlah_hadir }}</span>
+                                <span style="font-weight: 500; color: var(--text-muted); font-size: 0.85rem;">/ {{ $rapat->total_peserta }}</span>
+                            </div>
                         </td>
                         <td>
                             @if($rapat->status === 'scanning')

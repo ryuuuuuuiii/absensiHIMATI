@@ -4,7 +4,7 @@
  * Absensi HIMA TI Politeknik Hasnur
  */
 
-require_once __DIR__ . '/../includes/auth_check.php';
+require_once __DIR__.'/../includes/auth_check.php';
 
 $pageTitle = 'Kelola Event';
 $pageIcon = 'fas fa-calendar-alt';
@@ -33,7 +33,7 @@ $stmtArchived = $db->query("
 ");
 $archivedEvents = $stmtArchived->fetchAll();
 
-include __DIR__ . '/../includes/header.php';
+include __DIR__.'/../includes/header.php';
 ?>
 
 <div class="d-flex align-center justify-between mb-6">
@@ -51,15 +51,15 @@ include __DIR__ . '/../includes/header.php';
 
 <!-- Active Events -->
 <div id="tab-active" class="tab-content active">
-    <?php if (empty($activeEvents)): ?>
+    <?php if (empty($activeEvents)) { ?>
     <div class="empty-state">
         <i class="fas fa-calendar-times"></i>
         <h3>Belum ada event aktif</h3>
         <p>Klik tombol "Tambah Event Baru" untuk mulai membuat kepanitiaan.</p>
     </div>
-    <?php else: ?>
+    <?php } else { ?>
     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: var(--space-4);">
-        <?php foreach ($activeEvents as $event): ?>
+        <?php foreach ($activeEvents as $event) { ?>
         <div class="card event-card" style="display: flex; flex-direction: column; h-100">
             <div class="card-header border-bottom-0 pb-0 d-flex justify-between align-center">
                 <h3 class="card-title text-primary" style="font-size: var(--font-lg); font-weight: 700;">
@@ -68,11 +68,11 @@ include __DIR__ . '/../includes/header.php';
                 <span class="badge badge-success">Aktif</span>
             </div>
             <div class="card-body" style="flex: 1;">
-                <?php if ($event['deskripsi']): ?>
+                <?php if ($event['deskripsi']) { ?>
                     <p style="color: var(--text-secondary); font-size: var(--font-sm); margin-bottom: var(--space-4); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
                         <?= htmlspecialchars($event['deskripsi']) ?>
                     </p>
-                <?php endif; ?>
+                <?php } ?>
                 
                 <div class="d-flex justify-between" style="background: var(--dark-surface-2); padding: var(--space-3); border-radius: var(--radius-md); margin-bottom: var(--space-4);">
                     <div class="text-center" style="flex: 1;">
@@ -122,20 +122,20 @@ include __DIR__ . '/../includes/header.php';
                 </div>
             </div>
         </div>
-        <?php endforeach; ?>
+        <?php } ?>
     </div>
-    <?php endif; ?>
+    <?php } ?>
 </div>
 
 <!-- Archived Events -->
 <div id="tab-archived" class="tab-content" style="display: none;">
-    <?php if (empty($archivedEvents)): ?>
+    <?php if (empty($archivedEvents)) { ?>
     <div class="empty-state">
         <i class="fas fa-archive"></i>
         <h3>Belum ada arsip</h3>
         <p>Event yang sudah selesai bisa diarsipkan di sini.</p>
     </div>
-    <?php else: ?>
+    <?php } else { ?>
     <div class="table-wrapper">
         <table class="table">
             <thead>
@@ -148,7 +148,7 @@ include __DIR__ . '/../includes/header.php';
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($archivedEvents as $event): ?>
+                <?php foreach ($archivedEvents as $event) { ?>
                 <tr>
                     <td>
                         <div class="d-flex align-center gap-3">
@@ -185,11 +185,11 @@ include __DIR__ . '/../includes/header.php';
                         </div>
                     </td>
                 </tr>
-                <?php endforeach; ?>
+                <?php } ?>
             </tbody>
         </table>
     </div>
-    <?php endif; ?>
+    <?php } ?>
 </div>
 
 <!-- Modal Add/Edit Event -->
@@ -258,4 +258,4 @@ document.getElementById('addEventModal').addEventListener('click', function(e) {
 });
 </script>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__.'/../includes/footer.php'; ?>

@@ -4,37 +4,37 @@
  * Shows meeting info and attendance results
  */
 
-require_once __DIR__ . '/../includes/auth_check.php';
+require_once __DIR__.'/../includes/auth_check.php';
 
 $pageTitle = 'Detail Rapat';
 $pageIcon = 'fas fa-clipboard-list';
 
 $meetingId = intval($_GET['id'] ?? 0);
-if (!$meetingId) {
+if (! $meetingId) {
     setFlash('danger', 'ID rapat tidak valid.');
-    redirect(BASE_URL . '/dashboard/index.php');
+    redirect(BASE_URL.'/dashboard/index.php');
 }
 
 $db = getDB();
 
 // Get meeting
-$stmt = $db->prepare("SELECT m.*, u.nama_lengkap as creator_name FROM meetings m JOIN users u ON m.created_by = u.id WHERE m.id = ?");
+$stmt = $db->prepare('SELECT m.*, u.nama_lengkap as creator_name FROM meetings m JOIN users u ON m.created_by = u.id WHERE m.id = ?');
 $stmt->execute([$meetingId]);
 $meeting = $stmt->fetch();
 
-if (!$meeting) {
+if (! $meeting) {
     setFlash('danger', 'Rapat tidak ditemukan.');
-    redirect(BASE_URL . '/dashboard/index.php');
+    redirect(BASE_URL.'/dashboard/index.php');
 }
 
 // Get attendances
-$stmt = $db->prepare("
+$stmt = $db->prepare('
     SELECT a.*, u.nama_lengkap, u.departemen, u.jabatan, u.is_bph
     FROM attendances a 
     JOIN users u ON a.user_id = u.id 
     WHERE a.meeting_id = ?
     ORDER BY a.status ASC, u.nama_lengkap ASC
-");
+');
 $stmt->execute([$meetingId]);
 $attendances = $stmt->fetchAll();
 
@@ -46,10 +46,10 @@ foreach ($attendances as $a) {
 $totalPeserta = count($attendances);
 
 // URLs
-$onlineUrl = BASE_URL . '/meeting/online_attend.php?token=' . $meeting['unique_link'];
-$absentUrl = BASE_URL . '/meeting/absent_form.php?token=' . $meeting['absent_link'];
+$onlineUrl = BASE_URL.'/meeting/online_attend.php?token='.$meeting['unique_link'];
+$absentUrl = BASE_URL.'/meeting/absent_form.php?token='.$meeting['absent_link'];
 
-include __DIR__ . '/../includes/header.php';
+include __DIR__.'/../includes/header.php';
 ?>
 
 <!-- Meeting Info -->
@@ -73,36 +73,36 @@ include __DIR__ . '/../includes/header.php';
         </div>
         <div class="meeting-info-item">
             <label><i class="fas fa-clock"></i> Waktu</label>
-            <p><?= formatWaktu($meeting['waktu_mulai']) ?><?= $meeting['waktu_selesai'] ? ' - ' . formatWaktu($meeting['waktu_selesai']) : '' ?></p>
+            <p><?= formatWaktu($meeting['waktu_mulai']) ?><?= $meeting['waktu_selesai'] ? ' - '.formatWaktu($meeting['waktu_selesai']) : '' ?></p>
         </div>
         <div class="meeting-info-item">
             <label><i class="fas fa-wifi"></i> Mode</label>
             <p><?= $meeting['mode_rapat'] === 'offline' ? '🏢 Offline' : '🌐 Online' ?></p>
         </div>
-        <?php if ($meeting['departemen']): ?>
+        <?php if ($meeting['departemen']) { ?>
         <div class="meeting-info-item">
             <label><i class="fas fa-building"></i> Departemen</label>
             <p><?= getDepartemenLabel($meeting['departemen']) ?></p>
         </div>
-        <?php endif; ?>
+        <?php } ?>
     </div>
     
-    <?php if ($meeting['fokus_bahasan']): ?>
+    <?php if ($meeting['fokus_bahasan']) { ?>
     <div class="meeting-info-item mt-4">
         <label><i class="fas fa-bookmark"></i> Fokus Bahasan / Agenda</label>
         <p><?= nl2br(htmlspecialchars($meeting['fokus_bahasan'])) ?></p>
     </div>
-    <?php endif; ?>
+    <?php } ?>
     
-    <?php if ($meeting['nama_event']): ?>
+    <?php if ($meeting['nama_event']) { ?>
     <div class="meeting-info-item mt-4">
         <label><i class="fas fa-calendar-star"></i> Nama Event</label>
         <p><?= htmlspecialchars($meeting['nama_event']) ?></p>
     </div>
-    <?php endif; ?>
+    <?php } ?>
     
     <!-- Action Buttons -->
-    <?php if ($meeting['status'] === 'scanning'): ?>
+    <?php if ($meeting['status'] === 'scanning') { ?>
     <div class="btn-group mt-6">
         <a href="<?= BASE_URL ?>/meeting/scan.php?id=<?= $meetingId ?>" class="btn btn-primary">
             <i class="fas fa-qrcode"></i> Lanjut Scan
@@ -110,13 +110,13 @@ include __DIR__ . '/../includes/header.php';
         <button class="btn btn-secondary" onclick="copyToClipboard('<?= $absentUrl ?>', this)">
             <i class="fas fa-share-alt"></i> Share Link Absent
         </button>
-        <?php if ($meeting['mode_rapat'] === 'online'): ?>
+        <?php if ($meeting['mode_rapat'] === 'online') { ?>
         <button class="btn btn-secondary" onclick="copyToClipboard('<?= $onlineUrl ?>', this)">
             <i class="fas fa-link"></i> Share Link Online
         </button>
-        <?php endif; ?>
+        <?php } ?>
     </div>
-    <?php endif; ?>
+    <?php } ?>
 </div>
 
 <!-- Attendance Stats -->
@@ -172,14 +172,14 @@ include __DIR__ . '/../includes/header.php';
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($attendances as $i => $a): ?>
+                <?php foreach ($attendances as $i => $a) { ?>
                 <tr>
                     <td><?= $i + 1 ?></td>
                     <td>
                         <strong><?= htmlspecialchars($a['nama_lengkap']) ?></strong>
-                        <?php if ($a['is_bph']): ?>
+                        <?php if ($a['is_bph']) { ?>
                             <span class="badge badge-success" style="font-size: 0.7em; margin-left: var(--space-2);">BPH Opsional</span>
-                        <?php endif; ?>
+                        <?php } ?>
                     </td>
                     <td><span class="badge badge-dept"><?= htmlspecialchars($a['departemen']) ?></span></td>
                     <td><?= htmlspecialchars($a['jabatan']) ?></td>
@@ -191,7 +191,7 @@ include __DIR__ . '/../includes/header.php';
                         <?= $a['keterangan'] ? htmlspecialchars(mb_substr($a['keterangan'], 0, 60)) : '-' ?>
                     </td>
                 </tr>
-                <?php endforeach; ?>
+                <?php } ?>
             </tbody>
         </table>
     </div>
@@ -199,4 +199,4 @@ include __DIR__ . '/../includes/header.php';
 
 <script src="<?= BASE_URL ?>/assets/js/app.js"></script>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__.'/../includes/footer.php'; ?>

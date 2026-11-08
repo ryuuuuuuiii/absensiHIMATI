@@ -4,28 +4,28 @@
  * Accessed via unique link shared by meeting creator
  */
 
-require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__.'/../config/config.php';
+require_once __DIR__.'/../includes/functions.php';
 
 $token = sanitize($_GET['token'] ?? '');
 
 if (empty($token)) {
-    die('Link tidak valid.');
+    exit('Link tidak valid.');
 }
 
 $db = getDB();
 
 // Get meeting by token
-$stmt = $db->prepare("SELECT m.*, u.nama_lengkap as creator_name FROM meetings m JOIN users u ON m.created_by = u.id WHERE m.unique_link = ?");
+$stmt = $db->prepare('SELECT m.*, u.nama_lengkap as creator_name FROM meetings m JOIN users u ON m.created_by = u.id WHERE m.unique_link = ?');
 $stmt->execute([$token]);
 $meeting = $stmt->fetch();
 
-if (!$meeting) {
-    die('Rapat tidak ditemukan.');
+if (! $meeting) {
+    exit('Rapat tidak ditemukan.');
 }
 
 // Check expiry
-$meetingStart = strtotime($meeting['tanggal'] . ' ' . $meeting['waktu_mulai']);
+$meetingStart = strtotime($meeting['tanggal'].' '.$meeting['waktu_mulai']);
 $expiryHours = intval(getSetting('online_link_expiry_hours', ONLINE_LINK_EXPIRY));
 $expiryTime = $meetingStart + ($expiryHours * 3600);
 
@@ -33,21 +33,21 @@ $isExpired = time() > $expiryTime && $meeting['status'] === 'completed';
 
 // Get participants (not yet marked hadir)
 if ($meeting['jenis_rapat'] === 'kepanitiaan') {
-    $stmt = $db->prepare("
+    $stmt = $db->prepare('
         SELECT u.id as user_id, u.nama_lengkap, u.departemen, u.jabatan, a.status, u.is_bph
         FROM users u 
         LEFT JOIN attendances a ON u.id = a.user_id AND a.meeting_id = ?
         WHERE (a.id IS NOT NULL OR u.is_bph = 1)
         ORDER BY u.nama_lengkap
-    ");
+    ');
 } else {
-    $stmt = $db->prepare("
+    $stmt = $db->prepare('
         SELECT a.user_id, u.nama_lengkap, u.departemen, u.jabatan, a.status, u.is_bph
         FROM attendances a 
         JOIN users u ON a.user_id = u.id 
         WHERE a.meeting_id = ? 
         ORDER BY u.nama_lengkap
-    ");
+    ');
 }
 $stmt->execute([$meeting['id']]);
 $participants = $stmt->fetchAll();
@@ -60,8 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $userId = intval($_POST['user_id'] ?? 0);
     $status = sanitize($_POST['status'] ?? '');
     $keterangan = sanitize($_POST['keterangan'] ?? '');
-    
-    if (!$userId || !in_array($status, ['hadir', 'izin', 'sakit'])) {
+
+    if (! $userId || ! in_array($status, ['hadir', 'izin', 'sakit'])) {
         $errorMessage = 'Data tidak valid. Silakan coba lagi.';
     } else {
         try {
@@ -72,50 +72,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE meeting_id = ? AND user_id = ?
             ");
             $stmt->execute([$status, $keterangan, $meeting['id'], $userId]);
-            
+
             // Check if BPH inserting new record
             if ($stmt->rowCount() === 0 && $meeting['jenis_rapat'] === 'kepanitiaan') {
-                $bphCheck = $db->prepare("SELECT is_bph FROM users WHERE id = ?");
+                $bphCheck = $db->prepare('SELECT is_bph FROM users WHERE id = ?');
                 $bphCheck->execute([$userId]);
                 if ($bphCheck->fetchColumn()) {
                     $iStmt = $db->prepare("INSERT INTO attendances (meeting_id, user_id, status, keterangan, scanned_at, scan_method) VALUES (?, ?, ?, ?, NOW(), 'online_link')");
                     $iStmt->execute([$meeting['id'], $userId, $status, $keterangan]);
                 }
             }
-            
+
             // Handle photo upload
             if (isset($_FILES['bukti_foto']) && $_FILES['bukti_foto']['error'] === UPLOAD_ERR_OK) {
-                $uploadDir = ROOT_PATH . 'uploads' . DIRECTORY_SEPARATOR . 'bukti' . DIRECTORY_SEPARATOR;
+                $uploadDir = ROOT_PATH.'uploads'.DIRECTORY_SEPARATOR.'bukti'.DIRECTORY_SEPARATOR;
                 $result = uploadFile($_FILES['bukti_foto'], $uploadDir);
                 if ($result['success']) {
-                    $stmt = $db->prepare("UPDATE attendances SET bukti_foto = ? WHERE meeting_id = ? AND user_id = ?");
+                    $stmt = $db->prepare('UPDATE attendances SET bukti_foto = ? WHERE meeting_id = ? AND user_id = ?');
                     $stmt->execute([$result['filename'], $meeting['id'], $userId]);
                 }
             }
-            
+
             $successMessage = 'Absensi berhasil dicatat! Terima kasih.';
-            
+
             // Refresh participants
             if ($meeting['jenis_rapat'] === 'kepanitiaan') {
-                $stmt = $db->prepare("
+                $stmt = $db->prepare('
                     SELECT u.id as user_id, u.nama_lengkap, u.departemen, u.jabatan, a.status, u.is_bph
                     FROM users u 
                     LEFT JOIN attendances a ON u.id = a.user_id AND a.meeting_id = ?
                     WHERE (a.id IS NOT NULL OR u.is_bph = 1)
                     ORDER BY u.nama_lengkap
-                ");
+                ');
             } else {
-                $stmt = $db->prepare("
+                $stmt = $db->prepare('
                     SELECT a.user_id, u.nama_lengkap, u.departemen, u.jabatan, a.status, u.is_bph
                     FROM attendances a 
                     JOIN users u ON a.user_id = u.id 
                     WHERE a.meeting_id = ? 
                     ORDER BY u.nama_lengkap
-                ");
+                ');
             }
             $stmt->execute([$meeting['id']]);
             $participants = $stmt->fetchAll();
-            
+
         } catch (Exception $e) {
             $errorMessage = 'Terjadi kesalahan. Silakan coba lagi.';
         }
@@ -166,30 +166,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
                 
-                <?php if ($meeting['fokus_bahasan'] || $meeting['nama_event']): ?>
+                <?php if ($meeting['fokus_bahasan'] || $meeting['nama_event']) { ?>
                 <div class="alert alert-info mb-6">
                     <i class="fas fa-info-circle"></i>
                     <span><?= htmlspecialchars($meeting['fokus_bahasan'] ?: $meeting['nama_event']) ?></span>
                 </div>
-                <?php endif; ?>
+                <?php } ?>
                 
-                <?php if ($isExpired): ?>
+                <?php if ($isExpired) { ?>
                     <div class="alert alert-danger">
                         <i class="fas fa-clock"></i>
                         <span>Absensi sudah ditutup. Link ini sudah expired.</span>
                     </div>
-                <?php elseif ($successMessage): ?>
+                <?php } elseif ($successMessage) { ?>
                     <div class="alert alert-success">
                         <i class="fas fa-check-circle"></i>
                         <span><?= $successMessage ?></span>
                     </div>
-                <?php else: ?>
-                    <?php if ($errorMessage): ?>
+                <?php } else { ?>
+                    <?php if ($errorMessage) { ?>
                         <div class="alert alert-danger">
                             <i class="fas fa-exclamation-circle"></i>
                             <span><?= $errorMessage ?></span>
                         </div>
-                    <?php endif; ?>
+                    <?php } ?>
                     
                     <!-- Attendance Form -->
                     <form method="POST" enctype="multipart/form-data">
@@ -197,13 +197,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label class="form-label">Nama Anda <span class="required">*</span></label>
                             <select name="user_id" class="form-control" id="selectUser" required onchange="autoFillDept()">
                                 <option value="">— Pilih Nama Anda —</option>
-                                <?php foreach ($participants as $p): ?>
-                                    <?php if ($p['status'] !== 'hadir'): ?>
+                                <?php foreach ($participants as $p) { ?>
+                                    <?php if ($p['status'] !== 'hadir') { ?>
                                     <option value="<?= $p['user_id'] ?>" data-dept="<?= htmlspecialchars($p['departemen']) ?>">
                                         <?= htmlspecialchars($p['nama_lengkap']) ?> (<?= $p['departemen'] ?>)
                                     </option>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
+                                    <?php } ?>
+                                <?php } ?>
                             </select>
                         </div>
                         
@@ -252,7 +252,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <i class="fas fa-paper-plane"></i> Kirim Absensi
                         </button>
                     </form>
-                <?php endif; ?>
+                <?php } ?>
             </div>
         </div>
     </div>

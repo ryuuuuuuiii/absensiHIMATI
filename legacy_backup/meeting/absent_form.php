@@ -4,24 +4,24 @@
  * For participants who can't attend — submit reason + proof
  */
 
-require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__.'/../config/config.php';
+require_once __DIR__.'/../includes/functions.php';
 
 $token = sanitize($_GET['token'] ?? '');
 
 if (empty($token)) {
-    die('Link tidak valid.');
+    exit('Link tidak valid.');
 }
 
 $db = getDB();
 
 // Get meeting by absent token
-$stmt = $db->prepare("SELECT m.*, u.nama_lengkap as creator_name FROM meetings m JOIN users u ON m.created_by = u.id WHERE m.absent_link = ?");
+$stmt = $db->prepare('SELECT m.*, u.nama_lengkap as creator_name FROM meetings m JOIN users u ON m.created_by = u.id WHERE m.absent_link = ?');
 $stmt->execute([$token]);
 $meeting = $stmt->fetch();
 
-if (!$meeting) {
-    die('Link tidak valid atau rapat tidak ditemukan.');
+if (! $meeting) {
+    exit('Link tidak valid atau rapat tidak ditemukan.');
 }
 
 // Get participants who haven't scanned
@@ -43,22 +43,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $userId = intval($_POST['user_id'] ?? 0);
     $status = sanitize($_POST['status'] ?? '');
     $keterangan = sanitize($_POST['keterangan'] ?? '');
-    
-    if (!$userId || !in_array($status, ['izin', 'sakit']) || empty($keterangan)) {
+
+    if (! $userId || ! in_array($status, ['izin', 'sakit']) || empty($keterangan)) {
         $errorMessage = 'Semua field harus diisi.';
     } else {
         try {
             $buktiFilename = null;
-            
+
             // Handle photo upload
             if (isset($_FILES['bukti_foto']) && $_FILES['bukti_foto']['error'] === UPLOAD_ERR_OK) {
-                $uploadDir = ROOT_PATH . 'uploads' . DIRECTORY_SEPARATOR . 'bukti' . DIRECTORY_SEPARATOR;
+                $uploadDir = ROOT_PATH.'uploads'.DIRECTORY_SEPARATOR.'bukti'.DIRECTORY_SEPARATOR;
                 $result = uploadFile($_FILES['bukti_foto'], $uploadDir);
                 if ($result['success']) {
                     $buktiFilename = $result['filename'];
                 }
             }
-            
+
             // Update attendance
             $stmt = $db->prepare("
                 UPDATE attendances 
@@ -66,14 +66,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE meeting_id = ? AND user_id = ?
             ");
             $stmt->execute([$status, $keterangan, $buktiFilename, $meeting['id'], $userId]);
-            
+
             $successMessage = 'Keterangan ketidakhadiran berhasil dikirim. Terima kasih.';
-            
+
             // Refresh
             $stmt = $db->prepare("SELECT a.*, u.nama_lengkap, u.departemen FROM attendances a JOIN users u ON a.user_id = u.id WHERE a.meeting_id = ? AND a.status = 'alpha' ORDER BY u.nama_lengkap");
             $stmt->execute([$meeting['id']]);
             $absentParticipants = $stmt->fetchAll();
-            
+
         } catch (Exception $e) {
             $errorMessage = 'Terjadi kesalahan. Silakan coba lagi.';
         }
@@ -103,37 +103,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <p><?= getJenisRapatLabel($meeting['jenis_rapat']) ?> — <?= formatTanggal($meeting['tanggal'], 'short') ?></p>
                 </div>
                 
-                <?php if ($successMessage): ?>
+                <?php if ($successMessage) { ?>
                     <div class="alert alert-success">
                         <i class="fas fa-check-circle"></i>
                         <span><?= $successMessage ?></span>
                     </div>
-                <?php endif; ?>
+                <?php } ?>
                 
-                <?php if ($errorMessage): ?>
+                <?php if ($errorMessage) { ?>
                     <div class="alert alert-danger">
                         <i class="fas fa-exclamation-circle"></i>
                         <span><?= $errorMessage ?></span>
                     </div>
-                <?php endif; ?>
+                <?php } ?>
                 
-                <?php if (empty($absentParticipants) && !$successMessage): ?>
+                <?php if (empty($absentParticipants) && ! $successMessage) { ?>
                     <div class="empty-state">
                         <i class="fas fa-check-circle" style="color: var(--success);"></i>
                         <h3>Semua Sudah Absen</h3>
                         <p>Semua peserta sudah tercatat kehadirannya.</p>
                     </div>
-                <?php elseif (!$successMessage): ?>
+                <?php } elseif (! $successMessage) { ?>
                     <form method="POST" enctype="multipart/form-data">
                         <div class="form-group">
                             <label class="form-label">Pilih Nama Anda <span class="required">*</span></label>
                             <select name="user_id" class="form-control" required>
                                 <option value="">— Pilih Nama —</option>
-                                <?php foreach ($absentParticipants as $p): ?>
+                                <?php foreach ($absentParticipants as $p) { ?>
                                     <option value="<?= $p['user_id'] ?>">
                                         <?= htmlspecialchars($p['nama_lengkap']) ?> (<?= $p['departemen'] ?>)
                                     </option>
-                                <?php endforeach; ?>
+                                <?php } ?>
                             </select>
                         </div>
                         
@@ -172,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <i class="fas fa-paper-plane"></i> Kirim Keterangan
                         </button>
                     </form>
-                <?php endif; ?>
+                <?php } ?>
             </div>
         </div>
     </div>

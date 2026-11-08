@@ -7,7 +7,6 @@ use App\Models\EventDivision;
 use App\Models\EventMember;
 use App\Models\Member;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class EventController extends Controller
 {
@@ -30,17 +29,17 @@ class EventController extends Controller
     {
         $validated = $request->validate([
             'nama_event' => ['required', 'string', 'max:200'],
-            'deskripsi'  => ['nullable', 'string'],
+            'deskripsi' => ['nullable', 'string'],
         ]);
 
         $event = Event::create([
             'nama_event' => $validated['nama_event'],
-            'deskripsi'  => $validated['deskripsi'],
-            'status'     => 'active',
+            'deskripsi' => $validated['deskripsi'],
+            'status' => 'active',
         ]);
 
         return redirect()->route('events.show', $event->id)
-            ->with('success', 'Event ' . $event->nama_event . ' berhasil dibuat. Silakan tambahkan divisi dan panitia.');
+            ->with('success', 'Event '.$event->nama_event.' berhasil dibuat. Silakan tambahkan divisi dan panitia.');
     }
 
     public function show($id)
@@ -49,7 +48,7 @@ class EventController extends Controller
             'divisions.members.member',
             'meetings' => function ($q) {
                 $q->orderBy('tanggal', 'desc');
-            }
+            },
         ])->findOrFail($id);
 
         $divisions = $event->divisions;
@@ -71,7 +70,7 @@ class EventController extends Controller
 
         $validated = $request->validate([
             'nama_event' => ['required', 'string', 'max:200'],
-            'deskripsi'  => ['nullable', 'string'],
+            'deskripsi' => ['nullable', 'string'],
         ]);
 
         $event->update($validated);
@@ -102,7 +101,7 @@ class EventController extends Controller
         $event->delete();
 
         return redirect()->route('events.index')
-            ->with('success', 'Event ' . $name . ' berhasil dihapus.');
+            ->with('success', 'Event '.$name.' berhasil dihapus.');
     }
 
     public function addDivision(Request $request, $id)
@@ -114,12 +113,12 @@ class EventController extends Controller
         ]);
 
         EventDivision::create([
-            'event_id'    => $event->id,
+            'event_id' => $event->id,
             'nama_divisi' => $validated['nama_divisi'],
-            'created_at'  => now(),
+            'created_at' => now(),
         ]);
 
-        return back()->with('success', 'Divisi ' . $validated['nama_divisi'] . ' berhasil ditambahkan.');
+        return back()->with('success', 'Divisi '.$validated['nama_divisi'].' berhasil ditambahkan.');
     }
 
     public function updateDivision(Request $request, $id, $divisionId)
@@ -150,9 +149,9 @@ class EventController extends Controller
         $event = Event::findOrFail($id);
 
         $request->validate([
-            'division_id'     => ['required', 'exists:event_divisions,id'],
-            'user_ids'        => ['required', 'array', 'min:1'],
-            'user_ids.*'      => ['exists:users,id'],
+            'division_id' => ['required', 'exists:event_divisions,id'],
+            'user_ids' => ['required', 'array', 'min:1'],
+            'user_ids.*' => ['exists:users,id'],
             'jabatan_panitia' => ['nullable', 'string', 'max:100'],
         ]);
 
@@ -163,20 +162,23 @@ class EventController extends Controller
         $addedCount = 0;
         foreach ($userIds as $userId) {
             $exists = EventMember::where('event_id', $event->id)
-                ->where('division_id', $divisionId)
                 ->where('user_id', $userId)
                 ->exists();
 
-            if (!$exists) {
+            if (! $exists) {
                 EventMember::create([
-                    'event_id'        => $event->id,
-                    'division_id'     => $divisionId,
-                    'user_id'         => $userId,
+                    'event_id' => $event->id,
+                    'division_id' => $divisionId,
+                    'user_id' => $userId,
                     'jabatan_panitia' => $jabatan,
-                    'created_at'      => now(),
+                    'created_at' => now(),
                 ]);
                 $addedCount++;
             }
+        }
+
+        if ($addedCount === 0) {
+            return back()->with('warning', 'Anggota yang dipilih sudah terdaftar dalam kepanitiaan event ini.');
         }
 
         return back()->with('success', "{$addedCount} panitia berhasil ditambahkan ke divisi.");

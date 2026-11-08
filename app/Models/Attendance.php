@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\SpService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -19,6 +20,7 @@ class Attendance extends Model
         'bukti_foto',
         'scanned_at',
         'scan_method',
+        'sp_ignored',
         'created_at',
     ];
 
@@ -26,7 +28,27 @@ class Attendance extends Model
     {
         return [
             'scanned_at' => 'datetime',
+            'sp_ignored' => 'boolean',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(function (Attendance $attendance) {
+            $meeting = $attendance->relationLoaded('meeting')
+                ? $attendance->meeting
+                : Meeting::find($attendance->meeting_id);
+
+            if ($meeting && $meeting->status === 'completed') {
+                $member = $attendance->relationLoaded('member')
+                    ? $attendance->member
+                    : Member::find($attendance->user_id);
+
+                if ($member) {
+                    app(SpService::class)->evaluateMember($member);
+                }
+            }
+        });
     }
 
     public function meeting(): BelongsTo

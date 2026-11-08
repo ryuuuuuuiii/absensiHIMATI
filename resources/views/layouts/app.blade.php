@@ -5,21 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Sistem Absensi Digital HIMA TI Politeknik Hasnur">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F4FAFF">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#071320">
     <title>@yield('title', 'Dashboard') — {{ config('himati.app_name') }}</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="{{ asset('assets/img/logo1.png') }}">
+    <link rel="icon" type="image/png" href="{{ \App\Models\Setting::getLogo2Url() ?? asset('assets/img/logo2.png') }}">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.cdnfonts.com/css/gliker" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wdth,wght@75..125,500..700&family=Noto+Sans:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <!-- Main CSS -->
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}?v={{ file_exists(public_path('assets/css/style.css')) ? filemtime(public_path('assets/css/style.css')) : time() }}">
+
+    <script>
+        (function() {
+            try { localStorage.removeItem('himati_theme'); } catch(e) {}
+            function applyDeviceTheme(e) {
+                var isDark = (e && typeof e.matches === 'boolean') 
+                    ? e.matches 
+                    : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            }
+            applyDeviceTheme();
+            try {
+                var mq = window.matchMedia('(prefers-color-scheme: dark)');
+                if (mq.addEventListener) {
+                    mq.addEventListener('change', applyDeviceTheme);
+                } else if (mq.addListener) {
+                    mq.addListener(applyDeviceTheme);
+                }
+            } catch(e) {}
+        })();
+    </script>
     
     @stack('styles')
 </head>
@@ -32,31 +57,24 @@
             <div class="sidebar-header">
                 <div class="sidebar-logos">
                     @php
-                        $logo1 = \App\Models\Setting::get('logo_1');
-                        $logo2 = \App\Models\Setting::get('logo_2');
-                        $logo3 = \App\Models\Setting::get('logo_3');
+                        $logo1 = \App\Models\Setting::getLogo1Url();
+                        $logo2 = \App\Models\Setting::getLogo2Url();
                     @endphp
-                    @if ($logo1 && file_exists(public_path('uploads/logos/' . $logo1)))
-                        <img src="{{ asset('uploads/logos/' . $logo1) }}" alt="Logo 1">
+                    @if ($logo1)
+                        <img src="{{ $logo1 }}" alt="Logo Politeknik Hasnur" class="sidebar-logo-img">
                     @else
                         <span class="logo-placeholder"><i class="fas fa-university"></i></span>
                     @endif
 
-                    @if ($logo2 && file_exists(public_path('uploads/logos/' . $logo2)))
-                        <img src="{{ asset('uploads/logos/' . $logo2) }}" alt="Logo 2">
+                    @if ($logo2)
+                        <img src="{{ $logo2 }}" alt="Logo HIMA TI" class="sidebar-logo-img">
                     @else
                         <span class="logo-placeholder"><i class="fas fa-graduation-cap"></i></span>
                     @endif
-
-                    @if ($logo3 && file_exists(public_path('uploads/logos/' . $logo3)))
-                        <img src="{{ asset('uploads/logos/' . $logo3) }}" alt="Logo 3">
-                    @else
-                        <span class="logo-placeholder"><i class="fas fa-users"></i></span>
-                    @endif
                 </div>
                 <div class="sidebar-brand">
-                    {{ config('himati.app_name') }}
-                    <small>Panel Admin</small>
+                    <span class="sidebar-brand-title">HIMA TI</span>
+                    <span class="sidebar-brand-sub">Panel Admin</span>
                 </div>
             </div>
             
@@ -87,6 +105,20 @@
                         <i class="fas fa-chart-bar"></i>
                         <span>Laporan</span>
                     </a>
+                    <a href="{{ route('announcements.index') }}" class="nav-item {{ request()->routeIs('announcements.*') ? 'active' : '' }}">
+                        <i class="fas fa-bullhorn"></i>
+                        <span>Pengumuman & Pesan</span>
+                    </a>
+                    <a href="{{ route('feedbacks.index') }}" class="nav-item {{ request()->routeIs('feedbacks.*') ? 'active' : '' }}">
+                        <i class="fas fa-comment-dots"></i>
+                        <span>Kotak Feedback</span>
+                        @php
+                            $pendingFeedbackCount = \App\Models\Feedback::where('status', 'pending')->count();
+                        @endphp
+                        @if($pendingFeedbackCount > 0)
+                            <span class="badge badge-warning" style="margin-left: auto; font-size: 0.68rem; padding: 2px 7px; border-radius: 999px;">{{ $pendingFeedbackCount }}</span>
+                        @endif
+                    </a>
                 </div>
                 
                 <div class="nav-section">
@@ -94,6 +126,10 @@
                     <a href="{{ route('members.generate_qr') }}" class="nav-item {{ request()->routeIs('members.generate_qr*') ? 'active' : '' }}">
                         <i class="fas fa-qrcode"></i>
                         <span>Generate QR Code</span>
+                    </a>
+                    <a href="{{ route('members.accounts') }}" class="nav-item {{ request()->routeIs('members.accounts*') ? 'active' : '' }}">
+                        <i class="fas fa-user-shield"></i>
+                        <span>Akun Pengurus</span>
                     </a>
                     <a href="{{ route('settings.index') }}" class="nav-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
                         <i class="fas fa-cogs"></i>
@@ -103,17 +139,18 @@
             </nav>
             
             <div class="sidebar-footer">
+                <a href="{{ route('portal.dashboard') }}" class="nav-item" target="_blank" style="color: var(--primary);">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Portal Pengurus</span>
+                </a>
                 <a href="{{ route('public.meeting.create') }}" class="nav-item" target="_blank" style="color: var(--primary);">
                     <i class="fas fa-external-link-alt"></i>
                     <span>Link Buat Rapat</span>
                 </a>
-                <form action="{{ route('logout') }}" method="POST" style="margin: 0;">
-                    @csrf
-                    <button type="submit" class="nav-item" style="color: var(--danger); background: none; border: none; width: 100%; text-align: left; cursor: pointer;">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Logout</span>
-                    </button>
-                </form>
+                <button type="button" class="nav-item" onclick="openAdminLogoutModal()" style="color: var(--danger); background: none; border: none; width: 100%; text-align: left; cursor: pointer;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
             </div>
         </aside>
         
@@ -129,13 +166,10 @@
                     </button>
                     <div class="page-title">
                         @yield('page_icon')
-                        @yield('title', 'Dashboard')
+                        <span class="header-page-text">@yield('title', 'Dashboard')</span>
                     </div>
                 </div>
                 <div class="header-right">
-                    <a href="{{ route('public.my_qr') }}" target="_blank" class="btn btn-sm btn-outline-secondary" style="margin-right: var(--space-3);" title="Cari QR Anggota">
-                        <i class="fas fa-id-badge"></i> My QR
-                    </a>
                     <div class="header-user">
                         <div class="header-user-avatar">
                             {{ auth()->check() ? substr(auth()->user()->nama, 0, 1) : 'A' }}
@@ -157,10 +191,10 @@
                     <span>{{ session('success') }}</span>
                 </div>
             @endif
-            @if(session('danger'))
+            @if(session('danger') || session('error'))
                 <div class="alert alert-danger">
                     <i class="fas fa-exclamation-circle"></i>
-                    <span>{{ session('danger') }}</span>
+                    <span>{{ session('danger') ?? session('error') }}</span>
                 </div>
             @endif
             @if(session('warning'))
@@ -195,11 +229,60 @@
         </div>
     </div>
     
+    <!-- Modal Konfirmasi Logout Admin -->
+    <div class="logout-modal-overlay" id="adminLogoutModal" onclick="closeAdminLogoutModal(event)">
+        <div class="logout-modal-dialog" onclick="event.stopPropagation()">
+            <div class="logout-modal-icon">
+                <i class="fas fa-sign-out-alt"></i>
+            </div>
+            <h3 class="logout-modal-title">Konfirmasi Logout</h3>
+            <p class="logout-modal-desc">
+                Apakah Anda yakin ingin keluar dari Dashboard Administrator HIMA TI?
+            </p>
+            <div class="logout-modal-actions">
+                <button type="button" class="btn btn-secondary logout-modal-btn-cancel" onclick="closeAdminLogoutModal()">
+                    Batal
+                </button>
+                <form id="adminLogoutForm" action="{{ route('logout') }}" method="POST" style="margin: 0; flex: 1; display: flex;">
+                    @csrf
+                    <button type="submit" class="logout-modal-btn-confirm" style="width: 100%;">
+                        <i class="fas fa-sign-out-alt"></i> Ya, Keluar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Core JS -->
     <script src="{{ asset('assets/js/app.js') }}"></script>
     <script>
         window.BASE_URL = "{{ url('/') }}";
         window.CSRF_TOKEN = "{{ csrf_token() }}";
+
+        function openAdminLogoutModal() {
+            const modal = document.getElementById('adminLogoutModal');
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeAdminLogoutModal(event) {
+            if (event && event.target && event.target.id !== 'adminLogoutModal') {
+                return;
+            }
+            const modal = document.getElementById('adminLogoutModal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeAdminLogoutModal();
+            }
+        });
     </script>
     @stack('scripts')
 </body>
