@@ -238,4 +238,4 @@ Route::get('/uploads/{folder}/{filename}', function (string $folder, string $fil
     }
 
     abort(404);
-})->where('folder', 'profiles|bukti|dokumentasi|feedbacks');
+})->where('folder', 'profiles|bukti|dokumentasi|feedbacks|logos');

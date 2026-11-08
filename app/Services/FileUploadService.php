@@ -135,6 +135,19 @@ class FileUploadService
             // Ignore
         }
 
+        // Fallback jika logo lama diakses
+        if ($folder === 'logos') {
+            $fallback = str_contains($filename, 'logo_1')
+                ? public_path('assets/img/logo1.png')
+                : public_path('assets/img/logo2.png');
+
+            if (File::exists($fallback)) {
+                return response(File::get($fallback))
+                    ->header('Content-Type', 'image/png')
+                    ->header('Cache-Control', 'public, max-age=31536000');
+            }
+        }
+
         return null;
     }
 }

@@ -47,26 +47,16 @@ class Setting extends Model
     /**
      * Dapatkan URL logo pertama (Politeknik Hasnur / Instansi).
      */
-    public static function getLogo1Url(): ?string
+    public static function getLogo1Url(): string
     {
-        $val = static::get('logo_1');
-        if ($val) {
-            return asset('uploads/logos/'.$val);
-        }
-
         return asset('assets/img/logo1.png');
     }
 
     /**
      * Dapatkan URL logo kedua (HIMA TI / Organisasi).
      */
-    public static function getLogo2Url(): ?string
+    public static function getLogo2Url(): string
     {
-        $val = static::get('logo_2');
-        if ($val) {
-            return asset('uploads/logos/'.$val);
-        }
-
         return asset('assets/img/logo2.png');
     }
 }
