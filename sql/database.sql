@@ -4,6 +4,9 @@
 -- Generated for TiDB Cloud / MySQL
 -- ============================================
 
+CREATE DATABASE IF NOT EXISTS `test`;
+USE `test`;
+
 SET FOREIGN_KEY_CHECKS = 0;
 SET NAMES utf8mb4;
 
