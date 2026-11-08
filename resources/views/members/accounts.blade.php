@@ -93,7 +93,7 @@
                                                 <span class="badge badge-sp-3" style="font-size: 10px; margin-left: 4px;">SP 3 (Diberhentikan)</span>
                                             @endif
                                         </div>
-                                        <small style="color: var(--text-muted);">{{ $member->departemen }} — {{ $member->jabatan }}</small>
+                                        <small style="color: var(--text-muted);">{{ $member->departemen_label }} — {{ $member->jabatan }}</small>
                                     </div>
                                 </div>
                             </td>

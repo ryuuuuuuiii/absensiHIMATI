@@ -299,6 +299,19 @@ class Member extends Authenticatable
                 'Sekretaris 2',
                 'Bendahara 1',
                 'Bendahara 2',
+                'Sekretaris Umum I',
+                'Sekretaris Umum II',
+                'Bendahara Umum I',
+                'Bendahara Umum II',
             ]);
+    }
+
+    public function getDepartemenLabelAttribute(): string
+    {
+        if ($this->isBphInti()) {
+            return 'Pengurus Inti';
+        }
+
+        return 'Dept. '.$this->departemen;
     }
 }

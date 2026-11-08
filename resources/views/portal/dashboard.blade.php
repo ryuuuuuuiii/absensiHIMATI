@@ -30,13 +30,19 @@
                 <span class="hero-pill-badge role-badge">
                     <i class="fas fa-id-badge"></i> {{ $member->jabatan }}
                 </span>
-                <span class="hero-pill-badge dept-badge">
-                    <i class="fas fa-building"></i> Dept. {{ $member->departemen }}
-                </span>
-                @if ($member->is_bph)
+                @if ($member->isBphInti())
                     <span class="hero-pill-badge bph-badge">
-                        <i class="fas fa-shield-alt"></i> BPH
+                        <i class="fas fa-crown"></i> Pengurus Inti
                     </span>
+                @else
+                    <span class="hero-pill-badge dept-badge">
+                        <i class="fas fa-building"></i> Dept. {{ $member->departemen }}
+                    </span>
+                    @if ($member->is_bph)
+                        <span class="hero-pill-badge bph-badge">
+                            <i class="fas fa-shield-alt"></i> BPH
+                        </span>
+                    @endif
                 @endif
                 @if ($member->sp_level == 1)
                     <span class="badge badge-sp-1">

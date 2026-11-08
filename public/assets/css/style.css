@@ -7449,7 +7449,7 @@ h1, h2, h3, h4,
 }
 
 .portal-hero-card {
-    padding-top: 46px !important;
+    padding-top: 56px !important;
 }
 
 .login-card,
@@ -8351,7 +8351,7 @@ textarea.form-control {
         border-radius: 14px 14px 0 0 !important;
     }
     .portal-hero-card {
-        padding-top: 40px !important;
+        padding-top: 48px !important;
         border-radius: 16px !important;
     }
     .portal-hero-card::before {

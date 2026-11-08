@@ -86,9 +86,13 @@
                 {{ $member->nama_lengkap }}
             </h2>
             <p style="margin-bottom: 6px;">
-                <span class="badge badge-dept" style="font-size: var(--font-sm);">{{ $member->departemen }}</span>
-                @if ($member->is_bph)
-                    <span class="badge badge-warning" style="font-size: var(--font-sm); margin-left: 4px;">BPH</span>
+                @if ($member->isBphInti())
+                    <span class="badge badge-warning" style="font-size: var(--font-sm);"><i class="fas fa-crown"></i> Pengurus Inti</span>
+                @else
+                    <span class="badge badge-dept" style="font-size: var(--font-sm);"><i class="fas fa-building"></i> Dept. {{ $member->departemen }}</span>
+                    @if ($member->is_bph)
+                        <span class="badge badge-warning" style="font-size: var(--font-sm); margin-left: 4px;"><i class="fas fa-shield-alt"></i> BPH</span>
+                    @endif
                 @endif
                 @if ($member->sp_level == 1)
                     <span class="badge badge-sp-1" style="font-size: var(--font-sm); margin-left: 4px;"><i class="fas fa-exclamation-triangle"></i> SP 1</span>
@@ -169,7 +173,7 @@
 
             ctx.font = 'bold 15px Noto Sans, sans-serif';
             ctx.fillStyle = '#0284C7';
-            ctx.fillText(@json($member->departemen), 225, 455);
+            ctx.fillText(@json($member->isBphInti() ? 'Pengurus Inti' : 'Dept. ' . $member->departemen), 225, 455);
 
             ctx.font = '13px Poppins, sans-serif';
             ctx.fillStyle = '#616161';

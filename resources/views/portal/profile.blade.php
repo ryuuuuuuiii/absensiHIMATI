@@ -790,16 +790,22 @@
         <h2 class="profile-name">{{ $member->nama_lengkap }}</h2>
 
         <div class="profile-meta-badges">
-            <span class="badge badge-dept">
-                <i class="fas fa-building text-primary"></i> Dept. {{ $member->departemen }}
-            </span>
             <span class="badge badge-primary">
                 <i class="fas fa-id-badge"></i> {{ $member->jabatan }}
             </span>
-            @if ($member->is_bph)
+            @if ($member->isBphInti())
                 <span class="badge badge-warning">
-                    <i class="fas fa-star"></i> BPH
+                    <i class="fas fa-crown"></i> Pengurus Inti
                 </span>
+            @else
+                <span class="badge badge-dept">
+                    <i class="fas fa-building text-primary"></i> Dept. {{ $member->departemen }}
+                </span>
+                @if ($member->is_bph)
+                    <span class="badge badge-warning">
+                        <i class="fas fa-shield-alt"></i> BPH
+                    </span>
+                @endif
             @endif
             @if ($member->sp_level == 1)
                 <span class="badge badge-sp-1">
