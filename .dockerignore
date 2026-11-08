@@ -1,0 +1,11 @@
+/node_modules
+/vendor
+/storage/*.key
+.env
+.env.backup
+.git
+.github
+.phpunit.result.cache
+*.sql
+legacy_backup
+

@@ -22,10 +22,17 @@ class MemberAuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
+        $request->validate([
+            'email' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
+
+        $loginInput = trim($request->input('email'));
+        $field = filter_var($loginInput, FILTER_VALIDATE_EMAIL) ? 'email' : 'nim';
+        $credentials = [
+            $field => $loginInput,
+            'password' => $request->input('password'),
+        ];
 
         $remember = $request->boolean('remember');
 

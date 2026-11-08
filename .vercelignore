@@ -1,0 +1,8 @@
+/vendor
+/node_modules
+.env
+.git
+.github
+*.sql
+legacy_backup
+

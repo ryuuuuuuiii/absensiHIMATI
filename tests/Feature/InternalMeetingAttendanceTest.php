@@ -45,8 +45,13 @@ class InternalMeetingAttendanceTest extends TestCase
 
         $deptMember = Member::where('departemen', 'PSDM')->where('id', '!=', $creator->id)->first();
         $bphInti = Member::where('departemen', 'Inti')->first();
-        $outsideKadep = Member::where('departemen', 'Medinfo')->where('jabatan', 'like', '%Kepala%')->first();
-        $outsideMember = Member::where('departemen', 'Medinfo')->where('jabatan', 'not like', '%Kepala%')->first();
+        $outsideKadep = Member::where('departemen', 'Medinfo')->where(function ($q) {
+            $q->where('jabatan', 'like', '%Kepala%')->orWhere('jabatan', 'like', '%Koordinator%');
+        })->first();
+        $outsideMember = Member::where('departemen', 'Medinfo')
+            ->where('jabatan', 'not like', '%Kepala%')
+            ->where('jabatan', 'not like', '%Koordinator%')
+            ->first();
         $kadepPsdm = Member::where('departemen', 'PSDM')->where('is_bph', true)->first();
 
         $this->assertNotNull($deptMember);
