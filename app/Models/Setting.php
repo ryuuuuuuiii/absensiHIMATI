@@ -50,19 +50,11 @@ class Setting extends Model
     public static function getLogo1Url(): ?string
     {
         $val = static::get('logo_1');
-        if ($val && file_exists(public_path('uploads/logos/'.$val))) {
-            $mtime = filemtime(public_path('uploads/logos/'.$val));
-
-            return asset('uploads/logos/'.$val).'?v='.$mtime;
+        if ($val) {
+            return asset('uploads/logos/'.$val);
         }
 
-        if (file_exists(public_path('assets/img/logo1.png'))) {
-            $mtime = filemtime(public_path('assets/img/logo1.png'));
-
-            return asset('assets/img/logo1.png').'?v='.$mtime;
-        }
-
-        return null;
+        return asset('assets/img/logo1.png');
     }
 
     /**
@@ -71,18 +63,10 @@ class Setting extends Model
     public static function getLogo2Url(): ?string
     {
         $val = static::get('logo_2');
-        if ($val && file_exists(public_path('uploads/logos/'.$val))) {
-            $mtime = filemtime(public_path('uploads/logos/'.$val));
-
-            return asset('uploads/logos/'.$val).'?v='.$mtime;
+        if ($val) {
+            return asset('uploads/logos/'.$val);
         }
 
-        if (file_exists(public_path('assets/img/logo2.png'))) {
-            $mtime = filemtime(public_path('assets/img/logo2.png'));
-
-            return asset('assets/img/logo2.png').'?v='.$mtime;
-        }
-
-        return null;
+        return asset('assets/img/logo2.png');
     }
 }

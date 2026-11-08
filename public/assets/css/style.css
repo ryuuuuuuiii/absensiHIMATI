@@ -4862,36 +4862,8 @@ html, body {
 .portal-content-layer {
     width: 100%;
     opacity: 1;
-    transform: translateX(0);
-    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.18s ease;
-    will-change: transform, opacity;
-}
-
-/* Slide Left (Navigating Forward / Rightwards in Nav) */
-.portal-content-layer.slide-out-left {
-    transform: translateX(-36px) !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-}
-.portal-content-layer.slide-in-right {
-    transform: translateX(36px) !important;
-    opacity: 0 !important;
-}
-
-/* Slide Right (Navigating Backward / Leftwards in Nav) */
-.portal-content-layer.slide-out-right {
-    transform: translateX(36px) !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-}
-.portal-content-layer.slide-in-left {
-    transform: translateX(-36px) !important;
-    opacity: 0 !important;
-}
-
-.portal-content-layer.slide-active {
-    transform: translateX(0) !important;
-    opacity: 1 !important;
+    transition: opacity 0.09s ease;
+    will-change: opacity;
 }
 
 /* ==========================================================================

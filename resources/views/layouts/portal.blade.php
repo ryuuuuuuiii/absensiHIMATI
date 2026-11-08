@@ -445,39 +445,78 @@
                 };
             }
 
-            function performSlide(contentLayer, data, direction) {
+            function performSwap(contentLayer, data) {
                 return new Promise(resolve => {
-                    const outClass = direction === 'forward' ? 'slide-out-left' : 'slide-out-right';
-                    const inClass = direction === 'forward' ? 'slide-in-right' : 'slide-in-left';
+                    contentLayer.style.opacity = '0.35';
 
-                    contentLayer.classList.remove('slide-active', 'slide-out-left', 'slide-out-right', 'slide-in-left', 'slide-in-right');
-                    contentLayer.classList.add(outClass);
-
-                    setTimeout(() => {
+                    requestAnimationFrame(() => {
                         contentLayer.innerHTML = data.html;
                         updateHeaderMeta(data);
 
-                        // Reset scroll to top smoothly
+                        // Reset scroll to top immediately
                         window.scrollTo({ top: 0, behavior: 'instant' });
-
-                        contentLayer.classList.remove(outClass);
-                        contentLayer.classList.add(inClass);
 
                         // Execute script tags inside new content
                         executeScripts(contentLayer);
 
-                        void contentLayer.offsetWidth; // Force layout reflow
-
                         requestAnimationFrame(() => {
-                            contentLayer.classList.remove(inClass);
-                            contentLayer.classList.add('slide-active');
-                            setTimeout(() => {
-                                contentLayer.classList.remove('slide-active');
-                                resolve();
-                            }, 240);
+                            contentLayer.style.opacity = '1';
+                            resolve();
                         });
-                    }, 140);
+                    });
                 });
+            }
+
+            // Preload & Prefetch Engine
+            const PRELOAD_ROUTES = [
+                '{{ route("portal.dashboard") }}',
+                '{{ route("portal.qr") }}',
+                '{{ route("portal.attendance") }}',
+                '{{ route("portal.profile") }}',
+                '{{ route("portal.announcements.index") }}'
+            ];
+
+            const prefetchingUrls = new Set();
+            function prefetchPage(urlPath) {
+                try {
+                    const u = new URL(urlPath, window.location.origin);
+                    if (u.origin !== window.location.origin) return;
+                    if (!u.pathname.startsWith('/portal')) return;
+                    if (u.pathname.includes('/logout') || u.pathname.includes('/login') || u.pathname.includes('/qr/download')) return;
+
+                    const clean = normalizePath(u.pathname);
+                    if (portalCache.has(clean) || prefetchingUrls.has(clean)) return;
+
+                    prefetchingUrls.add(clean);
+                    fetchPageData(u.pathname + u.search).then(data => {
+                        portalCache.set(clean, data);
+                    }).catch(() => {}).finally(() => {
+                        prefetchingUrls.delete(clean);
+                    });
+                } catch(e) {}
+            }
+
+            // Prefetch on hover (desktop)
+            document.addEventListener('mouseover', function(e) {
+                const link = e.target.closest('a');
+                if (link && link.href) prefetchPage(link.href);
+            }, { passive: true });
+
+            // Prefetch on touchstart (mobile)
+            document.addEventListener('touchstart', function(e) {
+                const link = e.target.closest('a');
+                if (link && link.href) prefetchPage(link.href);
+            }, { passive: true });
+
+            // Idle prefetch main portal tabs
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(() => {
+                    PRELOAD_ROUTES.forEach(url => prefetchPage(url));
+                }, { timeout: 2000 });
+            } else {
+                setTimeout(() => {
+                    PRELOAD_ROUTES.forEach(url => prefetchPage(url));
+                }, 1000);
             }
 
             async function revalidateCache(urlPath) {
@@ -507,12 +546,8 @@
                 isNavigating = true;
 
                 const cleanTarget = normalizePath(targetUrl);
-                const currentPath = normalizePath(window.location.pathname);
 
-                const fromIdx = getRouteIndex(currentPath);
-                const toIdx = getRouteIndex(cleanTarget);
-                const direction = toIdx >= fromIdx ? 'forward' : 'backward';
-
+                // Immediate instant tactile UI feedback
                 updateNavHighlights(targetUrl);
 
                 const contentLayer = document.getElementById('portal-content-layer');
@@ -524,22 +559,22 @@
                 const cached = portalCache.get(cleanTarget);
 
                 if (cached) {
-                    // Instant swap with slide animation from cache (0ms delay!)
-                    await performSlide(contentLayer, cached, direction);
+                    // Instant swap from memory cache (<10ms!)
+                    await performSwap(contentLayer, cached);
                     if (pushState) {
                         history.pushState({ spa: true, url: targetUrl }, cached.title, targetUrl);
                     }
                     isNavigating = false;
-                    // Revalidate in background
+                    // Background refresh
                     revalidateCache(targetUrl);
                 } else {
-                    // First time: show subtle loader pill, fetch, cache, and slide
+                    // First time uncached: show subtle top loader pill
                     showLoader();
                     try {
                         const freshData = await fetchPageData(targetUrl);
                         hideLoader();
                         portalCache.set(cleanTarget, freshData);
-                        await performSlide(contentLayer, freshData, direction);
+                        await performSwap(contentLayer, freshData);
                         if (pushState) {
                             history.pushState({ spa: true, url: targetUrl }, freshData.title, targetUrl);
                         }
