@@ -570,6 +570,8 @@
     border-color: #1F2937 !important;
     width: 100% !important;
     box-sizing: border-box !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
 }
 
 [data-theme="dark"] .table {
@@ -8252,7 +8254,8 @@ textarea.form-control {
     border: 2px solid #061A2E !important;
     border-radius: 14px !important;
     box-shadow: 0 4px 0 #061A2E !important;
-    overflow: hidden;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
 }
 
 .table th {

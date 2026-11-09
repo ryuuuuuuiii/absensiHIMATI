@@ -264,18 +264,33 @@
     font-weight: 600;
     border-bottom: 1px solid var(--border-color);
     text-align: right;
+    user-select: none;
 }
 [data-theme="dark"] .table-scroll-hint-mobile {
-    background: #111827 !important;
+    background: #0d1522 !important;
     color: #94A3B8 !important;
-    border-color: #1F2937 !important;
+    border-color: rgba(48, 175, 255, 0.2) !important;
 }
 @media (max-width: 768px) {
     .table-scroll-hint-mobile {
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+    .table-wrapper {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        width: 100% !important;
+        max-width: 100% !important;
+        display: block !important;
     }
     #attendanceTable {
-        min-width: 620px;
+        min-width: 720px !important;
+        width: 100%;
+    }
+    #attendanceTable th {
+        white-space: nowrap !important;
     }
     .table-search-box {
         max-width: 100% !important;
@@ -532,11 +547,13 @@
         </div>
     </div>
 
+    <!-- Table Scroll Hint for Mobile -->
+    <div class="table-scroll-hint-mobile">
+        <i class="fas fa-arrows-alt-h"></i> Geser tabel ke samping untuk melihat data lengkap &rarr;
+    </div>
+
     <!-- Table Roster -->
-    <div class="table-wrapper" style="border: none; border-radius: 0;">
-        <div class="table-scroll-hint-mobile">
-            <i class="fas fa-arrows-alt-h"></i> Geser tabel ke samping untuk melihat data lengkap &rarr;
-        </div>
+    <div class="table-wrapper" style="border: none; border-radius: 0; overflow-x: auto !important; -webkit-overflow-scrolling: touch; width: 100%;">
         <table class="table" id="attendanceTable">
             <thead>
                 <tr>
