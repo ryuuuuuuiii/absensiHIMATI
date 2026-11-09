@@ -270,9 +270,9 @@
             </div>
             <span>Laporan</span>
         </a>
-        <button type="button" class="portal-nav-tab tab-menu {{ request()->routeIs('events.*') || request()->routeIs('announcements.*') || request()->routeIs('feedbacks.*') || request()->routeIs('members.generate_qr*') || request()->routeIs('members.accounts*') || request()->routeIs('settings.*') ? 'active' : '' }}" onclick="toggleSidebar(event);" aria-label="Buka Menu Admin" style="background: none; border: none; cursor: pointer; padding: 0;">
+        <button type="button" class="portal-nav-tab tab-menu {{ request()->routeIs('events.*') || request()->routeIs('announcements.*') || request()->routeIs('feedbacks.*') || request()->routeIs('members.generate_qr*') || request()->routeIs('members.accounts*') || request()->routeIs('settings.*') ? 'active' : '' }}" onclick="openAdminMenuSheet();" aria-label="Buka Menu Admin" style="background: none; border: none; cursor: pointer; padding: 0;">
             <div class="tab-icon-bubble" style="position: relative;">
-                <i class="fas fa-bars"></i>
+                <i class="fas fa-th"></i>
                 @if(isset($pendingFeedbackCount) && $pendingFeedbackCount > 0)
                     <span class="nav-tab-badge-dot"></span>
                 @endif
@@ -280,6 +280,82 @@
             <span>Menu</span>
         </button>
     </nav>
+    
+    <!-- Admin Mobile Menu Bottom Sheet -->
+    <div class="admin-menu-sheet-overlay" id="adminMenuSheet" onclick="closeAdminMenuSheet(event)">
+        <div class="admin-menu-sheet-dialog" onclick="event.stopPropagation()">
+            <div class="admin-menu-sheet-handle"></div>
+            <div class="admin-menu-sheet-header">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-th-large" style="color: var(--blue-primary); font-size: 1.1rem;"></i>
+                    <strong style="font-size: 1rem; color: var(--text-primary);">Menu Administrator</strong>
+                </div>
+                <button type="button" class="admin-menu-sheet-close" onclick="closeAdminMenuSheet()" aria-label="Tutup Menu">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="admin-menu-sheet-grid">
+                <a href="{{ route('events.index') }}" class="menu-sheet-item {{ request()->routeIs('events.*') ? 'active' : '' }}">
+                    <div class="menu-sheet-icon" style="background: rgba(168, 85, 247, 0.15); color: #A855F7;">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <span>Kelola Event</span>
+                </a>
+                <a href="{{ route('announcements.index') }}" class="menu-sheet-item {{ request()->routeIs('announcements.*') ? 'active' : '' }}">
+                    <div class="menu-sheet-icon" style="background: rgba(59, 130, 246, 0.15); color: #3B82F6;">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+                    <span>Pengumuman</span>
+                </a>
+                <a href="{{ route('feedbacks.index') }}" class="menu-sheet-item {{ request()->routeIs('feedbacks.*') ? 'active' : '' }}" style="position: relative;">
+                    <div class="menu-sheet-icon" style="background: rgba(245, 158, 11, 0.15); color: #F59E0B;">
+                        <i class="fas fa-comment-dots"></i>
+                    </div>
+                    <span>Feedback</span>
+                    @if(isset($pendingFeedbackCount) && $pendingFeedbackCount > 0)
+                        <span class="sheet-badge-count">{{ $pendingFeedbackCount }}</span>
+                    @endif
+                </a>
+                <a href="{{ route('members.generate_qr') }}" class="menu-sheet-item {{ request()->routeIs('members.generate_qr*') ? 'active' : '' }}">
+                    <div class="menu-sheet-icon" style="background: rgba(16, 185, 129, 0.15); color: #10B981;">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                    <span>Generate QR</span>
+                </a>
+                <a href="{{ route('members.accounts') }}" class="menu-sheet-item {{ request()->routeIs('members.accounts*') ? 'active' : '' }}">
+                    <div class="menu-sheet-icon" style="background: rgba(99, 102, 241, 0.15); color: #6366F1;">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <span>Akun Pengurus</span>
+                </a>
+                <a href="{{ route('settings.index') }}" class="menu-sheet-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
+                    <div class="menu-sheet-icon" style="background: rgba(100, 116, 139, 0.15); color: #64748B;">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <span>Pengaturan</span>
+                </a>
+                <a href="{{ route('portal.dashboard') }}" class="menu-sheet-item" target="_blank">
+                    <div class="menu-sheet-icon" style="background: rgba(6, 182, 212, 0.15); color: #06B6D4;">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <span>Portal</span>
+                </a>
+                <a href="{{ route('public.meeting.create') }}" class="menu-sheet-item" target="_blank">
+                    <div class="menu-sheet-icon" style="background: rgba(234, 88, 12, 0.15); color: #EA580C;">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <span>Buat Rapat</span>
+                </a>
+                <button type="button" class="menu-sheet-item menu-sheet-logout" onclick="closeAdminMenuSheet(); openAdminLogoutModal();">
+                    <div class="menu-sheet-icon" style="background: rgba(239, 68, 68, 0.15); color: #EF4444;">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </div>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+    </div>
     
     <!-- Modal Konfirmasi Logout Admin -->
     <div class="logout-modal-overlay" id="adminLogoutModal" onclick="closeAdminLogoutModal(event)">
@@ -311,7 +387,27 @@
         window.BASE_URL = "{{ url('/') }}";
         window.CSRF_TOKEN = "{{ csrf_token() }}";
 
+        function openAdminMenuSheet() {
+            const sheet = document.getElementById('adminMenuSheet');
+            if (sheet) {
+                sheet.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeAdminMenuSheet(event) {
+            if (event && event.target && event.target.id !== 'adminMenuSheet' && !event.target.closest('.admin-menu-sheet-close')) {
+                return;
+            }
+            const sheet = document.getElementById('adminMenuSheet');
+            if (sheet) {
+                sheet.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
         function openAdminLogoutModal() {
+            closeAdminMenuSheet();
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
             if (sidebar && sidebar.classList.contains('active')) {
@@ -338,6 +434,7 @@
 
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
+                closeAdminMenuSheet();
                 closeAdminLogoutModal();
             }
         });
