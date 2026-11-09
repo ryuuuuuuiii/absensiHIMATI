@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -29,22 +30,32 @@ class AuthController extends Controller
 
         $remember = $request->boolean('remember');
         $intended = $request->session()->pull('url.intended', null);
+        $email = $credentials['email'];
 
-        // 1. Coba autentikasi sebagai Admin (guard 'web')
-        if (Auth::guard('web')->attempt($credentials, $remember)) {
-            Auth::guard('member')->logout();
-            $request->session()->regenerate();
+        // Cek cepat apakah email terdaftar sebagai Admin di tabel admin
+        $isAdmin = Admin::where('email', $email)->exists();
 
-            $redirectUrl = route('dashboard');
-            if ($intended && ! str_contains($intended, '/portal')) {
-                $redirectUrl = $intended;
+        if ($isAdmin) {
+            // 1. Autentikasi sebagai Admin (guard 'web')
+            if (Auth::guard('web')->attempt($credentials, $remember)) {
+                Auth::guard('member')->logout();
+                $request->session()->regenerate();
+
+                $redirectUrl = route('dashboard');
+                if ($intended && ! str_contains($intended, '/portal')) {
+                    $redirectUrl = $intended;
+                }
+
+                return redirect()->to($redirectUrl)
+                    ->with('success', 'Selamat datang kembali, '.Auth::guard('web')->user()->nama.'!');
             }
 
-            return redirect()->to($redirectUrl)
-                ->with('success', 'Selamat datang kembali, '.Auth::guard('web')->user()->nama.'!');
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors(['email' => 'Email atau password salah.']);
         }
 
-        // 2. Coba autentikasi sebagai Pengurus / Member (guard 'member')
+        // 2. Jika bukan admin, langsung autentikasi sebagai Pengurus / Member (guard 'member')
         if (Auth::guard('member')->attempt($credentials, $remember)) {
             $member = Auth::guard('member')->user();
 

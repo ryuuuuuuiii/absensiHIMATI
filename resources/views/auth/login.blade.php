@@ -14,7 +14,6 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.cdnfonts.com/css/gliker" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wdth,wght@75..125,500..700&family=Noto+Sans:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}?v={{ file_exists(public_path('assets/css/style.css')) ? filemtime(public_path('assets/css/style.css')) : time() }}">
@@ -131,9 +130,9 @@
                         </label>
                     </div>
                     
-                    <button type="submit" class="btn btn-primary btn-lg btn-block" style="margin-top: var(--space-6);">
-                        <i class="fas fa-sign-in-alt"></i>
-                        Masuk
+                    <button type="submit" id="loginBtn" class="btn btn-primary btn-lg btn-block" style="margin-top: var(--space-6);">
+                        <i class="fas fa-sign-in-alt" id="loginBtnIcon"></i>
+                        <span id="loginBtnText">Masuk</span>
                     </button>
                     <p style="text-align: center; font-size: var(--font-xs); color: var(--text-muted); margin-top: var(--space-3); margin-bottom: 0;">
                         <i class="fas fa-shield-alt"></i> Otomatis diarahkan ke Panel Admin atau Portal Pengurus
@@ -165,6 +164,19 @@
                 icon.classList.replace('fa-eye-slash', 'fa-eye');
             }
         }
+
+        document.getElementById('loginForm')?.addEventListener('submit', function() {
+            const btn = document.getElementById('loginBtn');
+            const icon = document.getElementById('loginBtnIcon');
+            const txt = document.getElementById('loginBtnText');
+            if (btn && !btn.disabled) {
+                btn.disabled = true;
+                btn.style.opacity = '0.85';
+                btn.style.pointerEvents = 'none';
+                if (icon) icon.className = 'fas fa-spinner fa-spin';
+                if (txt) txt.textContent = 'Memproses...';
+            }
+        });
     </script>
     <script src="{{ asset('assets/js/app.js') }}"></script>
 </body>

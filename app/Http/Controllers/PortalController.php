@@ -391,6 +391,8 @@ class PortalController extends Controller
             $read->update(['read_at' => now()]);
         }
 
+        cache()->forget("portal_layout_notifs_{$member->id}");
+
         return response()->json(['success' => true]);
     }
 
@@ -407,6 +409,8 @@ class PortalController extends Controller
             'dismissed_at' => now(),
             'read_at' => $read->read_at ?? now(),
         ]);
+
+        cache()->forget("portal_layout_notifs_{$member->id}");
 
         return response()->json([
             'success' => true,
@@ -426,6 +430,8 @@ class PortalController extends Controller
                 ['read_at' => $now]
             );
         }
+
+        cache()->forget("portal_layout_notifs_{$member->id}");
 
         return response()->json([
             'success' => true,

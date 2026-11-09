@@ -1250,50 +1250,49 @@
         </div>
     </div>
 </div>
-@endsection
-
-@push('scripts')
 <script>
-function toggleEditSection(type) {
+window.toggleEditSection = function(type) {
     const editCollapse = document.getElementById('editProfileCollapse');
     const pwdCollapse = document.getElementById('changePasswordCollapse');
     const btnEdit = document.getElementById('btnToggleEdit');
     const btnPwd = document.getElementById('btnTogglePwd');
 
     // Tutup feedback jika sedang dibuka
-    toggleFeedbackSection('close');
+    if (typeof window.toggleFeedbackSection === 'function') {
+        window.toggleFeedbackSection('close');
+    }
 
     if (type === 'edit') {
-        const isOpening = (editCollapse.style.display === 'none' || editCollapse.style.display === '');
+        const isOpening = (!editCollapse.style.display || editCollapse.style.display === 'none');
         editCollapse.style.display = isOpening ? 'block' : 'none';
-        pwdCollapse.style.display = 'none';
+        if (pwdCollapse) pwdCollapse.style.display = 'none';
 
-        btnEdit.classList.toggle('active', isOpening);
-        btnPwd.classList.remove('active');
+        if (btnEdit) btnEdit.classList.toggle('active', isOpening);
+        if (btnPwd) btnPwd.classList.remove('active');
 
         if (isOpening) {
             editCollapse.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     } else if (type === 'password') {
-        const isOpening = (pwdCollapse.style.display === 'none' || pwdCollapse.style.display === '');
+        const isOpening = (!pwdCollapse.style.display || pwdCollapse.style.display === 'none');
         pwdCollapse.style.display = isOpening ? 'block' : 'none';
-        editCollapse.style.display = 'none';
+        if (editCollapse) editCollapse.style.display = 'none';
 
-        btnPwd.classList.toggle('active', isOpening);
-        btnEdit.classList.remove('active');
+        if (btnPwd) btnPwd.classList.toggle('active', isOpening);
+        if (btnEdit) btnEdit.classList.remove('active');
 
         if (isOpening) {
             pwdCollapse.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     } else if (type === 'close') {
-        editCollapse.style.display = 'none';
-        pwdCollapse.style.display = 'none';
-        btnEdit.classList.remove('active');
-        btnPwd.classList.remove('active');
+        if (editCollapse) editCollapse.style.display = 'none';
+        if (pwdCollapse) pwdCollapse.style.display = 'none';
+        if (btnEdit) btnEdit.classList.remove('active');
+        if (btnPwd) btnPwd.classList.remove('active');
     }
-}
+};
 
-function toggleFeedbackSection(action) {
+window.toggleFeedbackSection = function(action) {
     const feedbackCollapse = document.getElementById('feedbackCollapse');
     const btnToggle = document.getElementById('btnToggleFeedback');
     const chevron = document.getElementById('feedbackChevron');
@@ -1328,9 +1327,9 @@ function toggleFeedbackSection(action) {
         }
         feedbackCollapse.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-}
+};
 
-function previewSelectedPhoto(input) {
+window.previewSelectedPhoto = function(input) {
     const previewWrap = document.getElementById('photoPreviewWrap');
     const previewImg = document.getElementById('photoPreviewImg');
 
@@ -1344,10 +1343,10 @@ function previewSelectedPhoto(input) {
     } else {
         previewWrap.style.display = 'none';
     }
-}
+};
 
 /* Feedback Screenshot Preview Functions */
-function previewFeedbackScreenshot(input) {
+window.previewFeedbackScreenshot = function(input) {
     const previewBox = document.getElementById('feedbackPreviewBox');
     const previewImg = document.getElementById('feedbackPreviewImg');
     const previewName = document.getElementById('feedbackPreviewName');
@@ -1383,11 +1382,11 @@ function previewFeedbackScreenshot(input) {
         };
         reader.readAsDataURL(file);
     } else {
-        clearFeedbackScreenshot();
+        window.clearFeedbackScreenshot();
     }
-}
+};
 
-function clearFeedbackScreenshot() {
+window.clearFeedbackScreenshot = function() {
     const fileInput = document.getElementById('feedbackScreenshot');
     const previewBox = document.getElementById('feedbackPreviewBox');
     const previewImg = document.getElementById('feedbackPreviewImg');
@@ -1397,10 +1396,10 @@ function clearFeedbackScreenshot() {
     if (previewImg) previewImg.src = '';
     if (previewBox) previewBox.style.display = 'none';
     if (uploadZone) uploadZone.style.display = 'flex';
-}
+};
 
 /* Modal Screenshot Functions */
-function openScreenshotModal(imgUrl, title) {
+window.openScreenshotModal = function(imgUrl, title) {
     const modal = document.getElementById('feedbackModal');
     const img = document.getElementById('feedbackModalImg');
     const titleEl = document.getElementById('feedbackModalTitle');
@@ -1417,17 +1416,17 @@ function openScreenshotModal(imgUrl, title) {
     }
 
     modal.style.display = 'flex';
-}
+};
 
-function closeScreenshotModalDirect() {
+window.closeScreenshotModalDirect = function() {
     const modal = document.getElementById('feedbackModal');
     if (modal) modal.style.display = 'none';
-}
+};
 
-function closeScreenshotModal(event) {
+window.closeScreenshotModal = function(event) {
     if (event.target.id === 'feedbackModal') {
-        closeScreenshotModalDirect();
+        window.closeScreenshotModalDirect();
     }
-}
+};
 </script>
-@endpush
+@endsection

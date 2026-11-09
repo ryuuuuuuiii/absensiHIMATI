@@ -43,21 +43,30 @@ class AppServiceProvider extends ServiceProvider
             if (auth('member')->check()) {
                 $portalMember = auth('member')->user();
                 app(SpService::class)->ensureActiveSpNotification($portalMember);
-                $portalAnnouncements = Announcement::active()
-                    ->forMember($portalMember)
-                    ->with(['admin', 'reads' => function ($q) use ($portalMember) {
-                        $q->where('user_id', $portalMember->id);
-                    }])
-                    ->orderBy('pinned', 'desc')
-                    ->orderBy('created_at', 'desc')
-                    ->take(10)
-                    ->get();
 
-                $portalUnreadNotifCount = $portalAnnouncements->filter(function ($a) {
-                    $read = $a->reads->first();
+                [$portalAnnouncements, $portalUnreadNotifCount] = cache()->remember(
+                    "portal_layout_notifs_{$portalMember->id}",
+                    30,
+                    function () use ($portalMember) {
+                        $announcements = Announcement::active()
+                            ->forMember($portalMember)
+                            ->with(['admin', 'reads' => function ($q) use ($portalMember) {
+                                $q->where('user_id', $portalMember->id);
+                            }])
+                            ->orderBy('pinned', 'desc')
+                            ->orderBy('created_at', 'desc')
+                            ->take(10)
+                            ->get();
 
-                    return ! ($read && $read->read_at);
-                })->count();
+                        $unreadCount = $announcements->filter(function ($a) {
+                            $read = $a->reads->first();
+
+                            return ! ($read && $read->read_at);
+                        })->count();
+
+                        return [$announcements, $unreadCount];
+                    }
+                );
 
                 $view->with('portalAnnouncements', $portalAnnouncements)
                     ->with('portalUnreadNotifCount', $portalUnreadNotifCount);
