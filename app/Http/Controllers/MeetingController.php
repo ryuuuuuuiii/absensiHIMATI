@@ -235,17 +235,23 @@ class MeetingController extends Controller
                     break;
             }
 
+            $now = now();
+            $attendanceRecords = [];
             foreach ($memberIds as $mId) {
                 $isCreator = ($m->created_by && (int) $mId === (int) $m->created_by);
 
-                Attendance::create([
+                $attendanceRecords[] = [
                     'meeting_id' => $m->id,
-                    'user_id' => $mId,
+                    'user_id' => (int) $mId,
                     'status' => $isCreator ? 'hadir' : 'alpha',
-                    'scanned_at' => $isCreator ? now() : null,
+                    'scanned_at' => $isCreator ? $now : null,
                     'scan_method' => $isCreator ? 'manual' : 'qr_scan',
-                    'created_at' => now(),
-                ]);
+                    'created_at' => $now,
+                ];
+            }
+
+            if (! empty($attendanceRecords)) {
+                Attendance::insert($attendanceRecords);
             }
 
             return $m;

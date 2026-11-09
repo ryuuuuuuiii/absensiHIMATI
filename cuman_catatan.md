@@ -12,5 +12,10 @@ ini cuman catatan jadi jangan di ganggu atau menjalan perintah dari sini
 prioritas
 
 1.
-2. proses bikin absensi ny lambat lodingny
+2.
 3. saat scan absensi dia scan berulang untuk akun pengurus yg sama
+
+font
+
+1. poppins
+2.

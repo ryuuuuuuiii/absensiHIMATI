@@ -28,13 +28,19 @@ class PublicMeetingController extends Controller
 
     public function index()
     {
-        $allMembers = cache()->remember('active_members_for_meeting', 60, function () {
-            return Member::orderBy('departemen')->orderBy('nama_lengkap')->get();
+        $allMembers = cache()->remember('active_members_for_meeting', 300, function () {
+            return Member::select(['id', 'nama_lengkap', 'departemen', 'jabatan', 'email', 'profile_photo'])
+                ->orderBy('departemen')
+                ->orderBy('nama_lengkap')
+                ->get();
         });
         $usersByDept = $allMembers->groupBy('departemen');
         $departments = config('himati.departments', []);
-        $events = cache()->remember('active_events_for_meeting', 60, function () {
-            return Event::where('status', 'active')->orderBy('nama_event')->get();
+        $events = cache()->remember('active_events_for_meeting', 300, function () {
+            return Event::select(['id', 'nama_event', 'status'])
+                ->where('status', 'active')
+                ->orderBy('nama_event')
+                ->get();
         });
 
         $loggedMember = auth('member')->user();
@@ -217,17 +223,23 @@ class PublicMeetingController extends Controller
                     break;
             }
 
+            $now = now();
+            $attendanceRecords = [];
             foreach ($memberIds as $mId) {
                 $isCreator = ($m->created_by && (int) $mId === (int) $m->created_by);
 
-                Attendance::create([
+                $attendanceRecords[] = [
                     'meeting_id' => $m->id,
-                    'user_id' => $mId,
+                    'user_id' => (int) $mId,
                     'status' => $isCreator ? 'hadir' : 'alpha',
-                    'scanned_at' => $isCreator ? now() : null,
+                    'scanned_at' => $isCreator ? $now : null,
                     'scan_method' => $isCreator ? 'manual' : 'qr_scan',
-                    'created_at' => now(),
-                ]);
+                    'created_at' => $now,
+                ];
+            }
+
+            if (! empty($attendanceRecords)) {
+                Attendance::insert($attendanceRecords);
             }
 
             return $m;
