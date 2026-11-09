@@ -337,7 +337,12 @@ function addToScannedList(userData, scannedAt) {
 
     const userIdAttr = userData.id ? `data-user-id="${userData.id}"` : '';
     const qrAttr = userData.qr_code ? `data-qr="${userData.qr_code}"` : '';
-    const badgeDept = userData.departemen ? `<span class="badge badge-dept" style="font-size: 11px; padding: 2px 7px;">${escapeHTML(userData.departemen)}</span>` : '';
+    const badgeDept = userData.is_bph_inti
+        ? '<span class="badge badge-warning" style="font-size: 11px; padding: 2px 7px;"><i class="fas fa-crown"></i> Pengurus Inti</span>'
+        : (userData.departemen ? `<span class="badge badge-dept" style="font-size: 11px; padding: 2px 7px;">${escapeHTML(userData.departemen)}</span>` : '');
+    const badgeBph = userData.is_bph
+        ? '<span class="badge badge-warning" style="font-size: 11px; padding: 2px 7px;"><i class="fas fa-shield-alt"></i> BPH</span>'
+        : '';
     const jabatanText = userData.jabatan ? `<span>${escapeHTML(userData.jabatan)}</span>` : '';
     let spBadge = '';
     if (userData.sp_level === 1) {
@@ -360,6 +365,7 @@ function addToScannedList(userData, scannedAt) {
                 </h4>
                 <p>
                     ${badgeDept}
+                    ${badgeBph}
                     ${jabatanText}
                 </p>
             </div>

@@ -799,11 +799,11 @@
                 <span class="badge badge-dept">
                     <i class="fas fa-building text-primary"></i> Dept. {{ $member->departemen }}
                 </span>
-                @if ($member->is_bph)
-                    <span class="badge badge-warning">
-                        <i class="fas fa-shield-alt"></i> BPH
-                    </span>
-                @endif
+            @endif
+            @if ($member->is_bph)
+                <span class="badge badge-warning">
+                    <i class="fas fa-shield-alt"></i> BPH
+                </span>
             @endif
             @if ($member->sp_level == 1)
                 <span class="badge badge-sp-1">

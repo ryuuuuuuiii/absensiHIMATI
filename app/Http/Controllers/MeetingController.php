@@ -417,6 +417,7 @@ class MeetingController extends Controller
                 'qr_code' => $member->qr_code,
                 'departemen' => $member->departemen,
                 'jabatan' => $member->jabatan,
+                'is_bph' => (bool) $member->is_bph,
                 'is_bph_inti' => $member->isBphInti(),
                 'sp_level' => (int) $member->sp_level,
                 'sp_label' => $member->sp_label,

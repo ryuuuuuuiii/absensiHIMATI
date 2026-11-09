@@ -38,11 +38,11 @@
                     <span class="hero-pill-badge dept-badge">
                         <i class="fas fa-building"></i> Dept. {{ $member->departemen }}
                     </span>
-                    @if ($member->is_bph)
-                        <span class="hero-pill-badge bph-badge">
-                            <i class="fas fa-shield-alt"></i> BPH
-                        </span>
-                    @endif
+                @endif
+                @if ($member->is_bph)
+                    <span class="hero-pill-badge bph-badge">
+                        <i class="fas fa-shield-alt"></i> BPH
+                    </span>
                 @endif
                 @if ($member->sp_level == 1)
                     <span class="badge badge-sp-1">

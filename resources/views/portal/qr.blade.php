@@ -88,9 +88,9 @@
                     <span class="badge badge-warning" style="font-size: var(--font-sm);"><i class="fas fa-crown"></i> Pengurus Inti</span>
                 @else
                     <span class="badge badge-dept" style="font-size: var(--font-sm);"><i class="fas fa-building"></i> Dept. {{ $member->departemen }}</span>
-                    @if ($member->is_bph)
-                        <span class="badge badge-warning" style="font-size: var(--font-sm); margin-left: 4px;"><i class="fas fa-shield-alt"></i> BPH</span>
-                    @endif
+                @endif
+                @if ($member->is_bph)
+                    <span class="badge badge-warning" style="font-size: var(--font-sm); margin-left: 4px;"><i class="fas fa-shield-alt"></i> BPH</span>
                 @endif
                 @if ($member->sp_level == 1)
                     <span class="badge badge-sp-1" style="font-size: var(--font-sm); margin-left: 4px;"><i class="fas fa-exclamation-triangle"></i> SP 1</span>

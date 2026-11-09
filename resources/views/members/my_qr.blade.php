@@ -54,13 +54,13 @@
                     {{ $member->nama_lengkap }}
                 </h2>
                 <p style="margin-bottom: 6px;">
-                    <span class="badge badge-dept" style="font-size: var(--font-sm);">
-                        {{ $member->departemen }}
-                    </span>
+                    @if ($member->isBphInti())
+                        <span class="badge badge-warning" style="font-size: var(--font-sm);"><i class="fas fa-crown"></i> Pengurus Inti</span>
+                    @else
+                        <span class="badge badge-dept" style="font-size: var(--font-sm);"><i class="fas fa-building"></i> Dept. {{ $member->departemen }}</span>
+                    @endif
                     @if($member->is_bph)
-                        <span class="badge badge-warning" style="font-size: var(--font-sm); margin-left: 4px;">
-                            BPH
-                        </span>
+                        <span class="badge badge-warning" style="font-size: var(--font-sm); margin-left: 4px;"><i class="fas fa-shield-alt"></i> BPH</span>
                     @endif
                 </p>
                 <p style="font-size: var(--font-sm); color: var(--text-secondary);">

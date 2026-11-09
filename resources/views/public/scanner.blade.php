@@ -187,9 +187,20 @@
                                 @endif
                             </h4>
                             <p>
-                                <span class="badge badge-dept" style="font-size: 11px; padding: 2px 7px;">
-                                    {{ $a->member ? $a->member->departemen : '-' }}
-                                </span>
+                                @if($a->member && $a->member->isBphInti())
+                                    <span class="badge badge-warning" style="font-size: 11px; padding: 2px 7px;">
+                                        <i class="fas fa-crown"></i> Pengurus Inti
+                                    </span>
+                                @else
+                                    <span class="badge badge-dept" style="font-size: 11px; padding: 2px 7px;">
+                                        {{ $a->member ? $a->member->departemen : '-' }}
+                                    </span>
+                                @endif
+                                @if($a->member && $a->member->is_bph)
+                                    <span class="badge badge-warning" style="font-size: 11px; padding: 2px 7px;">
+                                        <i class="fas fa-shield-alt"></i> BPH
+                                    </span>
+                                @endif
                                 @if($a->member && $a->member->jabatan)
                                     <span>{{ $a->member->jabatan }}</span>
                                 @endif
