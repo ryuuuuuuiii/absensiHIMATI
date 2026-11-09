@@ -328,5 +328,225 @@ document.addEventListener('DOMContentLoaded', initBottomNav);
     } catch(e) {}
 })();
 
+// ============================================
+// PROFILE & FEEDBACK INTERACTION HELPERS (Global)
+// ============================================
+window.toggleEditSection = function(type) {
+    const editCollapse = document.getElementById('editProfileCollapse');
+    const pwdCollapse = document.getElementById('changePasswordCollapse');
+    const btnEdit = document.getElementById('btnToggleEdit');
+    const btnPwd = document.getElementById('btnTogglePwd');
+
+    if (!editCollapse && !pwdCollapse) return;
+
+    if (typeof window.toggleFeedbackSection === 'function') {
+        window.toggleFeedbackSection('close');
+    }
+
+    if (type === 'edit' && editCollapse) {
+        const isOpening = (!editCollapse.style.display || editCollapse.style.display === 'none');
+        editCollapse.style.display = isOpening ? 'block' : 'none';
+        editCollapse.classList.toggle('is-open', isOpening);
+        if (pwdCollapse) {
+            pwdCollapse.style.display = 'none';
+            pwdCollapse.classList.remove('is-open');
+        }
+
+        if (btnEdit) btnEdit.classList.toggle('active', isOpening);
+        if (btnPwd) btnPwd.classList.remove('active');
+
+        if (isOpening) {
+            editCollapse.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    } else if (type === 'password' && pwdCollapse) {
+        const isOpening = (!pwdCollapse.style.display || pwdCollapse.style.display === 'none');
+        pwdCollapse.style.display = isOpening ? 'block' : 'none';
+        pwdCollapse.classList.toggle('is-open', isOpening);
+        if (editCollapse) {
+            editCollapse.style.display = 'none';
+            editCollapse.classList.remove('is-open');
+        }
+
+        if (btnPwd) btnPwd.classList.toggle('active', isOpening);
+        if (btnEdit) btnEdit.classList.remove('active');
+
+        if (isOpening) {
+            pwdCollapse.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    } else if (type === 'close') {
+        if (editCollapse) {
+            editCollapse.style.display = 'none';
+            editCollapse.classList.remove('is-open');
+        }
+        if (pwdCollapse) {
+            pwdCollapse.style.display = 'none';
+            pwdCollapse.classList.remove('is-open');
+        }
+        if (btnEdit) btnEdit.classList.remove('active');
+        if (btnPwd) btnPwd.classList.remove('active');
+    }
+};
+
+window.toggleFeedbackSection = function(action) {
+    const feedbackCollapse = document.getElementById('feedbackCollapse');
+    const btnToggle = document.getElementById('btnToggleFeedback');
+    const chevron = document.getElementById('feedbackChevron');
+
+    if (!feedbackCollapse) return;
+
+    const isCurrentlyOpen = (feedbackCollapse.style.display === 'block');
+
+    if (action === 'close' || isCurrentlyOpen) {
+        feedbackCollapse.style.display = 'none';
+        feedbackCollapse.classList.remove('is-open');
+        if (btnToggle) btnToggle.classList.remove('active');
+        if (chevron) {
+            chevron.style.transform = 'rotate(0deg)';
+            chevron.style.color = '';
+        }
+    } else {
+        window.toggleEditSection('close');
+
+        feedbackCollapse.style.display = 'block';
+        feedbackCollapse.classList.add('is-open');
+        if (btnToggle) btnToggle.classList.add('active');
+        if (chevron) {
+            chevron.style.transform = 'rotate(180deg)';
+            chevron.style.color = 'var(--blue-primary)';
+        }
+        feedbackCollapse.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+};
+
+window.previewSelectedPhoto = function(input) {
+    const previewWrap = document.getElementById('photoPreviewWrap');
+    const previewImg = document.getElementById('photoPreviewImg');
+
+    if (input && input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            if (previewImg) previewImg.src = e.target.result;
+            if (previewWrap) previewWrap.style.display = 'flex';
+        };
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        if (previewWrap) previewWrap.style.display = 'none';
+    }
+};
+
+window.previewFeedbackScreenshot = function(input) {
+    const previewBox = document.getElementById('feedbackPreviewBox');
+    const previewImg = document.getElementById('feedbackPreviewImg');
+    const previewName = document.getElementById('feedbackPreviewName');
+    const previewSize = document.getElementById('feedbackPreviewSize');
+    const uploadZone = document.getElementById('feedbackUploadZone');
+
+    if (input && input.files && input.files[0]) {
+        const file = input.files[0];
+
+        if (!file.type.startsWith('image/')) {
+            alert('File yang dipilih harus berupa gambar (JPG, PNG, WEBP).');
+            input.value = '';
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Ukuran file gambar maksimal 5MB.');
+            input.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            if (previewImg) previewImg.src = e.target.result;
+            if (previewName) previewName.textContent = file.name;
+            const sizeKB = (file.size / 1024).toFixed(1);
+            if (previewSize) previewSize.textContent = sizeKB > 1024 ? (sizeKB / 1024).toFixed(2) + ' MB' : sizeKB + ' KB';
+
+            if (previewBox) previewBox.style.display = 'flex';
+            if (uploadZone) uploadZone.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        window.clearFeedbackScreenshot();
+    }
+};
+
+window.clearFeedbackScreenshot = function() {
+    const fileInput = document.getElementById('feedbackScreenshot');
+    const previewBox = document.getElementById('feedbackPreviewBox');
+    const previewImg = document.getElementById('feedbackPreviewImg');
+    const uploadZone = document.getElementById('feedbackUploadZone');
+
+    if (fileInput) fileInput.value = '';
+    if (previewImg) previewImg.src = '';
+    if (previewBox) previewBox.style.display = 'none';
+    if (uploadZone) uploadZone.style.display = 'flex';
+};
+
+window.openScreenshotModal = function(imgUrl, title) {
+    const modal = document.getElementById('feedbackModal');
+    const img = document.getElementById('feedbackModalImg');
+    const titleEl = document.getElementById('feedbackModalTitle');
+    const dlBtn = document.getElementById('feedbackModalDownload');
+
+    if (!modal || !img) return;
+
+    img.src = imgUrl;
+    if (titleEl && title) {
+        titleEl.innerHTML = '<i class="fas fa-image text-primary"></i> ' + title;
+    }
+    if (dlBtn) {
+        dlBtn.href = imgUrl;
+    }
+
+    modal.style.display = 'flex';
+};
+
+window.closeScreenshotModalDirect = function() {
+    const modal = document.getElementById('feedbackModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.closeScreenshotModal = function(event) {
+    if (event.target.id === 'feedbackModal') {
+        window.closeScreenshotModalDirect();
+    }
+};
+
+// Global click event delegation for profile buttons (runs immediately on any click)
+document.addEventListener('click', function(e) {
+    const editBtn = e.target.closest('#btnToggleEdit, .btn-edit');
+    if (editBtn) {
+        e.preventDefault();
+        window.toggleEditSection('edit');
+        return;
+    }
+    const pwdBtn = e.target.closest('#btnTogglePwd, .btn-pwd');
+    if (pwdBtn) {
+        e.preventDefault();
+        window.toggleEditSection('password');
+        return;
+    }
+    const avatarBadge = e.target.closest('.profile-avatar-edit-badge');
+    if (avatarBadge) {
+        e.preventDefault();
+        window.toggleEditSection('edit');
+        return;
+    }
+    const closeBtn = e.target.closest('.collapse-close-btn');
+    if (closeBtn) {
+        e.preventDefault();
+        window.toggleEditSection('close');
+        return;
+    }
+    const feedbackBtn = e.target.closest('#btnToggleFeedback');
+    if (feedbackBtn) {
+        e.preventDefault();
+        window.toggleFeedbackSection();
+        return;
+    }
+});
+
 
 
