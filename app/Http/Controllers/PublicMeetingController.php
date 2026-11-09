@@ -28,10 +28,14 @@ class PublicMeetingController extends Controller
 
     public function index()
     {
-        $allMembers = Member::orderBy('departemen')->orderBy('nama_lengkap')->get();
+        $allMembers = cache()->remember('active_members_for_meeting', 60, function () {
+            return Member::orderBy('departemen')->orderBy('nama_lengkap')->get();
+        });
         $usersByDept = $allMembers->groupBy('departemen');
         $departments = config('himati.departments', []);
-        $events = Event::where('status', 'active')->orderBy('nama_event')->get();
+        $events = cache()->remember('active_events_for_meeting', 60, function () {
+            return Event::where('status', 'active')->orderBy('nama_event')->get();
+        });
 
         $loggedMember = auth('member')->user();
         $loggedAdmin = auth('web')->user();

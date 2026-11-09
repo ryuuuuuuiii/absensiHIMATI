@@ -218,6 +218,15 @@
 
     <!-- Info Status Login Terverifikasi -->
     <div class="creator-top-bar">
+        @if ($loggedMember)
+            <a href="{{ route('portal.dashboard') }}" class="btn btn-sm btn-secondary" style="margin-right: auto; gap: 6px; font-size: 0.82rem; padding: 6px 14px; border-radius: 9999px;">
+                <i class="fas fa-arrow-left"></i> Kembali ke Portal
+            </a>
+        @elseif ($loggedAdmin)
+            <a href="{{ route('dashboard') }}" class="btn btn-sm btn-secondary" style="margin-right: auto; gap: 6px; font-size: 0.82rem; padding: 6px 14px; border-radius: 9999px;">
+                <i class="fas fa-arrow-left"></i> Kembali ke Dashboard
+            </a>
+        @endif
         <div class="creator-top-badge">
             <span class="status-dot"></span>
             <span>Akun Login Terverifikasi</span>

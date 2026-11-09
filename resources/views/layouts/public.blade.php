@@ -45,6 +45,26 @@
         })();
     </script>
 
+    @if (auth('member')->check())
+    <script type="speculationrules">
+    {
+        "prefetch": [
+            {
+                "source": "list",
+                "urls": [
+                    "{{ route('portal.dashboard') }}",
+                    "{{ route('public.meeting.create') }}",
+                    "{{ route('portal.qr') }}",
+                    "{{ route('portal.attendance') }}",
+                    "{{ route('portal.profile') }}"
+                ],
+                "eagerness": "moderate"
+            }
+        ]
+    }
+    </script>
+    @endif
+
     @stack('styles')
 </head>
 <body>
@@ -272,7 +292,29 @@
                 loader.classList.remove('loading');
             }
 
+            const prefetchTabs = new Set();
+            function prefetchDoc(url) {
+                if (!url || prefetchTabs.has(url)) return;
+                try {
+                    const u = new URL(url, window.location.origin);
+                    if (u.origin !== window.location.origin) return;
+                    prefetchTabs.add(url);
+                    const link = document.createElement('link');
+                    link.rel = 'prefetch';
+                    link.href = url;
+                    link.as = 'document';
+                    document.head.appendChild(link);
+                } catch(e) {}
+            }
+
+            // Hover & touch prefetch on navigation tabs
             navTabs.forEach(function(tab) {
+                const href = tab.getAttribute('href');
+                if (href) {
+                    tab.addEventListener('mouseover', function() { prefetchDoc(href); }, { passive: true });
+                    tab.addEventListener('touchstart', function() { prefetchDoc(href); }, { passive: true });
+                }
+
                 tab.addEventListener('click', function() {
                     const href = this.getAttribute('href');
                     if (!href || href === '#' || href.startsWith('javascript:')) return;
@@ -281,6 +323,33 @@
                     showLoader();
                 });
             });
+
+            // Also prefetch on footer links
+            document.querySelectorAll('.public-footer a').forEach(function(el) {
+                const href = el.getAttribute('href');
+                if (href) {
+                    el.addEventListener('mouseover', function() { prefetchDoc(href); }, { passive: true });
+                    el.addEventListener('touchstart', function() { prefetchDoc(href); }, { passive: true });
+                    el.addEventListener('click', function() { showLoader(); });
+                }
+            });
+
+            // Proactive idle prefetch for immediate switching back to portal
+            const PORTAL_PREFETCH = [
+                '{{ route("portal.dashboard") }}',
+                '{{ route("portal.qr") }}',
+                '{{ route("portal.attendance") }}',
+                '{{ route("portal.profile") }}'
+            ];
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(() => {
+                    PORTAL_PREFETCH.forEach(u => prefetchDoc(u));
+                }, { timeout: 1500 });
+            } else {
+                setTimeout(() => {
+                    PORTAL_PREFETCH.forEach(u => prefetchDoc(u));
+                }, 800);
+            }
 
             window.addEventListener('pageshow', function() {
                 hideLoader();

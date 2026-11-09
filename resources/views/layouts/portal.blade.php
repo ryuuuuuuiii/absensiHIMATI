@@ -40,6 +40,27 @@
         })();
     </script>
 
+    @if (auth('member')->check())
+    <script type="speculationrules">
+    {
+        "prefetch": [
+            {
+                "source": "list",
+                "urls": [
+                    "{{ route('portal.dashboard') }}",
+                    "{{ route('public.meeting.create') }}",
+                    "{{ route('portal.qr') }}",
+                    "{{ route('portal.attendance') }}",
+                    "{{ route('portal.profile') }}",
+                    "{{ route('portal.announcements.index') }}"
+                ],
+                "eagerness": "moderate"
+            }
+        ]
+    }
+    </script>
+    @endif
+
     @stack('styles')
 </head>
 <body>
@@ -474,6 +495,7 @@
             // Preload & Prefetch Engine
             const PRELOAD_ROUTES = [
                 '{{ route("portal.dashboard") }}',
+                '{{ route("public.meeting.create") }}',
                 '{{ route("portal.qr") }}',
                 '{{ route("portal.attendance") }}',
                 '{{ route("portal.profile") }}',
@@ -485,11 +507,23 @@
                 try {
                     const u = new URL(urlPath, window.location.origin);
                     if (u.origin !== window.location.origin) return;
-                    if (!u.pathname.startsWith('/portal')) return;
                     if (u.pathname.includes('/logout') || u.pathname.includes('/login') || u.pathname.includes('/qr/download')) return;
 
                     const clean = normalizePath(u.pathname);
                     if (portalCache.has(clean) || prefetchingUrls.has(clean)) return;
+
+                    // If non-portal link (like /rapat), inject prefetch link for browser document cache
+                    if (!u.pathname.startsWith('/portal')) {
+                        prefetchingUrls.add(clean);
+                        if (!document.querySelector('link[rel="prefetch"][href*="' + clean + '"]')) {
+                            const pl = document.createElement('link');
+                            pl.rel = 'prefetch';
+                            pl.href = u.pathname + u.search;
+                            pl.as = 'document';
+                            document.head.appendChild(pl);
+                        }
+                        return;
+                    }
 
                     prefetchingUrls.add(clean);
                     fetchPageData(u.pathname + u.search).then(data => {
@@ -617,7 +651,11 @@
                 if (urlObj.origin !== window.location.origin) return;
 
                 // Don't intercept non-portal links or Buat Rapat (which uses layouts.public)
-                if (!urlObj.pathname.startsWith('/portal')) return;
+                if (!urlObj.pathname.startsWith('/portal')) {
+                    showLoader();
+                    updateNavHighlights(urlObj.pathname);
+                    return;
+                }
 
                 // Exclude logout, login, or direct download routes
                 if (urlObj.pathname.includes('/logout') || urlObj.pathname.includes('/login') || urlObj.pathname.includes('/qr/download')) {
