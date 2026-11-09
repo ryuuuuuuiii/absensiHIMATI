@@ -367,8 +367,10 @@
             const initialIconEl = document.querySelector('.portal-header-page-title i');
 
             if (initialLayer) {
+                const initialHeadStyles = Array.from(document.head.querySelectorAll('style')).map(s => s.outerHTML).join('\n');
                 portalCache.set(normalizePath(window.location.pathname), {
                     html: initialLayer.innerHTML,
+                    styles: initialHeadStyles,
                     title: document.title,
                     headerTitle: initialTitleEl ? initialTitleEl.textContent : '',
                     headerIconHtml: initialIconEl ? initialIconEl.outerHTML : '<i class="fas fa-th-large"></i>',
@@ -488,9 +490,11 @@
 
                 const headerTitleEl = doc.querySelector('.portal-header-page-title .header-page-text');
                 const headerIconEl = doc.querySelector('.portal-header-page-title i');
+                const headStyles = Array.from(doc.head.querySelectorAll('style')).map(s => s.outerHTML).join('\n');
 
                 return {
                     html: newLayer.innerHTML,
+                    styles: headStyles,
                     title: doc.title,
                     headerTitle: headerTitleEl ? headerTitleEl.textContent : '',
                     headerIconHtml: headerIconEl ? headerIconEl.outerHTML : '<i class="fas fa-th-large"></i>',
@@ -505,6 +509,16 @@
                     requestAnimationFrame(() => {
                         contentLayer.innerHTML = data.html;
                         updateHeaderMeta(data);
+
+                        if (data.styles !== undefined) {
+                            let dynStyle = document.getElementById('portal-dynamic-styles');
+                            if (!dynStyle) {
+                                dynStyle = document.createElement('div');
+                                dynStyle.id = 'portal-dynamic-styles';
+                                document.head.appendChild(dynStyle);
+                            }
+                            dynStyle.innerHTML = data.styles;
+                        }
 
                         // Reset scroll to top immediately
                         window.scrollTo({ top: 0, behavior: 'instant' });

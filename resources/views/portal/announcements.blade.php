@@ -5,7 +5,7 @@
     <i class="fas fa-bullhorn"></i>
 @endsection
 
-@push('styles')
+@section('content')
 <style>
 .notif-page-wrap {
     max-width: 760px;
@@ -253,9 +253,7 @@
     color: var(--text-muted);
 }
 </style>
-@endpush
 
-@section('content')
 <div class="notif-page-wrap">
     <!-- Top Bar: Tombol Kembali di Kiri Atas & Tandai Semua Dibaca di Kanan Atas -->
     <div class="notif-topbar">

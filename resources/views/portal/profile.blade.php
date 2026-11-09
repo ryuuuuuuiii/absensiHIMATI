@@ -5,7 +5,7 @@
     <i class="fas fa-user-circle"></i>
 @endsection
 
-@push('styles')
+@section('content')
 <style>
 .profile-wrapper {
     max-width: 620px;
@@ -758,9 +758,7 @@
     color: #E2E8F0;
 }
 </style>
-@endpush
 
-@section('content')
 <div class="profile-wrapper">
 
     <div class="portal-page-header">

@@ -5,7 +5,7 @@
     <i class="fas fa-qrcode"></i>
 @endsection
 
-@push('styles')
+@section('content')
 <style>
 .qr-instruction-card {
     display: flex;
@@ -57,9 +57,7 @@
     color: #E2E8F0 !important;
 }
 </style>
-@endpush
 
-@section('content')
 <div class="portal-page-header">
     <h1 class="portal-page-title">
         <i class="fas fa-qrcode"></i> QR Code Saya
