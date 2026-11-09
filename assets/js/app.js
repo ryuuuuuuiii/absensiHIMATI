@@ -278,118 +278,30 @@ function debounce(func, wait) {
 }
 
 // ============================================
-// FLUID ANIMATED BOTTOM NAVIGATION (Mobile View)
+// CLEAN MOBILE BOTTOM NAVIGATION BAR
 // ============================================
-function initFluidBottomNav() {
+function initBottomNav() {
     const nav = document.querySelector('.portal-bottom-nav');
     if (!nav) return;
 
-    const fillPath = nav.querySelector('.portal-nav-fluid-fill');
-    const strokePath = nav.querySelector('.portal-nav-fluid-stroke');
-    if (!fillPath || !strokePath) return;
-
     const tabs = nav.querySelectorAll('.portal-nav-tab');
     if (!tabs.length) return;
-
-    let activeTab = nav.querySelector('.portal-nav-tab.active');
-    if (!activeTab) activeTab = tabs[0];
-
-    let currentX = 0;
-    let animId = null;
-
-    function getTabCenter(tab) {
-        const navRect = nav.getBoundingClientRect();
-        const tabRect = tab.getBoundingClientRect();
-        if (tabRect.width === 0 && nav.clientWidth > 0) {
-            const idx = Array.prototype.indexOf.call(tabs, tab);
-            return (nav.clientWidth / tabs.length) * (idx + 0.5);
-        }
-        return (tabRect.left + tabRect.width / 2) - navRect.left;
-    }
-
-    function renderPath(x) {
-        const w = nav.clientWidth;
-        if (w <= 0) return;
-
-        const baseline = 24;
-        const peakY = 3;
-        const r = 44;
-        const cp = 24;
-
-        const x0 = Math.max(0, x - r);
-        const x1 = x - cp;
-        const x2 = x - cp;
-        const x3 = x;
-        const x4 = x + cp;
-        const x5 = x + cp;
-        const x6 = Math.min(w, x + r);
-
-        const strokeD = `M 0 ${baseline} L ${x0} ${baseline} C ${x1} ${baseline} ${x2} ${peakY} ${x3} ${peakY} C ${x4} ${peakY} ${x5} ${baseline} ${x6} ${baseline} L ${w} ${baseline}`;
-        const fillD = `${strokeD} L ${w} 86 L 0 86 Z`;
-
-        strokePath.setAttribute('d', strokeD);
-        fillPath.setAttribute('d', fillD);
-    }
-
-    function animateTo(targetX) {
-        const startX = currentX;
-        const diff = targetX - startX;
-        const startTime = performance.now();
-        const duration = 320;
-
-        if (animId) cancelAnimationFrame(animId);
-
-        function step(now) {
-            const elapsed = now - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const ease = 1 - Math.pow(1 - progress, 3);
-            currentX = startX + diff * ease;
-            renderPath(currentX);
-
-            if (progress < 1) {
-                animId = requestAnimationFrame(step);
-            }
-        }
-        animId = requestAnimationFrame(step);
-    }
-
-    function updatePosition(animate) {
-        const targetX = getTabCenter(activeTab);
-        if (currentX === 0 || !animate) {
-            currentX = targetX;
-            renderPath(currentX);
-        } else {
-            animateTo(targetX);
-        }
-    }
-
-    updatePosition(false);
-    requestAnimationFrame(() => updatePosition(false));
-    setTimeout(() => updatePosition(false), 80);
-
-    window.addEventListener('resize', debounce(() => {
-        updatePosition(false);
-    }, 100));
 
     window.updateFluidNavPosition = function(targetTab) {
         if (!targetTab) return;
         tabs.forEach(t => t.classList.remove('active'));
         targetTab.classList.add('active');
-        activeTab = targetTab;
-        updatePosition(true);
     };
 
     tabs.forEach(tab => {
         tab.addEventListener('click', function() {
             tabs.forEach(t => t.classList.remove('active'));
             this.classList.add('active');
-            activeTab = this;
-            updatePosition(true);
         });
     });
 }
 
-document.addEventListener('DOMContentLoaded', initFluidBottomNav);
+document.addEventListener('DOMContentLoaded', initBottomNav);
 
 // ============================================
 // THEME SYSTEM (Pure Auto Follow Device)

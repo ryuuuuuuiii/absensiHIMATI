@@ -254,10 +254,6 @@
 
     <!-- Bottom Navigation Bar Khusus Mode HP (Mobile View) -->
     <nav class="portal-bottom-nav" aria-label="Navigasi Bawah Mobile">
-        <svg class="portal-nav-fluid-svg" preserveAspectRatio="none" aria-hidden="true">
-            <path class="portal-nav-fluid-fill" d=""></path>
-            <path class="portal-nav-fluid-stroke" d=""></path>
-        </svg>
         <a href="{{ route('portal.dashboard') }}" class="portal-nav-tab tab-beranda {{ request()->routeIs('portal.dashboard') ? 'active' : '' }}">
             <div class="tab-icon-bubble">
                 <i class="fas fa-th-large"></i>
