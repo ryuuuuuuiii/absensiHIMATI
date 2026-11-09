@@ -666,6 +666,13 @@ function restoreMeetingDraft() {
 
     if (!draft || typeof draft !== 'object') return;
 
+    // Batas waktu kadaluarsa draft rapat: 15 menit (15 * 60 * 1000 ms)
+    const DRAFT_MAX_AGE_MS = 15 * 60 * 1000;
+    if (!draft.updatedAt || (Date.now() - draft.updatedAt > DRAFT_MAX_AGE_MS)) {
+        clearMeetingDraft();
+        return;
+    }
+
     isRestoringDraft = true;
     try {
         const creatorEl = document.getElementById('selectCreator');
@@ -825,5 +832,25 @@ window.addEventListener('pagehide', function() {
 window.addEventListener('pageshow', function(e) {
     if (e.persisted) {
         restoreMeetingDraft();
+    }
+});
+
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+        const raw = localStorage.getItem(getDraftStorageKey());
+        if (raw) {
+            try {
+                const d = JSON.parse(raw);
+                const DRAFT_MAX_AGE_MS = 15 * 60 * 1000;
+                if (!d || !d.updatedAt || (Date.now() - d.updatedAt > DRAFT_MAX_AGE_MS)) {
+                    clearMeetingDraft();
+                    const form = document.getElementById('meetingForm');
+                    if (form) {
+                        form.reset();
+                        goToStep(1);
+                    }
+                }
+            } catch(e) {}
+        }
     }
 });
