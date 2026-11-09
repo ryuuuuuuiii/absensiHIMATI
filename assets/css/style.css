@@ -5752,14 +5752,15 @@ html, body {
     position: relative;
     width: 36px;
     height: 36px;
-    border-radius: 10px;
-    border: 1.5px solid var(--border-color);
+    border-radius: 50% !important;
+    border: 2px solid #061A2E !important;
+    box-shadow: 0 3px 0 #061A2E !important;
     background: var(--bg-surface);
     color: var(--text-secondary);
     text-decoration: none;
     font-size: 0.95rem;
     transition: all 0.15s ease;
-    margin-right: 6px;
+    margin-right: 8px;
 }
 .header-action-btn:hover {
     color: var(--blue-primary);
@@ -5767,8 +5768,9 @@ html, body {
     background: var(--blue-subtle);
 }
 [data-theme="dark"] .header-action-btn {
-    background: #1A2333 !important;
-    border-color: #263347 !important;
+    background: #0E2238 !important;
+    border: 2px solid #30AFFF !important;
+    box-shadow: 0 3px 0 #000000, 0 4px 0 1px rgba(48, 175, 255, 0.45) !important;
     color: #92EEFF !important;
 }
 .header-badge-count {
@@ -5985,114 +5987,75 @@ html, body {
    RESPONSIVE OVERRIDES (Mobile Screens <= 768px)
    ========================================================================== */
 @media (max-width: 768px) {
-    /* Portal hides sidebar; Admin uses sidebar as slide-out drawer */
-    .portal-wrapper .sidebar,
-    .portal-wrapper .sidebar-overlay {
-        display: none !important;
-    }
-
-    .sidebar {
-        position: fixed !important;
-        top: 0 !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        width: 290px !important;
-        max-width: 85vw !important;
-        height: 100vh !important;
-        height: 100dvh !important;
-        z-index: 1050 !important;
-        transform: translateX(-100%) !important;
-        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
-        display: flex !important;
-        flex-direction: column !important;
-        box-shadow: 6px 0 32px rgba(0, 0, 0, 0.4) !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-    }
-    .sidebar.active {
-        transform: translateX(0) !important;
-        z-index: 1050 !important;
-    }
-
-    .sidebar-overlay {
-        position: fixed !important;
-        inset: 0 !important;
-        background: rgba(6, 26, 46, 0.65) !important;
-        backdrop-filter: blur(4px) !important;
-        -webkit-backdrop-filter: blur(4px) !important;
-        z-index: 1040 !important;
-        display: none !important;
-        opacity: 0 !important;
-        transition: opacity 0.22s ease !important;
-    }
-    .sidebar-overlay.active {
-        display: block !important;
-        opacity: 1 !important;
-    }
-
-    .sidebar-close-btn {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        width: 32px !important;
-        height: 32px !important;
-        margin-left: auto !important;
-        border-radius: 8px !important;
-        border: 1.5px solid var(--border-color) !important;
-        background: var(--bg-surface-subtle) !important;
-        color: var(--text-secondary) !important;
-        font-size: 0.95rem !important;
-        cursor: pointer !important;
-    }
-    [data-theme="dark"] .sidebar-close-btn {
-        background: #111827 !important;
-        border-color: #1F2937 !important;
-        color: #92EEFF !important;
-    }
-
+    /* Mobile Web App Layout (<= 768px):
+       Hides sidebar drawer, mobile overlay, and hamburger button completely.
+       Full navigation is seamlessly provided by the persistent bottom navigation bar
+       and the interactive bottom sheet menu. */
+    .sidebar,
+    .sidebar-overlay,
     .menu-toggle {
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        width: 36px !important;
-        height: 36px !important;
-        border-radius: 10px !important;
-        border: 1.5px solid var(--border-color) !important;
-        background: var(--bg-surface) !important;
-        color: var(--text-primary) !important;
-        font-size: 0.95rem !important;
-        cursor: pointer !important;
-        margin-right: 8px !important;
-        flex-shrink: 0 !important;
-        transition: all 0.15s ease !important;
-    }
-    .menu-toggle:hover {
-        background: var(--blue-subtle) !important;
-        color: var(--blue-primary) !important;
-        border-color: #30AFFF !important;
-    }
-    [data-theme="dark"] .menu-toggle {
-        background: #1A2333 !important;
-        border-color: #263347 !important;
-        color: #92EEFF !important;
+        display: none !important;
     }
 
     /* Streamline App Header */
     .app-header {
         height: 54px !important;
-        padding: 0 12px !important;
+        padding: 0 14px !important;
         left: 0 !important;
+        width: 100% !important;
     }
     .header-desktop-btn {
         display: none !important;
+    }
+    .header-user {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+    }
+    [data-theme="dark"] .header-user {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
     .header-user-info {
         display: none !important;
     }
     .header-user-avatar {
-        width: 34px !important;
-        height: 34px !important;
-        font-size: 0.85rem !important;
+        width: 36px !important;
+        height: 36px !important;
+        border-radius: 50% !important;
+        border: 2px solid #061A2E !important;
+        box-shadow: 0 3px 0 #061A2E !important;
+        background: #30AFFF !important;
+        color: #061A2E !important;
+        font-weight: 800 !important;
+        font-size: 0.95rem !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+    }
+    [data-theme="dark"] .header-user-avatar {
+        background: #30AFFF !important;
+        color: #061A2E !important;
+        border: 2px solid #30AFFF !important;
+        box-shadow: 0 3px 0 #000000, 0 4px 0 1px rgba(48, 175, 255, 0.45) !important;
+    }
+    .header-user:active .header-user-avatar {
+        transform: translateY(2px) !important;
+        box-shadow: 0 1px 0 #061A2E !important;
+    }
+    [data-theme="dark"] .header-user:active .header-user-avatar {
+        box-shadow: 0 1px 0 #000000 !important;
     }
     .page-title {
         font-size: 0.98rem !important;
@@ -8360,11 +8323,13 @@ h1, h2, h3, h4,
     background: #92EEFF !important;
 }
 
-.header-user {
-    background: #FFFFFF !important;
-    border: 2px solid #061A2E !important;
-    box-shadow: 0 3px 0 #061A2E !important;
-    border-radius: 9999px !important;
+@media (min-width: 769px) {
+    .header-user {
+        background: #FFFFFF !important;
+        border: 2px solid #061A2E !important;
+        box-shadow: 0 3px 0 #061A2E !important;
+        border-radius: 9999px !important;
+    }
 }
 
 /* Page Title in App Header / Navbar (Desktop Active Menu Name) */
@@ -9162,10 +9127,12 @@ textarea.form-control {
     box-shadow: 0 3px 0 #000000, 0 4px 0 1px rgba(48, 175, 255, 0.45) !important;
 }
 
-[data-theme="dark"] .header-user {
-    background: #0E2238 !important;
-    border: 2px solid #30AFFF !important;
-    box-shadow: 0 3px 0 #000000, 0 4px 0 1px rgba(48, 175, 255, 0.45) !important;
+@media (min-width: 769px) {
+    [data-theme="dark"] .header-user {
+        background: #0E2238 !important;
+        border: 2px solid #30AFFF !important;
+        box-shadow: 0 3px 0 #000000, 0 4px 0 1px rgba(48, 175, 255, 0.45) !important;
+    }
 }
 
 [data-theme="dark"] .logout-modal-dialog,
@@ -9501,6 +9468,19 @@ textarea.form-control {
     .meeting-datetime-grid {
         grid-template-columns: 1fr;
         gap: var(--space-4);
+    }
+}
+
+/* Final Mobile Admin Header User Avatar Safeguards */
+@media (max-width: 768px) {
+    .header-user,
+    [data-theme="dark"] .header-user {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        outline: none !important;
     }
 }
 
