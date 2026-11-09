@@ -785,6 +785,7 @@
             }
         });
     </script>
+    @include('partials.popup_alert')
     @stack('scripts')
 </body>
 </html>

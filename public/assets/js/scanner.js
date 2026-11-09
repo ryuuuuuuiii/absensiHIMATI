@@ -10,9 +10,14 @@ let html5QrCode = null;
 let scannedUsers = [];
 let isScanning = false;
 let isProcessingScan = false;
+let isScannerPaused = false;
+let isTorchOn = false;
+let torchSupported = false;
 let lastScannedCode = null;
 let lastScannedTime = 0;
 let scanResultTimeout = null;
+const recentlyScannedCodes = new Set();
+const recentlyScannedUserIds = new Set();
 const scannedQrCodes = new Set(
     (typeof SCANNED_QR_CODES !== 'undefined' && Array.isArray(SCANNED_QR_CODES)) ? SCANNED_QR_CODES : []
 );
@@ -63,13 +68,13 @@ function startScanning() {
     if (isScanning) return;
     
     const config = {
-        fps: 20,
+        fps: 10, // Optimal 10 FPS: eliminates CPU throttling, lag, and queue buildup on mobile devices
         qrbox: function(viewfinderWidth, viewfinderHeight) {
             const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-            const edge = Math.max(220, Math.floor(minEdge * 0.72));
+            // Generous scanning area (85%) so users can scan effortlessly without pinpoint centering
+            const edge = Math.max(240, Math.floor(minEdge * 0.85));
             return { width: edge, height: edge };
         },
-        aspectRatio: 1.0,
         disableFlip: false,
         experimentalFeatures: {
             useBarCodeDetectorIfSupported: true
@@ -83,6 +88,8 @@ function startScanning() {
         onScanError
     ).then(() => {
         isScanning = true;
+        isScannerPaused = false;
+        setTimeout(checkAndSetupTorch, 1000);
     }).catch(err => {
         console.warn("Camera environment failed, falling back to user facing:", err);
         // Try with user-facing camera
@@ -93,6 +100,7 @@ function startScanning() {
             onScanError
         ).then(() => {
             isScanning = true;
+            isScannerPaused = false;
         }).catch(err2 => {
             showToast('error', 'Kamera Error', 'Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.');
         });
@@ -101,9 +109,62 @@ function startScanning() {
 
 function stopScanning() {
     if (html5QrCode && isScanning) {
+        if (isTorchOn) {
+            toggleTorch();
+        }
         html5QrCode.stop().then(() => {
             isScanning = false;
+            isScannerPaused = false;
         }).catch(console.error);
+    }
+}
+
+// ============================================
+// TORCH / FLASHLIGHT CONTROLS
+// ============================================
+function checkAndSetupTorch() {
+    try {
+        if (!html5QrCode) return;
+        const capabilities = html5QrCode.getRunningTrackCameraCapabilities();
+        if (capabilities && typeof capabilities.torchFeature === 'function') {
+            const torch = capabilities.torchFeature();
+            if (torch && torch.isSupported()) {
+                torchSupported = true;
+                const btnTorch = document.getElementById('btnTorch');
+                if (btnTorch) {
+                    btnTorch.style.display = 'inline-flex';
+                }
+            }
+        }
+    } catch (e) {
+        // Torch capability check not supported or failed
+    }
+}
+
+async function toggleTorch() {
+    if (!html5QrCode) return;
+    try {
+        const capabilities = html5QrCode.getRunningTrackCameraCapabilities();
+        if (capabilities && typeof capabilities.torchFeature === 'function') {
+            const torch = capabilities.torchFeature();
+            if (torch && torch.isSupported()) {
+                isTorchOn = !isTorchOn;
+                await torch.apply(isTorchOn);
+                const btnTorch = document.getElementById('btnTorch');
+                const torchText = document.getElementById('torchText');
+                if (btnTorch) {
+                    if (isTorchOn) {
+                        btnTorch.classList.add('active');
+                        if (torchText) torchText.textContent = 'Senter Aktif';
+                    } else {
+                        btnTorch.classList.remove('active');
+                        if (torchText) torchText.textContent = 'Senter';
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('Torch toggle error:', e);
     }
 }
 
@@ -111,57 +172,75 @@ function stopScanning() {
 // SCAN HANDLERS
 // ============================================
 function onScanSuccess(decodedText, decodedResult) {
-    if (isProcessingScan) {
-        return; // Ignore frames while previous scan is currently processing
+    // 1. If scanner is currently processing or in cooldown, ignore frames
+    if (isProcessingScan || isScannerPaused) {
+        return;
     }
 
     const rawText = (typeof decodedText === 'string') ? decodedText.trim() : '';
     if (!rawText) return;
 
     const now = Date.now();
-    // Prevent immediate re-triggering of the same QR string within 2.5 seconds
-    if (rawText === lastScannedCode && (now - lastScannedTime) < 2500) {
-        return;
-    }
 
+    // 2. Parse payload: supports JSON object or plain QR code string
     let data = null;
     try {
         data = JSON.parse(rawText);
     } catch (e) {
-        if (rawText.startsWith('HIMATI-USR-')) {
-            data = {
-                qr_code: rawText
-            };
-        }
+        data = {
+            qr_code: rawText
+        };
     }
 
     if (!data || (!data.id && !data.qr_code)) {
-        lastScannedCode = rawText;
-        lastScannedTime = now;
-        showScanResult('error', 'QR Code Tidak Valid', 'Data QR tidak sesuai format pengurus HIMA TI.');
-        playSound('error');
         return;
     }
 
-    // Check if already scanned locally
-    const isAlreadyScanned = (data.qr_code && scannedQrCodes.has(data.qr_code)) ||
-        (data.id && (SCANNED_USER_IDS.includes(data.id) || scannedUsers.includes(data.id)));
+    const userIdNum = data.id ? Number(data.id) : null;
+    const qrStr = data.qr_code ? String(data.qr_code).trim() : '';
 
-    if (isAlreadyScanned) {
-        lastScannedCode = rawText;
-        lastScannedTime = now;
-        showScanResult('duplicate', 'Sudah Di-Scan!', 
-            `${data.nama || 'Peserta'} (${data.departemen || ''}) sudah tercatat hadir.`);
+    // 3. SILENT IGNORE: If this person's QR was just scanned in the last 15 seconds,
+    // do NOT re-submit and do NOT spam duplicate alerts or beeps while holding the phone!
+    if ((qrStr && recentlyScannedCodes.has(qrStr)) || (userIdNum && recentlyScannedUserIds.has(userIdNum))) {
+        return;
+    }
+
+    // 4. Check if already attended earlier in this meeting (preloaded or previous scan)
+    const isAlreadyAttended = (qrStr && scannedQrCodes.has(qrStr)) ||
+        (userIdNum && (
+            SCANNED_USER_IDS.some(id => Number(id) === userIdNum) ||
+            scannedUsers.some(id => Number(id) === userIdNum)
+        ));
+
+    if (isAlreadyAttended) {
+        if (qrStr) recentlyScannedCodes.add(qrStr);
+        if (userIdNum) recentlyScannedUserIds.add(userIdNum);
+        setTimeout(() => {
+            if (qrStr) recentlyScannedCodes.delete(qrStr);
+            if (userIdNum) recentlyScannedUserIds.delete(userIdNum);
+        }, 10000);
+
+        showScanResult('duplicate', 'Sudah Di-Scan Sebelumnya!', 
+            `${escapeHTML(data.nama || 'Peserta')} (${escapeHTML(data.departemen || '')}) sudah tercatat hadir.`);
         playSound('duplicate');
+
+        // Lock briefly (2.5s) to avoid buzzing
+        isScannerPaused = true;
+        setTimeout(() => {
+            isScannerPaused = false;
+        }, 2500);
         return;
     }
 
-    // Lock processing immediately to prevent duplicate requests from subsequent frames
+    // 5. Lock scanner immediately to prevent duplicate requests from subsequent frames
     isProcessingScan = true;
+    isScannerPaused = true;
     lastScannedCode = rawText;
     lastScannedTime = now;
+    if (qrStr) recentlyScannedCodes.add(qrStr);
+    if (userIdNum) recentlyScannedUserIds.add(userIdNum);
 
-    // Process scan
+    // Process scan via API
     processAttendance(data);
 }
 
@@ -194,21 +273,22 @@ async function processAttendance(userData) {
 
         if (result.success) {
             const user = result.user || userData;
+            const uId = user.id ? Number(user.id) : (userData.id ? Number(userData.id) : null);
+            const uQr = user.qr_code || userData.qr_code;
 
             // Track scanned ID & QR Code
-            if (user.id) {
-                if (!scannedUsers.includes(user.id)) {
-                    scannedUsers.push(user.id);
+            if (uId) {
+                if (!scannedUsers.some(x => Number(x) === uId)) {
+                    scannedUsers.push(uId);
                 }
-                if (!SCANNED_USER_IDS.includes(user.id)) {
-                    SCANNED_USER_IDS.push(user.id);
+                if (!SCANNED_USER_IDS.some(x => Number(x) === uId)) {
+                    SCANNED_USER_IDS.push(uId);
                 }
+                recentlyScannedUserIds.add(uId);
             }
-            if (userData.qr_code) {
-                scannedQrCodes.add(userData.qr_code);
-            }
-            if (user.qr_code) {
-                scannedQrCodes.add(user.qr_code);
+            if (uQr) {
+                scannedQrCodes.add(uQr);
+                recentlyScannedCodes.add(uQr);
             }
 
             // Update UI
@@ -224,33 +304,60 @@ async function processAttendance(userData) {
                     : (user.sp_reason ? `Pelanggaran: ${user.sp_reason}` : 'Pelanggaran disiplin');
                 spInfoText = ` • Status Akun: ${spLabelText} (${spDetailText})`;
             }
-            showScanResult('success', 'Berhasil!' + (user.sp_level > 0 ? ` [${user.sp_label || ('SP ' + user.sp_level)}]` : ''), 
-                `${user.nama} (${user.departemen || ''}${badgeText}) berhasil tercatat hadir${spInfoText}.`);
+
+            showScanResult('success', 'Berhasil! ✓' + (user.sp_level > 0 ? ` [${user.sp_label || ('SP ' + user.sp_level)}]` : ''), 
+                `<strong>${escapeHTML(user.nama || 'Peserta')}</strong> (${escapeHTML(user.departemen || '')}${badgeText}) berhasil tercatat hadir${spInfoText}.`);
             playSound('success');
 
             // Save state
             saveState();
+
+            // Retain in recentlyScanned for 15 seconds: prevents repeated triggers if phone stays in front of lens
+            setTimeout(() => {
+                if (uId) recentlyScannedUserIds.delete(uId);
+                if (uQr) recentlyScannedCodes.delete(uQr);
+            }, 15000);
+
+            // Cooldown of 2.5s before ready for the NEXT person to scan
+            setTimeout(() => {
+                isProcessingScan = false;
+                isScannerPaused = false;
+            }, 2500);
+
         } else if (result.duplicate) {
+            const uId = userData.id ? Number(userData.id) : null;
+            if (uId && !SCANNED_USER_IDS.some(x => Number(x) === uId)) {
+                SCANNED_USER_IDS.push(uId);
+            }
             if (userData.qr_code) {
                 scannedQrCodes.add(userData.qr_code);
             }
-            if (userData.id && !SCANNED_USER_IDS.includes(userData.id)) {
-                SCANNED_USER_IDS.push(userData.id);
-            }
+
             showScanResult('duplicate', 'Sudah Di-Scan!', result.message);
             playSound('duplicate');
+
+            setTimeout(() => {
+                isProcessingScan = false;
+                isScannerPaused = false;
+            }, 2500);
+
         } else {
             showScanResult('error', 'Presensi Ditolak', result.message || 'Gagal mencatat kehadiran.');
             playSound('error');
+
+            setTimeout(() => {
+                isProcessingScan = false;
+                isScannerPaused = false;
+            }, 2000);
         }
     } catch (error) {
         console.error('Process error:', error);
         showScanResult('error', 'Error', 'Gagal memproses data absensi.');
-    } finally {
-        // Unlock after cooldown to prevent jitter
+
         setTimeout(() => {
             isProcessingScan = false;
-        }, 1200);
+            isScannerPaused = false;
+        }, 2000);
     }
 }
 
@@ -303,11 +410,16 @@ function addToScannedList(userData, scannedAt) {
     if (!list) return;
 
     // Prevent duplicate entries in DOM
-    if (userData.id && list.querySelector(`.scanned-item[data-user-id="${userData.id}"]`)) {
+    const numId = userData.id ? Number(userData.id) : null;
+    if (numId && list.querySelector(`.scanned-item[data-user-id="${numId}"]`)) {
         return;
     }
-    if (userData.qr_code && list.querySelector(`.scanned-item[data-qr="${userData.qr_code}"]`)) {
-        return;
+    const cleanQr = userData.qr_code ? String(userData.qr_code).trim() : '';
+    if (cleanQr) {
+        const existingByQr = Array.from(list.querySelectorAll('.scanned-item')).some(el => {
+            return (el.getAttribute('data-qr') || '').trim() === cleanQr;
+        });
+        if (existingByQr) return;
     }
 
     const emptyState = document.getElementById('emptyState');
@@ -454,12 +566,12 @@ function restoreState() {
     document.querySelectorAll('#scannedList .scanned-item').forEach(el => {
         const qr = el.getAttribute('data-qr');
         const uid = el.getAttribute('data-user-id');
-        if (qr) {
-            scannedQrCodes.add(qr);
+        if (qr && qr.trim()) {
+            scannedQrCodes.add(qr.trim());
         }
         if (uid) {
             const numId = parseInt(uid, 10);
-            if (!isNaN(numId) && !SCANNED_USER_IDS.includes(numId)) {
+            if (!isNaN(numId) && !SCANNED_USER_IDS.some(x => Number(x) === numId)) {
                 SCANNED_USER_IDS.push(numId);
             }
         }
@@ -473,12 +585,15 @@ function restoreState() {
                 scannedUsers = state.scannedUsers || [];
                 // Merge with server-side scanned IDs
                 state.scannedUserIds?.forEach(id => {
-                    if (!SCANNED_USER_IDS.includes(id)) {
-                        SCANNED_USER_IDS.push(id);
+                    const numId = parseInt(id, 10);
+                    if (!isNaN(numId) && !SCANNED_USER_IDS.some(x => Number(x) === numId)) {
+                        SCANNED_USER_IDS.push(numId);
                     }
                 });
                 state.scannedQrCodes?.forEach(qr => {
-                    scannedQrCodes.add(qr);
+                    if (qr && String(qr).trim()) {
+                        scannedQrCodes.add(String(qr).trim());
+                    }
                 });
             }
         } catch (e) {
@@ -671,57 +786,73 @@ window.previewDocPhoto = previewDocPhoto;
 window.openLatestDocPhoto = openLatestDocPhoto;
 window.closeDocPhotoModalDirect = closeDocPhotoModalDirect;
 window.closeDocPhotoModal = closeDocPhotoModal;
+window.toggleTorch = toggleTorch;
 
 // ============================================
 // FINISH ATTENDANCE
 // ============================================
 async function finishAttendance() {
-    if (!confirm('Apakah Anda yakin ingin menyelesaikan absensi? Peserta yang belum scan akan dicatat sebagai Alpha.')) {
+    const confirmMessage = 'Apakah Anda yakin ingin menyelesaikan absensi? Peserta yang belum scan akan dicatat sebagai Alpha.';
+
+    const executeFinish = async () => {
+        try {
+            const response = await fetch(BASE_URL + '/meeting/process/process_scan.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': CSRF_TOKEN
+                },
+                body: JSON.stringify({
+                    action: 'finish',
+                    meeting_id: MEETING_ID,
+                    csrf_token: CSRF_TOKEN
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                stopScanning();
+                clearState();
+                showToast('success', 'Selesai!', 'Absensi berhasil diselesaikan.');
+                
+                let targetUrl = result.redirect_url;
+                if (!targetUrl) {
+                    if (typeof PUBLIC_HASIL_URL !== 'undefined' && PUBLIC_HASIL_URL) {
+                        targetUrl = PUBLIC_HASIL_URL;
+                    } else if (typeof MEETING_DATA !== 'undefined' && MEETING_DATA.unique_link) {
+                        targetUrl = BASE_URL + '/rapat/' + MEETING_DATA.unique_link + '/hasil';
+                    } else {
+                        targetUrl = BASE_URL + '/meeting/detail.php?id=' + MEETING_ID;
+                    }
+                }
+                
+                setTimeout(() => {
+                    window.location.href = targetUrl;
+                }, 1200);
+            } else {
+                showToast('error', 'Error', result.message || 'Gagal menyelesaikan absensi.');
+            }
+        } catch (error) {
+            showToast('error', 'Error', 'Gagal menghubungi server.');
+        }
+    };
+
+    if (typeof window.showConfirmPopup === 'function') {
+        window.showConfirmPopup({
+            title: 'Selesaikan Absensi',
+            message: confirmMessage,
+            confirmText: 'Ya, Selesaikan',
+            cancelText: 'Batal',
+            onConfirm: executeFinish
+        });
         return;
     }
-    
-    try {
-        const response = await fetch(BASE_URL + '/meeting/process/process_scan.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': CSRF_TOKEN
-            },
-            body: JSON.stringify({
-                action: 'finish',
-                meeting_id: MEETING_ID,
-                csrf_token: CSRF_TOKEN
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            stopScanning();
-            clearState();
-            showToast('success', 'Selesai!', 'Absensi berhasil diselesaikan.');
-            
-            let targetUrl = result.redirect_url;
-            if (!targetUrl) {
-                if (typeof PUBLIC_HASIL_URL !== 'undefined' && PUBLIC_HASIL_URL) {
-                    targetUrl = PUBLIC_HASIL_URL;
-                } else if (typeof MEETING_DATA !== 'undefined' && MEETING_DATA.unique_link) {
-                    targetUrl = BASE_URL + '/rapat/' + MEETING_DATA.unique_link + '/hasil';
-                } else {
-                    targetUrl = BASE_URL + '/meeting/detail.php?id=' + MEETING_ID;
-                }
-            }
-            
-            setTimeout(() => {
-                window.location.href = targetUrl;
-            }, 1200);
-        } else {
-            showToast('error', 'Error', result.message || 'Gagal menyelesaikan absensi.');
-        }
-    } catch (error) {
-        showToast('error', 'Error', 'Gagal menghubungi server.');
+
+    if (confirm(confirmMessage)) {
+        executeFinish();
     }
 }
 

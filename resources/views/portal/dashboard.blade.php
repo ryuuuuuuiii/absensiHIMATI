@@ -100,6 +100,19 @@
             </div>
         </div>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const spKey = 'sp_ack_{{ $member->id }}_{{ $member->sp_level }}';
+            if (!sessionStorage.getItem(spKey) && typeof window.showPopupAlert === 'function') {
+                sessionStorage.setItem(spKey, '1');
+                window.showPopupAlert(
+                    '{{ $member->sp_level >= 3 ? "danger" : "warning" }}',
+                    'Pemberitahuan {{ $member->sp_full_label }}',
+                    '<strong>Status Akun Anda Saat Ini:</strong> {{ $member->sp_full_label }}<br><br><strong>Pelanggaran:</strong> {{ addslashes($member->sp_reason_display) }}<br><br><small>Silakan hubungi BPH Inti atau buka menu Pesan untuk informasi pemulihan akun.</small>'
+                );
+            }
+        });
+    </script>
 @elseif ($currentAlphaStreak > 0)
     <div class="sp-portal-alert sp-level-streak mb-6">
         <div class="sp-portal-alert-icon">

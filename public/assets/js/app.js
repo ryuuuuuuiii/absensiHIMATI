@@ -39,9 +39,13 @@ document.addEventListener('click', (e) => {
 });
 
 // ============================================
-// TOAST NOTIFICATIONS
+// TOAST NOTIFICATIONS & WARNING POPUP
 // ============================================
 function showToast(type, title, message, duration = 4000) {
+    if (type === 'warning' && typeof window.showPopupAlert === 'function') {
+        window.showPopupAlert('warning', title, message);
+    }
+
     const container = document.getElementById('toastContainer');
     if (!container) return;
 

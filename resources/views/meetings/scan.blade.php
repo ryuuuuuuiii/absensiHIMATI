@@ -91,12 +91,16 @@
     <!-- Left Column: Scanner -->
     <div style="min-width: 0;">
         <div class="card">
-            <h3 class="card-title mb-3" style="font-size: 1.05rem;">
-                <i class="fas fa-camera"></i> Arahkan Kamera ke QR Code Peserta
+            <h3 class="card-title mb-3" style="font-size: 1.05rem; display: flex; align-items: center; justify-content: space-between;">
+                <span><i class="fas fa-camera"></i> Arahkan Kamera ke QR Code Peserta</span>
+                <button type="button" id="btnTorch" class="btn-torch" style="display: none;" onclick="toggleTorch()" title="Nyalakan/Matikan Senter HP">
+                    <i class="fas fa-bolt"></i> <span id="torchText">Senter</span>
+                </button>
             </h3>
             
             <div class="scanner-container">
                 <div id="qr-reader" class="scanner-viewport"></div>
+                <div class="scanner-laser"></div>
             </div>
             
             <!-- Scan Result Display -->
@@ -290,7 +294,53 @@
         font-weight: 500 !important;
     }
 
-    /* Scanner Viewport */
+    /* Scanner Viewport & Laser */
+    .scanner-container {
+        position: relative !important;
+        overflow: hidden !important;
+        border-radius: var(--radius-xl) !important;
+    }
+    .scanner-laser {
+        position: absolute;
+        top: 10%;
+        left: 8%;
+        right: 8%;
+        height: 2.5px;
+        background: linear-gradient(90deg, transparent 0%, #30AFFF 50%, transparent 100%);
+        box-shadow: 0 0 10px #30AFFF, 0 0 20px #30AFFF;
+        pointer-events: none;
+        z-index: 10;
+        animation: laserScan 2.4s ease-in-out infinite alternate;
+    }
+    @keyframes laserScan {
+        0% { top: 12%; opacity: 0.35; }
+        50% { opacity: 1; }
+        100% { top: 86%; opacity: 0.35; }
+    }
+
+    .btn-torch {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 11px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        border-radius: 20px;
+        background: rgba(245, 158, 11, 0.15);
+        border: 1.5px solid #F59E0B;
+        color: #F59E0B;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .btn-torch:hover {
+        background: rgba(245, 158, 11, 0.25);
+    }
+    .btn-torch.active {
+        background: #F59E0B !important;
+        color: #061A2E !important;
+        box-shadow: 0 0 12px rgba(245, 158, 11, 0.6) !important;
+    }
+
     .scanner-viewport,
     #qr-reader {
         width: 100% !important;
