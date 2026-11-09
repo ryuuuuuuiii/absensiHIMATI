@@ -69,7 +69,7 @@
         $portalMember = auth('member')->user();
     @endphp
 
-    <div class="app-wrapper">
+    <div class="app-wrapper portal-wrapper">
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logos">

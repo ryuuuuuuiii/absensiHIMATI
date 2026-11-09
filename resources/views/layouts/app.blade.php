@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Sistem Absensi Digital HIMA TI Politeknik Hasnur">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Admin HIMA TI">
     <meta name="color-scheme" content="light dark">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F4FAFF">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#071320">
@@ -50,7 +54,7 @@
 <body>
     <div class="bg-animated"></div>
     
-    <div class="app-wrapper">
+    <div class="app-wrapper admin-wrapper">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
@@ -75,6 +79,9 @@
                     <span class="sidebar-brand-title">HIMA TI</span>
                     <span class="sidebar-brand-sub">Panel Admin</span>
                 </div>
+                <button type="button" class="sidebar-close-btn" onclick="toggleSidebar(event)" aria-label="Tutup Menu">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             
             <nav class="sidebar-nav">
@@ -154,13 +161,13 @@
         </aside>
         
         <!-- Mobile Overlay -->
-        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(event)"></div>
         
         <!-- Main Content Area -->
         <div class="main-content">
             <header class="app-header">
                 <div class="header-left">
-                    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+                    <button class="menu-toggle" onclick="toggleSidebar(event)" aria-label="Toggle menu" title="Buka Menu Admin">
                         <i class="fas fa-bars"></i>
                     </button>
                     <div class="page-title">
@@ -169,7 +176,16 @@
                     </div>
                 </div>
                 <div class="header-right">
-                    <div class="header-user">
+                    @php
+                        $pendingFeedbackCount = \App\Models\Feedback::where('status', 'pending')->count();
+                    @endphp
+                    @if($pendingFeedbackCount > 0)
+                        <a href="{{ route('feedbacks.index') }}" class="header-action-btn" title="{{ $pendingFeedbackCount }} Feedback Perlu Ditinjau">
+                            <i class="fas fa-comment-dots"></i>
+                            <span class="header-badge-count">{{ $pendingFeedbackCount }}</span>
+                        </a>
+                    @endif
+                    <div class="header-user" onclick="openAdminLogoutModal()" style="cursor: pointer;" title="Klik untuk keluar / akun">
                         <div class="header-user-avatar">
                             {{ auth()->check() ? substr(auth()->user()->nama, 0, 1) : 'A' }}
                         </div>
@@ -228,6 +244,43 @@
         </div>
     </div>
     
+    <!-- Admin Mobile Web App Bottom Navigation Bar -->
+    <nav class="portal-bottom-nav admin-bottom-nav" aria-label="Navigasi Bawah Admin">
+        <a href="{{ route('dashboard') }}" class="portal-nav-tab tab-beranda {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+            <div class="tab-icon-bubble">
+                <i class="fas fa-th-large"></i>
+            </div>
+            <span>Beranda</span>
+        </a>
+        <a href="{{ route('members.index') }}" class="portal-nav-tab tab-anggota {{ request()->routeIs('members.*') && !request()->routeIs('members.generate_qr*') && !request()->routeIs('members.accounts*') ? 'active' : '' }}">
+            <div class="tab-icon-bubble">
+                <i class="fas fa-users-cog"></i>
+            </div>
+            <span>Anggota</span>
+        </a>
+        <a href="{{ route('meetings.index') }}" class="portal-nav-tab tab-highlight {{ request()->routeIs('meetings.*') ? 'active' : '' }}" title="Kelola Rapat">
+            <div class="tab-icon-bubble">
+                <i class="fas fa-clipboard-list"></i>
+            </div>
+            <span>Rapat</span>
+        </a>
+        <a href="{{ route('reports.index') }}" class="portal-nav-tab tab-laporan {{ request()->routeIs('reports.*') ? 'active' : '' }}">
+            <div class="tab-icon-bubble">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <span>Laporan</span>
+        </a>
+        <button type="button" class="portal-nav-tab tab-menu {{ request()->routeIs('events.*') || request()->routeIs('announcements.*') || request()->routeIs('feedbacks.*') || request()->routeIs('members.generate_qr*') || request()->routeIs('members.accounts*') || request()->routeIs('settings.*') ? 'active' : '' }}" onclick="toggleSidebar(event);" aria-label="Buka Menu Admin" style="background: none; border: none; cursor: pointer; padding: 0;">
+            <div class="tab-icon-bubble" style="position: relative;">
+                <i class="fas fa-bars"></i>
+                @if(isset($pendingFeedbackCount) && $pendingFeedbackCount > 0)
+                    <span class="nav-tab-badge-dot"></span>
+                @endif
+            </div>
+            <span>Menu</span>
+        </button>
+    </nav>
+    
     <!-- Modal Konfirmasi Logout Admin -->
     <div class="logout-modal-overlay" id="adminLogoutModal" onclick="closeAdminLogoutModal(event)">
         <div class="logout-modal-dialog" onclick="event.stopPropagation()">
@@ -259,6 +312,12 @@
         window.CSRF_TOKEN = "{{ csrf_token() }}";
 
         function openAdminLogoutModal() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+                if (overlay) overlay.classList.remove('active');
+            }
             const modal = document.getElementById('adminLogoutModal');
             if (modal) {
                 modal.classList.add('active');

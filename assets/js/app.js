@@ -6,21 +6,36 @@
 // ============================================
 // SIDEBAR TOGGLE
 // ============================================
-function toggleSidebar() {
+function toggleSidebar(e) {
+    if (e && typeof e.stopPropagation === 'function') {
+        e.stopPropagation();
+    }
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
-    sidebar.classList.toggle('active');
-    overlay.classList.toggle('active');
+    if (!sidebar) return;
+    const isActive = sidebar.classList.toggle('active');
+    if (overlay) {
+        overlay.classList.toggle('active', isActive);
+    }
+    if (window.innerWidth <= 768) {
+        document.body.style.overflow = isActive ? 'hidden' : '';
+    }
 }
 
 // Close sidebar on outside click (mobile)
 document.addEventListener('click', (e) => {
     const sidebar = document.getElementById('sidebar');
-    const toggle = document.querySelector('.menu-toggle');
-    if (sidebar && sidebar.classList.contains('active') && 
-        !sidebar.contains(e.target) && !toggle.contains(e.target)) {
-        toggleSidebar();
+    if (!sidebar || !sidebar.classList.contains('active')) return;
+
+    // Ignore clicks inside sidebar or on any toggle element
+    if (sidebar.contains(e.target) || 
+        e.target.closest('.menu-toggle') || 
+        e.target.closest('.tab-menu') || 
+        e.target.closest('.sidebar-close-btn')) {
+        return;
     }
+
+    toggleSidebar();
 });
 
 // ============================================
