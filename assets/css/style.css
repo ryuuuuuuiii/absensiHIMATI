@@ -8391,31 +8391,41 @@ h1, h2, h3, h4,
     letter-spacing: 0.01em !important;
 }
 
-/* Di Desktop: sembunyikan logo brand HIMA TI di navbar portal (karena sudah ada 1 di sidebar) & tampilkan nama menu */
+/* Di Desktop: sembunyikan logo brand HIMA TI di navbar (karena sudah ada 1 di sidebar) & tampilkan nama menu */
 @media (min-width: 769px) {
-    .portal-navbar .portal-nav-brand {
+    .portal-navbar .portal-nav-brand,
+    .app-header .portal-nav-brand {
         display: none !important;
     }
-    .portal-navbar .portal-header-page-title {
+    .portal-navbar .portal-header-page-title,
+    .app-header .page-title {
         display: inline-flex !important;
     }
-    .portal-page-header {
+    .portal-page-header,
+    .admin-page-header {
         display: none !important;
     }
 }
 
 /* Di Mobile: tampilkan brand logo HIMA TI di navbar & sembunyikan title header (sidebar disembunyikan di HP) */
 @media (max-width: 768px) {
-    .portal-navbar .portal-nav-brand {
+    .portal-navbar .portal-nav-brand,
+    .app-header .portal-nav-brand {
         display: inline-flex !important;
     }
-    .portal-navbar .portal-header-page-title {
+    .portal-navbar .portal-header-page-title,
+    .app-header .page-title {
         display: none !important;
+    }
+    .portal-page-header,
+    .admin-page-header {
+        display: flex !important;
     }
 }
 
 /* Page Title Icon Badge */
-.portal-page-header {
+.portal-page-header,
+.admin-page-header {
     border-bottom: 2px solid #061A2E !important;
 }
 
@@ -9187,11 +9197,17 @@ textarea.form-control {
 }
 
 [data-theme="dark"] .app-header .page-title i,
-[data-theme="dark"] .portal-header-page-title i {
+[data-theme="dark"] .portal-header-page-title i,
+[data-theme="dark"] .portal-page-title i {
     background: #0E2238 !important;
     border-color: #30AFFF !important;
     box-shadow: 0 3px 0 #000000, 0 4px 0 1px rgba(48, 175, 255, 0.45) !important;
     color: #92EEFF !important;
+}
+
+[data-theme="dark"] .portal-page-header,
+[data-theme="dark"] .admin-page-header {
+    border-bottom: 2px solid rgba(48, 175, 255, 0.4) !important;
 }
 
 [data-theme="dark"] .sidebar-header {

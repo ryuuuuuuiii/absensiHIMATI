@@ -53,16 +53,17 @@
 </head>
 <body>
     <div class="bg-animated"></div>
+
+    @php
+        $logo1 = \App\Models\Setting::getLogo1Url();
+        $logo2 = \App\Models\Setting::getLogo2Url();
+    @endphp
     
     <div class="app-wrapper admin-wrapper">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logos">
-                    @php
-                        $logo1 = \App\Models\Setting::getLogo1Url();
-                        $logo2 = \App\Models\Setting::getLogo2Url();
-                    @endphp
                     @if ($logo1)
                         <img src="{{ $logo1 }}" alt="Logo Politeknik Hasnur" class="sidebar-logo-img">
                     @else
@@ -167,10 +168,29 @@
         <div class="main-content">
             <header class="app-header">
                 <div class="header-left">
-                    <button class="menu-toggle" onclick="toggleSidebar(event)" aria-label="Toggle menu" title="Buka Menu Admin">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <div class="page-title">
+                    {{-- Di mobile (karena sidebar disembunyikan di HP), tampilkan brand logo HIMA TI persis seperti di portal --}}
+                    <a href="{{ route('dashboard') }}" class="portal-nav-brand admin-nav-brand" title="HIMA TI — Panel Admin">
+                        <div class="portal-nav-logos">
+                            @if ($logo1)
+                                <img src="{{ $logo1 }}" alt="Logo Politeknik Hasnur" class="portal-nav-logo">
+                            @else
+                                <span class="portal-nav-logo-placeholder"><i class="fas fa-university"></i></span>
+                            @endif
+
+                            @if ($logo2)
+                                <img src="{{ $logo2 }}" alt="Logo HIMA TI" class="portal-nav-logo">
+                            @else
+                                <span class="portal-nav-logo-placeholder"><i class="fas fa-graduation-cap"></i></span>
+                            @endif
+                        </div>
+                        <div class="portal-nav-text">
+                            <span class="portal-nav-title">HIMA TI</span>
+                            <span class="portal-nav-subtitle">Politeknik Hasnur</span>
+                        </div>
+                    </a>
+
+                    {{-- Di desktop (karena sidebar sudah ada logo HIMA TI), tampilkan nama menu aktif --}}
+                    <div class="page-title app-header-page-title">
                         @yield('page_icon')
                         <span class="header-page-text">@yield('title', 'Dashboard')</span>
                     </div>
@@ -196,6 +216,18 @@
                     </div>
                 </div>
             </header>
+
+            <!-- In-Page Header for Mobile (Shows current page title under navbar) -->
+            <div class="portal-page-header admin-page-header">
+                <h1 class="portal-page-title">
+                    @hasSection('page_icon')
+                        @yield('page_icon')
+                    @else
+                        <i class="fas fa-th-large"></i>
+                    @endif
+                    <span>@yield('title', 'Dashboard')</span>
+                </h1>
+            </div>
             
             <div class="toast-container" id="toastContainer"></div>
             
