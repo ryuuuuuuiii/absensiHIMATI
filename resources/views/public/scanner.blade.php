@@ -2,7 +2,7 @@
 
 @section('title', 'Scanner Absensi — ' . $meeting->jenis_label)
 @section('page_heading', config('himati.app_name'))
-@section('page_subheading', 'Scanner Kamera Absensi — ' . $meeting->jenis_label)
+@section('page_subheading', 'Scanner Presensi — ' . $meeting->jenis_label)
 @section('container_width', '900px')
 
 @section('content')
@@ -73,13 +73,15 @@
         </div>
 
         <div class="meeting-attendance-counter-card">
-            <div class="counter-label"><i class="fas fa-users"></i> Kehadiran</div>
+            <div class="counter-info-col">
+                <div class="counter-label"><i class="fas fa-users"></i> Kehadiran</div>
+                <div class="counter-subtext">Peserta Tercatat</div>
+            </div>
             <div class="counter-number">
                 <span id="hadirCounter" class="counter-hadir">{{ $hadirCount }}</span>
                 <span class="counter-divider">/</span>
                 <span id="totalCounter" class="counter-total">{{ $attendances->count() }}</span>
             </div>
-            <div class="counter-subtext">Peserta Tercatat</div>
         </div>
     </div>
 </div>
@@ -88,7 +90,7 @@
     <!-- Left Column: Scanner -->
     <div style="min-width: 0;">
         <div class="card">
-            <h3 class="card-title mb-4">
+            <h3 class="card-title mb-3" style="font-size: 1.05rem;">
                 <i class="fas fa-camera"></i> Arahkan Kamera ke QR Code Peserta
             </h3>
             
@@ -251,14 +253,35 @@
 
 @push('styles')
 <style>
+    /* Agenda Note in Dark Mode */
+    [data-theme="dark"] .meeting-agenda-note {
+        background: rgba(14, 32, 51, 0.85) !important;
+        border: 1px solid rgba(48, 175, 255, 0.35) !important;
+        border-left: 3.5px solid #30AFFF !important;
+        border-radius: 10px !important;
+        padding: 8px 14px !important;
+    }
+    [data-theme="dark"] .meeting-agenda-note .agenda-icon {
+        color: #30AFFF !important;
+    }
+    [data-theme="dark"] .meeting-agenda-note .agenda-label {
+        color: #92EEFF !important;
+        font-weight: 700 !important;
+    }
+    [data-theme="dark"] .meeting-agenda-note .agenda-text {
+        color: #F8FAFC !important;
+        font-weight: 500 !important;
+    }
+
+    /* Scanner Viewport */
     .scanner-viewport,
     #qr-reader {
         width: 100% !important;
-        border: none !important;
+        border: 2px solid rgba(48, 175, 255, 0.35) !important;
         background: #000000 !important;
         border-radius: var(--radius-xl) !important;
         overflow: hidden !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
         position: relative !important;
     }
     #qr-reader video {
@@ -277,22 +300,54 @@
     #qr-reader__dashboard {
         padding: 8px !important;
     }
+
+    /* Actions */
     .scan-actions {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+        margin-top: 14px !important;
     }
     .scan-actions .btn {
-        flex: 1;
-        min-width: 140px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 12px 18px;
-        font-size: 0.95rem;
-        font-weight: 600;
+        width: 100% !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 7px !important;
+        padding: 11px 12px !important;
+        font-size: 0.85rem !important;
+        font-weight: 700 !important;
+        border-radius: 12px !important;
+        text-transform: none !important;
+        white-space: nowrap !important;
+        min-width: 0 !important;
+        letter-spacing: 0.01em !important;
     }
+
+    [data-theme="dark"] #btnPhoto {
+        background: rgba(14, 32, 51, 0.9) !important;
+        color: #92EEFF !important;
+        border: 1.5px solid rgba(48, 175, 255, 0.45) !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25) !important;
+    }
+    [data-theme="dark"] #btnPhoto:hover,
+    [data-theme="dark"] #btnPhoto:active {
+        background: #30AFFF !important;
+        color: #061A2E !important;
+    }
+    [data-theme="dark"] #btnFinish {
+        background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35) !important;
+    }
+    [data-theme="dark"] #btnFinish:hover,
+    [data-theme="dark"] #btnFinish:active {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+        box-shadow: 0 6px 18px rgba(16, 185, 129, 0.5) !important;
+        transform: translateY(-1px);
+    }
+
     @media (max-width: 768px) {
         .scanner-grid-container {
             grid-template-columns: 1fr !important;
@@ -300,14 +355,38 @@
         .meeting-header-content {
             flex-direction: column !important;
             align-items: stretch !important;
+            gap: 12px !important;
         }
         .meeting-attendance-counter-card {
             width: 100% !important;
             min-width: unset !important;
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            padding: 12px 18px !important;
+            margin-top: 4px !important;
+            border-radius: 12px !important;
         }
+        .meeting-attendance-counter-card .counter-info-col {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            text-align: left !important;
+            gap: 2px !important;
+        }
+        .meeting-attendance-counter-card .counter-number {
+            font-size: 1.55rem !important;
+            font-weight: 800 !important;
+            line-height: 1 !important;
+        }
+    }
+
+    @media (max-width: 480px) {
         .scan-actions .btn {
-            width: 100% !important;
-            flex: 1 1 100% !important;
+            padding: 10px 6px !important;
+            font-size: 0.80rem !important;
+            gap: 5px !important;
         }
     }
 </style>
