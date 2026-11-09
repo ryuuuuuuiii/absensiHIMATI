@@ -9487,6 +9487,133 @@ textarea.form-control {
     }
 }
 
+/* ==========================================================================
+   ONLINE ATTENDANCE AUTHENTICATED MEMBER CARD
+   ========================================================================== */
+.online-member-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 18px;
+    background: #FFFFFF;
+    border: 2px solid #061A2E;
+    border-radius: 16px;
+    box-shadow: 0 4px 0 #061A2E;
+    margin-bottom: 20px;
+}
+
+[data-theme="dark"] .online-member-card {
+    background: #0E2238;
+    border: 2px solid #30AFFF;
+    box-shadow: 0 4px 0 #000000, 0 5px 0 1px rgba(48, 175, 255, 0.45);
+}
+
+.online-member-avatar {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    border: 2px solid #061A2E;
+    box-shadow: 0 3px 0 #061A2E;
+    background: #30AFFF;
+    color: #061A2E;
+    font-weight: 800;
+    font-size: 1.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.online-member-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+[data-theme="dark"] .online-member-avatar {
+    background: #30AFFF;
+    border-color: #30AFFF;
+    box-shadow: 0 3px 0 #000000;
+    color: #061A2E;
+}
+
+.online-member-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.online-member-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 5px;
+}
+
+.online-member-name {
+    font-size: 1.12rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.25;
+}
+
+.online-member-badges {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.online-member-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    border: 1.5px solid #061A2E;
+    background: #D8FFC5;
+    color: #061A2E;
+}
+
+[data-theme="dark"] .online-member-badge {
+    background: #0B2540;
+    border-color: #30AFFF;
+    color: #92EEFF;
+}
+
+.online-member-switch {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 6px;
+}
+
+.online-member-switch a {
+    color: var(--blue-primary);
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+@media (max-width: 576px) {
+    .online-member-card {
+        padding: 12px 14px;
+        gap: 12px;
+    }
+    .online-member-avatar {
+        width: 46px;
+        height: 46px;
+        font-size: 1.15rem;
+    }
+    .online-member-name {
+        font-size: 1rem;
+    }
+}
+
 /* Final Mobile Admin Header User Avatar Safeguards */
 @media (max-width: 768px) {
     .header-user,

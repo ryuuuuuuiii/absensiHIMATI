@@ -15,6 +15,16 @@ class PublicAttendanceController extends Controller
 
     public function onlineAttend($uniqueLink)
     {
+        $member = auth('member')->user();
+        if (! $member && auth('web')->check()) {
+            $member = Member::where('email', auth('web')->user()->email)->first();
+        }
+
+        if (! $member) {
+            return redirect()->guest(route('login'))
+                ->with('info', 'Silakan login terlebih dahulu dengan akun kepengurusan Anda untuk melakukan presensi online.');
+        }
+
         $meeting = Meeting::with('creator')
             ->where('unique_link', $uniqueLink)
             ->firstOrFail();
@@ -27,44 +37,19 @@ class PublicAttendanceController extends Controller
         $isExpired = in_array($meeting->status, ['completed', 'cancelled'], true)
             || ($meeting->status !== 'scanning' && now()->greaterThan($start->addHours($expiryHours)));
 
-        $attendances = $meeting->attendances()
-            ->with('member')
-            ->get();
+        $eligibilityError = $meeting->checkMemberEligibility($member);
 
-        $registeredUserIds = $attendances->pluck('user_id')->toArray();
+        $existingAttendance = Attendance::where('meeting_id', $meeting->id)
+            ->where('user_id', $member->id)
+            ->first();
 
-        $participantsCollection = collect();
-        foreach ($attendances as $att) {
-            if ($att->member) {
-                $participantsCollection->push((object) [
-                    'user_id' => $att->user_id,
-                    'member' => $att->member,
-                    'status' => $att->status,
-                ]);
-            }
-        }
-
-        // Jika rapat internal, lintas departemen, atau kepanitiaan, Pengurus Inti berhak hadir opsional
-        if (in_array($meeting->jenis_rapat, ['internal_dept', 'lintas_dept', 'kepanitiaan'])) {
-            $intiMembers = Member::where('departemen', 'Inti')
-                ->whereNotIn('id', $registeredUserIds)
-                ->get();
-
-            foreach ($intiMembers as $inti) {
-                $participantsCollection->push((object) [
-                    'user_id' => $inti->id,
-                    'member' => $inti,
-                    'status' => null,
-                    'is_optional_inti' => true,
-                ]);
-            }
-        }
-
-        $participants = $participantsCollection->sortBy(function ($a) {
-            return $a->member ? $a->member->nama_lengkap : '';
-        });
-
-        return view('public.online_attend', compact('meeting', 'participants', 'isExpired'));
+        return view('public.online_attend', compact(
+            'meeting',
+            'member',
+            'isExpired',
+            'eligibilityError',
+            'existingAttendance'
+        ));
     }
 
     public function submitOnlineAttend(Request $request, $uniqueLink)
@@ -81,18 +66,17 @@ class PublicAttendanceController extends Controller
             return back()->with('error', 'Presensi ditolak. Batas waktu absensi untuk rapat ini telah berakhir.');
         }
 
-        $request->validate([
-            'user_id' => ['required', 'exists:users,id'],
-            'status' => ['required', 'in:hadir,izin,sakit'],
-            'keterangan' => ['nullable', 'string', 'max:255'],
-            'bukti_foto' => ['nullable', 'image', 'max:5120'], // 5MB
-        ]);
-
-        $userId = $request->input('user_id');
-        $member = Member::find($userId);
+        $member = auth('member')->user();
+        if (! $member && auth('web')->check()) {
+            $member = Member::where('email', auth('web')->user()->email)->first();
+            if (! $member && $request->filled('user_id')) {
+                $member = Member::find($request->input('user_id'));
+            }
+        }
 
         if (! $member) {
-            return back()->with('error', 'Data anggota tidak ditemukan.');
+            return redirect()->guest(route('login'))
+                ->with('info', 'Silakan login terlebih dahulu dengan akun kepengurusan Anda untuk melakukan presensi online.');
         }
 
         $eligibilityError = $meeting->checkMemberEligibility($member);
@@ -100,6 +84,13 @@ class PublicAttendanceController extends Controller
             return back()->with('error', $eligibilityError);
         }
 
+        $request->validate([
+            'status' => ['required', 'in:hadir,izin,sakit'],
+            'keterangan' => ['nullable', 'string', 'max:255'],
+            'bukti_foto' => ['nullable', 'image', 'max:5120'], // 5MB
+        ]);
+
+        $userId = $member->id;
         $status = $request->input('status');
         $keterangan = $request->input('keterangan');
 
@@ -129,7 +120,7 @@ class PublicAttendanceController extends Controller
             Attendance::create($data);
         }
 
-        return back()->with('success', 'Absensi online berhasil dicatat! Terima kasih.'.$member->sp_attendance_notice);
+        return back()->with('success', 'Presensi online berhasil dicatat atas nama '.$member->nama_lengkap.'! Terima kasih.'.$member->sp_attendance_notice);
     }
 
     public function absentForm($absentLink)

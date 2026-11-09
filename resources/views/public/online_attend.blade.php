@@ -89,48 +89,128 @@
     </div>
 @else
     <div class="card mb-6">
-        <h3 class="card-title mb-4"><i class="fas fa-user-check"></i> Isi Presensi Kehadiran</h3>
-        
+        <h3 class="card-title mb-4"><i class="fas fa-user-check"></i> Form Presensi Kehadiran Online</h3>
+
+        <!-- Verified Member Account Card -->
+        <div class="online-member-card">
+            <div class="online-member-avatar">
+                @if($member->profile_photo_url)
+                    <img src="{{ $member->profile_photo_url }}" alt="{{ $member->nama_lengkap }}">
+                @else
+                    <span>{{ $member->initials }}</span>
+                @endif
+            </div>
+            <div class="online-member-details">
+                <div class="online-member-name-row">
+                    <span class="online-member-name">{{ $member->nama_lengkap }}</span>
+                    <span class="badge badge-success" style="font-size: 0.72rem; padding: 2px 7px;">
+                        <i class="fas fa-check-circle"></i> Terverifikasi
+                    </span>
+                    @if($member->sp_level > 0)
+                        <span class="badge badge-warning" style="font-size: 0.72rem; padding: 2px 7px;">
+                            {{ $member->sp_label }}
+                        </span>
+                    @endif
+                </div>
+                <div class="online-member-badges">
+                    <span class="online-member-badge">
+                        <i class="fas fa-id-card"></i> {{ $member->nim ?? '-' }}
+                    </span>
+                    <span class="online-member-badge">
+                        <i class="fas fa-building"></i> Dept. {{ $member->departemen }}
+                    </span>
+                    <span class="online-member-badge">
+                        <i class="fas fa-briefcase"></i> {{ $member->jabatan }}
+                    </span>
+                    @if($member->isBphInti())
+                        <span class="online-member-badge" style="background: #92EEFF; color: #061A2E;">
+                            <i class="fas fa-crown"></i> Pengurus Inti
+                        </span>
+                    @elseif($member->is_bph)
+                        <span class="online-member-badge" style="background: #92EEFF; color: #061A2E;">
+                            <i class="fas fa-shield-alt"></i> BPH
+                        </span>
+                    @endif
+                </div>
+                <div class="online-member-switch">
+                    <span>Presensi otomatis dicatat untuk akun ini. Bukan Anda? </span>
+                    <a href="#" onclick="event.preventDefault(); document.getElementById('switchAccountForm').submit();">
+                        Ganti Akun
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <form id="switchAccountForm" action="{{ auth('member')->check() ? route('portal.logout') : route('logout') }}" method="POST" style="display: none;">
+            @csrf
+        </form>
+
+        @if($existingAttendance)
+            <div class="alert alert-success mb-4" style="border-radius: 12px;">
+                <i class="fas fa-check-circle"></i>
+                <div>
+                    <strong>Anda sudah tercatat {{ strtoupper($existingAttendance->status) }} pada rapat ini.</strong>
+                    <div style="font-size: 0.85rem; margin-top: 2px;">
+                        Waktu presensi: {{ $existingAttendance->scanned_at ? $existingAttendance->scanned_at->locale('id')->translatedFormat('H:i') . ' WITA' : '-' }}
+                        @if($existingAttendance->keterangan)
+                            • Keterangan: "{{ $existingAttendance->keterangan }}"
+                        @endif
+                    </div>
+                    <div style="font-size: 0.78rem; opacity: 0.9; margin-top: 2px;">
+                        Anda dapat memperbarui status atau foto bukti di bawah jika diperlukan.
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if($eligibilityError)
+            <div class="alert alert-danger mb-4" style="border-radius: 12px;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                    <strong>Pemberitahuan Partisipasi:</strong>
+                    <div style="font-size: 0.88rem; margin-top: 2px;">{{ $eligibilityError }}</div>
+                </div>
+            </div>
+        @endif
+
+        @if($member->sp_level >= 3)
+            <div class="alert alert-danger mb-4" style="border-radius: 12px;">
+                <i class="fas fa-user-times"></i>
+                <div>
+                    <strong>Status Akun: {{ $member->sp_label }}</strong>
+                    <div style="font-size: 0.85rem; margin-top: 2px;">
+                        Akun pengurus Anda telah dinonaktifkan (Pemberhentian) dan tidak dapat melakukan presensi rapat.
+                    </div>
+                </div>
+            </div>
+        @elseif($member->sp_level > 0)
+            <div class="alert alert-warning mb-4" style="border-radius: 12px;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                    <strong>Informasi Status Akun: {{ $member->sp_label }}</strong>
+                    <div style="font-size: 0.85rem; margin-top: 2px;">
+                        {{ $member->sp_reason ?: 'Harap tingkatkan kedisiplinan kehadiran rapat Anda.' }}
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <form action="{{ route('public.online.submit', $meeting->unique_link) }}" method="POST" enctype="multipart/form-data">
             @csrf
-
-            <div class="form-group">
-                <label class="form-label" for="user_id">Pilih Nama Anda <span class="required">*</span></label>
-                <select name="user_id" id="user_id" class="form-control" required onchange="updateOnlineSpNotice(this)">
-                    <option value="" data-sp="0">— Cari & Pilih Nama Anda —</option>
-                    @foreach($participants as $p)
-                        @php
-                            $pSp = $p->member ? (int) $p->member->sp_level : 0;
-                            $pSpLabel = $p->member ? $p->member->sp_label : '';
-                            $pSpReason = $p->member ? $p->member->sp_reason : '';
-                        @endphp
-                        <option value="{{ $p->user_id }}"
-                                data-sp="{{ $pSp }}"
-                                data-sp-label="{{ $pSpLabel }}"
-                                data-sp-reason="{{ $pSpReason }}"
-                                {{ old('user_id') == $p->user_id ? 'selected' : '' }}>
-                            {{ $p->member ? $p->member->nama_lengkap : 'Unknown' }} ({{ $p->member ? $p->member->departemen : '' }}{{ !empty($p->member->jabatan) ? ' — ' . $p->member->jabatan : '' }}){{ !empty($p->is_optional_inti) ? ' [Pengurus Inti - Opsional]' : '' }}
-                            @if($pSp > 0) [{{ $pSpLabel }}] @endif
-                            @if($p->status === 'hadir') [Sudah Hadir] @endif
-                        </option>
-                    @endforeach
-                </select>
-                <div id="onlineSpNotice" class="sp-attend-notice" style="display: none; margin-top: 10px;"></div>
-            </div>
 
             <div class="form-group">
                 <label class="form-label">Status Kehadiran <span class="required">*</span></label>
                 <div style="display: flex; gap: var(--space-4); flex-wrap: wrap;">
                     <label class="form-check">
-                        <input type="radio" name="status" value="hadir" checked>
+                        <input type="radio" name="status" value="hadir" {{ old('status', $existingAttendance?->status ?? 'hadir') === 'hadir' ? 'checked' : '' }}>
                         <span class="form-check-label"><i class="fas fa-check-circle text-success"></i> Hadir</span>
                     </label>
                     <label class="form-check">
-                        <input type="radio" name="status" value="izin">
+                        <input type="radio" name="status" value="izin" {{ old('status', $existingAttendance?->status) === 'izin' ? 'checked' : '' }}>
                         <span class="form-check-label"><i class="fas fa-info-circle text-info"></i> Izin</span>
                     </label>
                     <label class="form-check">
-                        <input type="radio" name="status" value="sakit">
+                        <input type="radio" name="status" value="sakit" {{ old('status', $existingAttendance?->status) === 'sakit' ? 'checked' : '' }}>
                         <span class="form-check-label"><i class="fas fa-medkit text-warning"></i> Sakit</span>
                     </label>
                 </div>
@@ -138,52 +218,27 @@
 
             <div class="form-group">
                 <label class="form-label" for="keterangan">Keterangan (Opsional)</label>
-                <textarea name="keterangan" id="keterangan" class="form-control" placeholder="Contoh: Mengikuti via Google Meet / Kendala jaringan" rows="2"></textarea>
+                <textarea name="keterangan" id="keterangan" class="form-control" placeholder="Contoh: Mengikuti via Google Meet / Zoom" rows="2">{{ old('keterangan', $existingAttendance?->keterangan) }}</textarea>
             </div>
 
             <div class="form-group">
                 <label class="form-label" for="bukti_foto">Foto Bukti / Selfie (Opsional)</label>
+                @if($existingAttendance?->bukti_foto_url)
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                        <img src="{{ $existingAttendance->bukti_foto_url }}" alt="Bukti Foto Sebelumnya" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--border-color);">
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Foto bukti sebelumnya sudah tersimpan. Unggah foto baru jika ingin mengganti.</span>
+                    </div>
+                @endif
                 <input type="file" name="bukti_foto" id="bukti_foto" class="form-control" accept="image/*">
                 <small style="color: var(--text-muted); display: block; margin-top: 4px;">
-                    Screenshot tampilan zoom/meet atau foto kehadiran Anda (maksimal 5MB).
+                    Screenshot tampilan Google Meet/Zoom atau foto kehadiran Anda (maksimal 5MB).
                 </small>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnOnlineSubmit" style="margin-top: var(--space-6);">
-                <i class="fas fa-paper-plane"></i> Kirim Presensi
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnOnlineSubmit" style="margin-top: var(--space-6);" {{ ($eligibilityError || $member->sp_level >= 3) ? 'disabled' : '' }}>
+                <i class="fas fa-paper-plane"></i> {{ $existingAttendance ? 'Perbarui Presensi' : 'Kirim Presensi Kehadiran' }}
             </button>
         </form>
     </div>
-    <script>
-        function updateOnlineSpNotice(selectEl) {
-            const box = document.getElementById('onlineSpNotice');
-            const btn = document.getElementById('btnOnlineSubmit');
-            if (!box || !selectEl) return;
-            const opt = selectEl.options[selectEl.selectedIndex];
-            const sp = parseInt(opt?.getAttribute('data-sp') || '0', 10);
-            const label = opt?.getAttribute('data-sp-label') || '';
-            const reason = opt?.getAttribute('data-sp-reason') || '';
-
-            if (sp >= 3) {
-                box.style.display = 'flex';
-                box.className = 'alert alert-danger';
-                box.innerHTML = `<i class="fas fa-user-times"></i><div><strong>Status Akun: ${label}</strong><div style="font-size: 0.82rem;">Akun pengurus ini telah dinonaktifkan (Pemberhentian) dan tidak dapat melakukan presensi.</div></div>`;
-                if (btn) btn.disabled = true;
-            } else if (sp > 0) {
-                box.style.display = 'flex';
-                box.className = 'alert alert-warning';
-                box.innerHTML = `<i class="fas fa-exclamation-triangle"></i><div><strong>Informasi Status Akun: ${label}</strong><div style="font-size: 0.82rem;">${reason ? reason : 'Harap tingkatkan kedisiplinan kehadiran rapat Anda.'}</div></div>`;
-                if (btn) btn.disabled = false;
-            } else {
-                box.style.display = 'none';
-                box.innerHTML = '';
-                if (btn) btn.disabled = false;
-            }
-        }
-        document.addEventListener('DOMContentLoaded', function() {
-            const sel = document.getElementById('user_id');
-            if (sel && sel.value) updateOnlineSpNotice(sel);
-        });
-    </script>
 @endif
 @endsection

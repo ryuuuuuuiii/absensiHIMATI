@@ -350,13 +350,12 @@ class InternalMeetingAttendanceTest extends TestCase
         $resHasilAfter->assertSee('Absensi Rapat Sudah Ditutup');
 
         // 4. Halaman online attend menampilkan status expired / ditutup
-        $resOnline = $this->get('/rapat/'.$meeting->unique_link.'/online');
+        $resOnline = $this->actingAs($attendee, 'member')->get('/rapat/'.$meeting->unique_link.'/online');
         $resOnline->assertStatus(200);
         $resOnline->assertSee('Batas Waktu Absensi Telah Berakhir');
 
         // 5. Submit absensi setelah rapat selesai ditolak
-        $resSubmit = $this->post('/rapat/'.$meeting->unique_link.'/online', [
-            'user_id' => $attendee->id,
+        $resSubmit = $this->actingAs($attendee, 'member')->post('/rapat/'.$meeting->unique_link.'/online', [
             'status' => 'hadir',
         ]);
         $resSubmit->assertSessionHas('error');
@@ -451,15 +450,15 @@ class InternalMeetingAttendanceTest extends TestCase
         $attendee = Member::where('departemen', 'PSDM')->first();
         $this->assertNotNull($attendee);
 
-        // Peserta membuka halaman presensi online
-        $resOnline = $this->get('/rapat/'.$meeting->unique_link.'/online');
+        // Peserta membuka halaman presensi online (wajib login akun kepengurusan)
+        $resOnline = $this->actingAs($attendee, 'member')->get('/rapat/'.$meeting->unique_link.'/online');
         $resOnline->assertStatus(200);
-        $resOnline->assertSee('Isi Presensi Kehadiran');
+        $resOnline->assertSee('Form Presensi Kehadiran Online');
+        $resOnline->assertSee($attendee->nama_lengkap);
         $resOnline->assertDontSee('Batas Waktu Absensi Telah Berakhir');
 
-        // Peserta mengisi presensi online
-        $resSubmit = $this->post('/rapat/'.$meeting->unique_link.'/online', [
-            'user_id' => $attendee->id,
+        // Peserta mengisi presensi online (otomatis dari data akun terautentikasi)
+        $resSubmit = $this->actingAs($attendee, 'member')->post('/rapat/'.$meeting->unique_link.'/online', [
             'status' => 'hadir',
             'keterangan' => 'Hadir via online',
         ]);
@@ -482,10 +481,10 @@ class InternalMeetingAttendanceTest extends TestCase
         $this->assertEquals('completed', $meeting->status);
 
         // Setelah selesai, barulah ditutup
-        $resOnlineClosed = $this->get('/rapat/'.$meeting->unique_link.'/online');
+        $resOnlineClosed = $this->actingAs($attendee, 'member')->get('/rapat/'.$meeting->unique_link.'/online');
         $resOnlineClosed->assertStatus(200);
         $resOnlineClosed->assertSee('Rapat Telah Selesai');
-        $resOnlineClosed->assertDontSee('Isi Presensi Kehadiran');
+        $resOnlineClosed->assertDontSee('Form Presensi Kehadiran Online');
     }
 
     public function test_scanning_already_present_member_returns_duplicate_response(): void
@@ -538,5 +537,108 @@ class InternalMeetingAttendanceTest extends TestCase
             1,
             Attendance::where('meeting_id', $meeting->id)->where('user_id', $member->id)->where('status', 'hadir')->count()
         );
+    }
+
+    public function test_unauthenticated_guest_opening_online_attend_is_redirected_to_login(): void
+    {
+        $creator = Member::where('departemen', 'Inti')->first();
+        $meeting = Meeting::create([
+            'created_by' => $creator->id,
+            'jenis_rapat' => 'internal_dept',
+            'mode_rapat' => 'online',
+            'departemen' => 'PSDM',
+            'fokus_bahasan' => 'Rapat Online Auth Guard Check',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => now()->format('H:i:s'),
+            'status' => 'scanning',
+            'unique_link' => Str::lower(Str::random(12)),
+            'absent_link' => Str::lower(Str::random(12)),
+        ]);
+
+        // Tamu (guest belum login) membuka link online -> dialihkan ke login dengan pesan info
+        $response = $this->get('/rapat/'.$meeting->unique_link.'/online');
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHas('info');
+
+        // Tamu mencoba POST submit langsung -> dialihkan juga ke login
+        $resSubmit = $this->post('/rapat/'.$meeting->unique_link.'/online', [
+            'status' => 'hadir',
+        ]);
+        $resSubmit->assertRedirect(route('login'));
+    }
+
+    public function test_authenticated_member_submits_online_attend_automatically_using_their_account(): void
+    {
+        $creator = Member::where('departemen', 'Inti')->first();
+        $meeting = Meeting::create([
+            'created_by' => $creator->id,
+            'jenis_rapat' => 'internal_dept',
+            'mode_rapat' => 'online',
+            'departemen' => 'PSDM',
+            'fokus_bahasan' => 'Rapat Online Auto Identity Record',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => now()->format('H:i:s'),
+            'status' => 'scanning',
+            'unique_link' => Str::lower(Str::random(12)),
+            'absent_link' => Str::lower(Str::random(12)),
+        ]);
+
+        $attendee = Member::where('departemen', 'PSDM')->first();
+        $this->assertNotNull($attendee);
+
+        // Buka form saat login -> Tampil data akun terverifikasi tanpa perlu input nama
+        $response = $this->actingAs($attendee, 'member')->get('/rapat/'.$meeting->unique_link.'/online');
+        $response->assertStatus(200);
+        $response->assertSee($attendee->nama_lengkap);
+        $response->assertSee('Terverifikasi');
+        $response->assertSee($attendee->departemen);
+        $response->assertDontSee('Pilih Nama Anda');
+
+        // Submit tanpa menyertakan user_id -> Otomatis tercatat atas nama akun login
+        $resSubmit = $this->actingAs($attendee, 'member')->post('/rapat/'.$meeting->unique_link.'/online', [
+            'status' => 'hadir',
+            'keterangan' => 'Hadir melalui akun sendiri',
+        ]);
+        $resSubmit->assertSessionHas('success');
+
+        $record = Attendance::where('meeting_id', $meeting->id)
+            ->where('user_id', $attendee->id)
+            ->first();
+        $this->assertNotNull($record);
+        $this->assertEquals('hadir', $record->status);
+        $this->assertEquals('Hadir melalui akun sendiri', $record->keterangan);
+        $this->assertEquals('online_link', $record->scan_method);
+    }
+
+    public function test_ineligible_member_submitting_online_attend_is_rejected(): void
+    {
+        $creator = Member::where('departemen', 'Inti')->first();
+        $meeting = Meeting::create([
+            'created_by' => $creator->id,
+            'jenis_rapat' => 'internal_dept',
+            'mode_rapat' => 'online',
+            'departemen' => 'PSDM',
+            'fokus_bahasan' => 'Rapat Khusus PSDM Saja',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => now()->format('H:i:s'),
+            'status' => 'scanning',
+            'unique_link' => Str::lower(Str::random(12)),
+            'absent_link' => Str::lower(Str::random(12)),
+        ]);
+
+        // Anggota dari departemen lain (bukan PSDM dan bukan Inti)
+        $otherMember = Member::whereNotIn('departemen', ['PSDM', 'Inti'])->first();
+        if ($otherMember) {
+            // Error kelayakan tampil di halaman
+            $response = $this->actingAs($otherMember, 'member')->get('/rapat/'.$meeting->unique_link.'/online');
+            $response->assertStatus(200);
+            $response->assertSee('Pemberitahuan Partisipasi');
+
+            // Submit ditolak
+            $resSubmit = $this->actingAs($otherMember, 'member')->post('/rapat/'.$meeting->unique_link.'/online', [
+                'status' => 'hadir',
+            ]);
+            $resSubmit->assertSessionHas('error');
+        }
     }
 }
