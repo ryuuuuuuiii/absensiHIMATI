@@ -5,9 +5,7 @@
    2px Crisp Dark Ink Borders #061A2E, Hard 3D Offset Shadows, Stacked Ribbons)
    ========================================================================== */
 
-/* ---- Fonts (Gliker + Fredoka Display + Noto Sans Body) ---- */
-@import url('https://fonts.cdnfonts.com/css/gliker');
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wdth,wght@75..125,500..700&family=Noto+Sans:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+/* ---- Fonts loaded asynchronously via HTML link tags in layouts ---- */
 
 /* ==========================================================================
    DESIGN TOKENS (CSS Custom Properties)
@@ -4862,36 +4860,8 @@ html, body {
 .portal-content-layer {
     width: 100%;
     opacity: 1;
-    transform: translateX(0);
-    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.18s ease;
-    will-change: transform, opacity;
-}
-
-/* Slide Left (Navigating Forward / Rightwards in Nav) */
-.portal-content-layer.slide-out-left {
-    transform: translateX(-36px) !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-}
-.portal-content-layer.slide-in-right {
-    transform: translateX(36px) !important;
-    opacity: 0 !important;
-}
-
-/* Slide Right (Navigating Backward / Leftwards in Nav) */
-.portal-content-layer.slide-out-right {
-    transform: translateX(36px) !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-}
-.portal-content-layer.slide-in-left {
-    transform: translateX(-36px) !important;
-    opacity: 0 !important;
-}
-
-.portal-content-layer.slide-active {
-    transform: translateX(0) !important;
-    opacity: 1 !important;
+    transition: opacity 0.09s ease;
+    will-change: opacity;
 }
 
 /* ==========================================================================
@@ -7449,7 +7419,7 @@ h1, h2, h3, h4,
 }
 
 .portal-hero-card {
-    padding-top: 46px !important;
+    padding-top: 56px !important;
 }
 
 .login-card,
@@ -8230,20 +8200,34 @@ textarea.form-control {
 
 /* 15. Mobile Bottom Navigation Bar & Modals (Fluid Animated Curved Navbar) */
 .portal-bottom-nav {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    height: 62px !important;
-    z-index: 999 !important;
-    background: transparent !important;
-    border-top: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    display: flex !important;
-    justify-content: space-around !important;
-    align-items: center !important;
-    overflow: visible !important;
+    display: none !important;
+}
+
+@media (min-width: 769px) {
+    .portal-bottom-nav {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .portal-bottom-nav {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 62px !important;
+        z-index: 999 !important;
+        background: transparent !important;
+        border-top: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        display: flex !important;
+        justify-content: space-around !important;
+        align-items: center !important;
+        overflow: visible !important;
+    }
 }
 
 .portal-nav-fluid-svg {
@@ -8351,7 +8335,7 @@ textarea.form-control {
         border-radius: 14px 14px 0 0 !important;
     }
     .portal-hero-card {
-        padding-top: 40px !important;
+        padding-top: 48px !important;
         border-radius: 16px !important;
     }
     .portal-hero-card::before {

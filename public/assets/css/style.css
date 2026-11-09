@@ -8200,20 +8200,34 @@ textarea.form-control {
 
 /* 15. Mobile Bottom Navigation Bar & Modals (Fluid Animated Curved Navbar) */
 .portal-bottom-nav {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    height: 62px !important;
-    z-index: 999 !important;
-    background: transparent !important;
-    border-top: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    display: flex !important;
-    justify-content: space-around !important;
-    align-items: center !important;
-    overflow: visible !important;
+    display: none !important;
+}
+
+@media (min-width: 769px) {
+    .portal-bottom-nav {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .portal-bottom-nav {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 62px !important;
+        z-index: 999 !important;
+        background: transparent !important;
+        border-top: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        display: flex !important;
+        justify-content: space-around !important;
+        align-items: center !important;
+        overflow: visible !important;
+    }
 }
 
 .portal-nav-fluid-svg {
