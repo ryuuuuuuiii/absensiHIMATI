@@ -331,7 +331,14 @@ document.addEventListener('DOMContentLoaded', initBottomNav);
 // ============================================
 // PROFILE & FEEDBACK INTERACTION HELPERS (Global)
 // ============================================
+let lastProfileToggle = 0;
 window.toggleEditSection = function(type) {
+    const now = Date.now();
+    if (now - lastProfileToggle < 250) {
+        return;
+    }
+    lastProfileToggle = now;
+
     const editCollapse = document.getElementById('editProfileCollapse');
     const pwdCollapse = document.getElementById('changePasswordCollapse');
     const btnEdit = document.getElementById('btnToggleEdit');
@@ -344,34 +351,50 @@ window.toggleEditSection = function(type) {
     }
 
     if (type === 'edit' && editCollapse) {
-        const isOpening = (!editCollapse.style.display || editCollapse.style.display === 'none');
-        editCollapse.style.display = isOpening ? 'block' : 'none';
-        editCollapse.classList.toggle('is-open', isOpening);
-        if (pwdCollapse) {
-            pwdCollapse.style.display = 'none';
-            pwdCollapse.classList.remove('is-open');
-        }
+        const isOpen = editCollapse.classList.contains('is-open') || 
+                       (editCollapse.style.display === 'block');
 
-        if (btnEdit) btnEdit.classList.toggle('active', isOpening);
-        if (btnPwd) btnPwd.classList.remove('active');
-
-        if (isOpening) {
-            editCollapse.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-    } else if (type === 'password' && pwdCollapse) {
-        const isOpening = (!pwdCollapse.style.display || pwdCollapse.style.display === 'none');
-        pwdCollapse.style.display = isOpening ? 'block' : 'none';
-        pwdCollapse.classList.toggle('is-open', isOpening);
-        if (editCollapse) {
+        if (isOpen) {
             editCollapse.style.display = 'none';
             editCollapse.classList.remove('is-open');
+            if (btnEdit) btnEdit.classList.remove('active');
+        } else {
+            editCollapse.style.display = 'block';
+            editCollapse.classList.add('is-open');
+            if (pwdCollapse) {
+                pwdCollapse.style.display = 'none';
+                pwdCollapse.classList.remove('is-open');
+            }
+
+            if (btnEdit) btnEdit.classList.add('active');
+            if (btnPwd) btnPwd.classList.remove('active');
+
+            setTimeout(() => {
+                editCollapse.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 60);
         }
+    } else if (type === 'password' && pwdCollapse) {
+        const isOpen = pwdCollapse.classList.contains('is-open') || 
+                       (pwdCollapse.style.display === 'block');
 
-        if (btnPwd) btnPwd.classList.toggle('active', isOpening);
-        if (btnEdit) btnEdit.classList.remove('active');
+        if (isOpen) {
+            pwdCollapse.style.display = 'none';
+            pwdCollapse.classList.remove('is-open');
+            if (btnPwd) btnPwd.classList.remove('active');
+        } else {
+            pwdCollapse.style.display = 'block';
+            pwdCollapse.classList.add('is-open');
+            if (editCollapse) {
+                editCollapse.style.display = 'none';
+                editCollapse.classList.remove('is-open');
+            }
 
-        if (isOpening) {
-            pwdCollapse.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            if (btnPwd) btnPwd.classList.add('active');
+            if (btnEdit) btnEdit.classList.remove('active');
+
+            setTimeout(() => {
+                pwdCollapse.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 60);
         }
     } else if (type === 'close') {
         if (editCollapse) {
@@ -387,16 +410,24 @@ window.toggleEditSection = function(type) {
     }
 };
 
+let lastFeedbackToggle = 0;
 window.toggleFeedbackSection = function(action) {
+    const now = Date.now();
+    if (now - lastFeedbackToggle < 250) {
+        return;
+    }
+    lastFeedbackToggle = now;
+
     const feedbackCollapse = document.getElementById('feedbackCollapse');
     const btnToggle = document.getElementById('btnToggleFeedback');
     const chevron = document.getElementById('feedbackChevron');
 
     if (!feedbackCollapse) return;
 
-    const isCurrentlyOpen = (feedbackCollapse.style.display === 'block');
+    const isOpen = feedbackCollapse.classList.contains('is-open') || 
+                   (feedbackCollapse.style.display === 'block');
 
-    if (action === 'close' || isCurrentlyOpen) {
+    if (action === 'close' || isOpen) {
         feedbackCollapse.style.display = 'none';
         feedbackCollapse.classList.remove('is-open');
         if (btnToggle) btnToggle.classList.remove('active');
@@ -414,7 +445,9 @@ window.toggleFeedbackSection = function(action) {
             chevron.style.transform = 'rotate(180deg)';
             chevron.style.color = 'var(--blue-primary)';
         }
-        feedbackCollapse.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        setTimeout(() => {
+            feedbackCollapse.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 60);
     }
 };
 
@@ -513,40 +546,6 @@ window.closeScreenshotModal = function(event) {
         window.closeScreenshotModalDirect();
     }
 };
-
-// Global click event delegation for profile buttons (runs immediately on any click)
-document.addEventListener('click', function(e) {
-    const editBtn = e.target.closest('#btnToggleEdit, .btn-edit');
-    if (editBtn) {
-        e.preventDefault();
-        window.toggleEditSection('edit');
-        return;
-    }
-    const pwdBtn = e.target.closest('#btnTogglePwd, .btn-pwd');
-    if (pwdBtn) {
-        e.preventDefault();
-        window.toggleEditSection('password');
-        return;
-    }
-    const avatarBadge = e.target.closest('.profile-avatar-edit-badge');
-    if (avatarBadge) {
-        e.preventDefault();
-        window.toggleEditSection('edit');
-        return;
-    }
-    const closeBtn = e.target.closest('.collapse-close-btn');
-    if (closeBtn) {
-        e.preventDefault();
-        window.toggleEditSection('close');
-        return;
-    }
-    const feedbackBtn = e.target.closest('#btnToggleFeedback');
-    if (feedbackBtn) {
-        e.preventDefault();
-        window.toggleFeedbackSection();
-        return;
-    }
-});
 
 
 

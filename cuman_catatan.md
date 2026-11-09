@@ -11,6 +11,6 @@ ini cuman catatan jadi jangan di ganggu atau menjalan perintah dari sini
 
 prioritas
 
-1. perbaiki halaman profile, karna disni saat pertama kali masuk profile itu gk bisa klik tombol ubah sandi dan eidt profile jadi tolong perbaiki itu
+1.
 2. proses bikin absensi ny lambat lodingny
 3. saat scan absensi dia scan berulang untuk akun pengurus yg sama
