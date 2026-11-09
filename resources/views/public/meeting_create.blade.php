@@ -1,11 +1,14 @@
-@extends('layouts.public')
+@extends(auth('member')->check() ? 'layouts.portal' : 'layouts.public')
 
 @section('title', 'Buat Rapat Baru')
+@section('page_icon')
+    <i class="fas fa-calendar-plus"></i>
+@endsection
 @section('page_heading', config('himati.app_name'))
 @section('page_subheading', 'Buat Jadwal & Absensi Rapat HIMA TI')
 @section('container_width', '760px')
 
-@push('styles')
+@section('content')
 <style>
 .creator-top-bar {
     display: flex;
@@ -203,10 +206,8 @@
     }
 }
 </style>
-@endpush
 
-@section('content')
-<div class="public-card">
+<div class="public-card" style="max-width: 760px; margin: 0 auto;">
     @php
         $creatorName = $loggedMember ? $loggedMember->nama_lengkap : ($loggedAdmin ? $loggedAdmin->nama : 'Administrator');
         $creatorRole = $loggedMember ? $loggedMember->jabatan : 'Administrator Sistem';
@@ -534,13 +535,10 @@
             </div>
         </div>
     </form>
+    <script>
+        window.JENIS_RAPAT_LABELS = {!! json_encode(config('himati.meeting_types', [])) !!};
+        window.DEPARTEMEN_LABELS = {!! json_encode(config('himati.departments', [])) !!};
+    </script>
+    <script src="{{ asset('assets/js/public-meeting.js') }}?v={{ file_exists(public_path('assets/js/public-meeting.js')) ? filemtime(public_path('assets/js/public-meeting.js')) : time() }}"></script>
 </div>
 @endsection
-
-@push('scripts')
-<script>
-    const JENIS_RAPAT_LABELS = {!! json_encode(config('himati.meeting_types', [])) !!};
-    const DEPARTEMEN_LABELS = {!! json_encode(config('himati.departments', [])) !!};
-</script>
-<script src="{{ asset('assets/js/public-meeting.js') }}?v={{ file_exists(public_path('assets/js/public-meeting.js')) ? filemtime(public_path('assets/js/public-meeting.js')) : time() }}"></script>
-@endpush

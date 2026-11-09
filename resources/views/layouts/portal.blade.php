@@ -345,6 +345,12 @@
                 }
             }
 
+            function isPortalRoute(urlPath) {
+                if (!urlPath) return false;
+                const p = normalizePath(urlPath);
+                return p.startsWith('/portal') || p === '/rapat' || p.startsWith('/rapat');
+            }
+
             function getRouteIndex(path) {
                 const p = normalizePath(path);
                 if (p === '/portal') return 0;
@@ -431,15 +437,37 @@
 
             function executeScripts(container) {
                 const scripts = container.querySelectorAll('script');
+                let pendingExternal = 0;
+
+                function checkDone() {
+                    if (pendingExternal === 0) {
+                        document.dispatchEvent(new CustomEvent('portal:page-loaded'));
+                    }
+                }
+
                 scripts.forEach(oldScript => {
                     const newScript = document.createElement('script');
                     Array.from(oldScript.attributes).forEach(attr => {
                         newScript.setAttribute(attr.name, attr.value);
                     });
                     newScript.textContent = oldScript.textContent;
+
+                    if (oldScript.src) {
+                        pendingExternal++;
+                        newScript.onload = () => {
+                            pendingExternal--;
+                            checkDone();
+                        };
+                        newScript.onerror = () => {
+                            pendingExternal--;
+                            checkDone();
+                        };
+                    }
+
                     oldScript.parentNode.replaceChild(newScript, oldScript);
                 });
-                document.dispatchEvent(new CustomEvent('portal:page-loaded'));
+
+                checkDone();
             }
 
             async function fetchPageData(urlPath) {
@@ -507,23 +535,11 @@
                 try {
                     const u = new URL(urlPath, window.location.origin);
                     if (u.origin !== window.location.origin) return;
+                    if (!isPortalRoute(u.pathname)) return;
                     if (u.pathname.includes('/logout') || u.pathname.includes('/login') || u.pathname.includes('/qr/download')) return;
 
                     const clean = normalizePath(u.pathname);
                     if (portalCache.has(clean) || prefetchingUrls.has(clean)) return;
-
-                    // If non-portal link (like /rapat), inject prefetch link for browser document cache
-                    if (!u.pathname.startsWith('/portal')) {
-                        prefetchingUrls.add(clean);
-                        if (!document.querySelector('link[rel="prefetch"][href*="' + clean + '"]')) {
-                            const pl = document.createElement('link');
-                            pl.rel = 'prefetch';
-                            pl.href = u.pathname + u.search;
-                            pl.as = 'document';
-                            document.head.appendChild(pl);
-                        }
-                        return;
-                    }
 
                     prefetchingUrls.add(clean);
                     fetchPageData(u.pathname + u.search).then(data => {
@@ -647,15 +663,9 @@
                     return;
                 }
 
-                // Check if internal portal link
+                // Check if internal portal or rapat link
                 if (urlObj.origin !== window.location.origin) return;
-
-                // Don't intercept non-portal links or Buat Rapat (which uses layouts.public)
-                if (!urlObj.pathname.startsWith('/portal')) {
-                    showLoader();
-                    updateNavHighlights(urlObj.pathname);
-                    return;
-                }
+                if (!isPortalRoute(urlObj.pathname)) return;
 
                 // Exclude logout, login, or direct download routes
                 if (urlObj.pathname.includes('/logout') || urlObj.pathname.includes('/login') || urlObj.pathname.includes('/qr/download')) {
@@ -675,7 +685,7 @@
             // Handle browser Back / Forward buttons
             window.addEventListener('popstate', function(e) {
                 const targetUrl = window.location.pathname + window.location.search;
-                if (normalizePath(targetUrl).startsWith('/portal')) {
+                if (isPortalRoute(targetUrl)) {
                     navigateTo(targetUrl, false);
                 }
             });

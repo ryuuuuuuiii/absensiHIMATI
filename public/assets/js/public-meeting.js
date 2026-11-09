@@ -3,13 +3,13 @@
  * Absensi HIMA TI — Khusus Pengurus & Admin
  */
 
-let currentStep = 1;
-let selectedJenis = '';
-let selectedMode = 'offline';
-let eventMembersCount = 0;
-let isRestoringDraft = false;
-let isSubmittingForm = false;
-const totalSteps = 4;
+var currentStep = 1;
+var selectedJenis = '';
+var selectedMode = 'offline';
+var eventMembersCount = 0;
+var isRestoringDraft = false;
+var isSubmittingForm = false;
+var totalSteps = 4;
 
 // ============================================
 // STEP NAVIGATION
@@ -786,15 +786,37 @@ function restoreMeetingDraft() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+function initMeetingForm() {
     const form = document.getElementById('meetingForm');
     if (!form) return;
 
+    currentStep = 1;
     restoreMeetingDraft();
 
+    form.removeEventListener('input', saveMeetingDraft);
+    form.removeEventListener('change', saveMeetingDraft);
     form.addEventListener('input', saveMeetingDraft);
     form.addEventListener('change', saveMeetingDraft);
-});
+
+    form.onsubmit = function() {
+        isSubmittingForm = true;
+        clearMeetingDraft();
+        const btn = document.getElementById('btnSubmit');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Memproses...';
+        }
+    };
+}
+
+window.initMeetingForm = initMeetingForm;
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMeetingForm);
+} else {
+    initMeetingForm();
+}
+document.addEventListener('portal:page-loaded', initMeetingForm);
 
 window.addEventListener('pagehide', function() {
     saveMeetingDraft();
@@ -803,16 +825,5 @@ window.addEventListener('pagehide', function() {
 window.addEventListener('pageshow', function(e) {
     if (e.persisted) {
         restoreMeetingDraft();
-    }
-});
-
-// Submit handler
-document.getElementById('meetingForm')?.addEventListener('submit', function(e) {
-    isSubmittingForm = true;
-    clearMeetingDraft();
-    const btn = document.getElementById('btnSubmit');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> Memproses...';
     }
 });

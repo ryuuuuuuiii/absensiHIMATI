@@ -7,8 +7,11 @@ error_reporting(E_ALL & ~E_DEPRECATED);
 if (! is_dir('/tmp/views')) {
     @mkdir('/tmp/views', 0755, true);
 }
-if (! is_dir('/tmp/cache')) {
-    @mkdir('/tmp/cache', 0755, true);
+if (! is_dir('/tmp/cache/data')) {
+    @mkdir('/tmp/cache/data', 0755, true);
+}
+if (! is_dir('/tmp/cache/locks')) {
+    @mkdir('/tmp/cache/locks', 0755, true);
 }
 
 // Forward Vercel requests to normal public/index.php
