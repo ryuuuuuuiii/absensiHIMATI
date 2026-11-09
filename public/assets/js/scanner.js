@@ -9,6 +9,13 @@
 let html5QrCode = null;
 let scannedUsers = [];
 let isScanning = false;
+let isProcessingScan = false;
+let lastScannedCode = null;
+let lastScannedTime = 0;
+let scanResultTimeout = null;
+const scannedQrCodes = new Set(
+    (typeof SCANNED_QR_CODES !== 'undefined' && Array.isArray(SCANNED_QR_CODES)) ? SCANNED_QR_CODES : []
+);
 
 // ============================================
 // INITIALIZATION
@@ -38,7 +45,13 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================
 function initScanner() {
     try {
-        html5QrCode = new Html5Qrcode("qr-reader");
+        const qrConfig = {
+            verbose: false
+        };
+        if (typeof Html5QrcodeSupportedFormats !== 'undefined') {
+            qrConfig.formatsToSupport = [Html5QrcodeSupportedFormats.QR_CODE];
+        }
+        html5QrCode = new Html5Qrcode("qr-reader", qrConfig);
         startScanning();
     } catch (err) {
         console.error("Scanner init error:", err);
@@ -50,10 +63,17 @@ function startScanning() {
     if (isScanning) return;
     
     const config = {
-        fps: 10,
-        qrbox: { width: 220, height: 220 },
+        fps: 20,
+        qrbox: function(viewfinderWidth, viewfinderHeight) {
+            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            const edge = Math.max(220, Math.floor(minEdge * 0.72));
+            return { width: edge, height: edge };
+        },
         aspectRatio: 1.0,
-        disableFlip: false
+        disableFlip: false,
+        experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+        }
     };
     
     html5QrCode.start(
@@ -64,7 +84,7 @@ function startScanning() {
     ).then(() => {
         isScanning = true;
     }).catch(err => {
-        console.error("Camera start error:", err);
+        console.warn("Camera environment failed, falling back to user facing:", err);
         // Try with user-facing camera
         html5QrCode.start(
             { facingMode: "user" },
@@ -91,29 +111,55 @@ function stopScanning() {
 // SCAN HANDLERS
 // ============================================
 function onScanSuccess(decodedText, decodedResult) {
+    if (isProcessingScan) {
+        return; // Ignore frames while previous scan is currently processing
+    }
+
+    const rawText = (typeof decodedText === 'string') ? decodedText.trim() : '';
+    if (!rawText) return;
+
+    const now = Date.now();
+    // Prevent immediate re-triggering of the same QR string within 2.5 seconds
+    if (rawText === lastScannedCode && (now - lastScannedTime) < 2500) {
+        return;
+    }
+
     let data = null;
     try {
-        data = JSON.parse(decodedText);
+        data = JSON.parse(rawText);
     } catch (e) {
-        if (typeof decodedText === 'string' && decodedText.trim().startsWith('HIMATI-USR-')) {
+        if (rawText.startsWith('HIMATI-USR-')) {
             data = {
-                qr_code: decodedText.trim()
+                qr_code: rawText
             };
         }
     }
 
     if (!data || (!data.id && !data.qr_code)) {
+        lastScannedCode = rawText;
+        lastScannedTime = now;
         showScanResult('error', 'QR Code Tidak Valid', 'Data QR tidak sesuai format pengurus HIMA TI.');
+        playSound('error');
         return;
     }
 
-    // Check if already scanned
-    if (data.id && (SCANNED_USER_IDS.includes(data.id) || scannedUsers.includes(data.id))) {
+    // Check if already scanned locally
+    const isAlreadyScanned = (data.qr_code && scannedQrCodes.has(data.qr_code)) ||
+        (data.id && (SCANNED_USER_IDS.includes(data.id) || scannedUsers.includes(data.id)));
+
+    if (isAlreadyScanned) {
+        lastScannedCode = rawText;
+        lastScannedTime = now;
         showScanResult('duplicate', 'Sudah Di-Scan!', 
             `${data.nama || 'Peserta'} (${data.departemen || ''}) sudah tercatat hadir.`);
         playSound('duplicate');
         return;
     }
+
+    // Lock processing immediately to prevent duplicate requests from subsequent frames
+    isProcessingScan = true;
+    lastScannedCode = rawText;
+    lastScannedTime = now;
 
     // Process scan
     processAttendance(data);
@@ -132,7 +178,9 @@ async function processAttendance(userData) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': CSRF_TOKEN
             },
             body: JSON.stringify({
                 meeting_id: MEETING_ID,
@@ -147,12 +195,20 @@ async function processAttendance(userData) {
         if (result.success) {
             const user = result.user || userData;
 
-            // Add to scanned list
+            // Track scanned ID & QR Code
             if (user.id) {
-                scannedUsers.push(user.id);
+                if (!scannedUsers.includes(user.id)) {
+                    scannedUsers.push(user.id);
+                }
                 if (!SCANNED_USER_IDS.includes(user.id)) {
                     SCANNED_USER_IDS.push(user.id);
                 }
+            }
+            if (userData.qr_code) {
+                scannedQrCodes.add(userData.qr_code);
+            }
+            if (user.qr_code) {
+                scannedQrCodes.add(user.qr_code);
             }
 
             // Update UI
@@ -169,12 +225,18 @@ async function processAttendance(userData) {
                 spInfoText = ` • Status Akun: ${spLabelText} (${spDetailText})`;
             }
             showScanResult('success', 'Berhasil!' + (user.sp_level > 0 ? ` [${user.sp_label || ('SP ' + user.sp_level)}]` : ''), 
-                `${user.nama} (${user.departemen}${badgeText}) berhasil tercatat hadir${spInfoText}.`);
+                `${user.nama} (${user.departemen || ''}${badgeText}) berhasil tercatat hadir${spInfoText}.`);
             playSound('success');
 
             // Save state
             saveState();
         } else if (result.duplicate) {
+            if (userData.qr_code) {
+                scannedQrCodes.add(userData.qr_code);
+            }
+            if (userData.id && !SCANNED_USER_IDS.includes(userData.id)) {
+                SCANNED_USER_IDS.push(userData.id);
+            }
             showScanResult('duplicate', 'Sudah Di-Scan!', result.message);
             playSound('duplicate');
         } else {
@@ -184,6 +246,11 @@ async function processAttendance(userData) {
     } catch (error) {
         console.error('Process error:', error);
         showScanResult('error', 'Error', 'Gagal memproses data absensi.');
+    } finally {
+        // Unlock after cooldown to prevent jitter
+        setTimeout(() => {
+            isProcessingScan = false;
+        }, 1200);
     }
 }
 
@@ -192,6 +259,13 @@ async function processAttendance(userData) {
 // ============================================
 function showScanResult(type, title, message) {
     const resultEl = document.getElementById('scanResult');
+    if (!resultEl) return;
+
+    if (scanResultTimeout) {
+        clearTimeout(scanResultTimeout);
+        scanResultTimeout = null;
+    }
+
     resultEl.style.display = 'block';
 
     const icons = {
@@ -218,15 +292,25 @@ function showScanResult(type, title, message) {
     `;
 
     // Auto-hide after 3 seconds
-    setTimeout(() => {
+    scanResultTimeout = setTimeout(() => {
         resultEl.style.display = 'none';
+        scanResultTimeout = null;
     }, 3000);
 }
 
 function addToScannedList(userData, scannedAt) {
     const list = document.getElementById('scannedList');
-    const emptyState = document.getElementById('emptyState');
+    if (!list) return;
 
+    // Prevent duplicate entries in DOM
+    if (userData.id && list.querySelector(`.scanned-item[data-user-id="${userData.id}"]`)) {
+        return;
+    }
+    if (userData.qr_code && list.querySelector(`.scanned-item[data-qr="${userData.qr_code}"]`)) {
+        return;
+    }
+
+    const emptyState = document.getElementById('emptyState');
     // Remove empty state
     if (emptyState) emptyState.remove();
 
@@ -252,6 +336,7 @@ function addToScannedList(userData, scannedAt) {
     }
 
     const userIdAttr = userData.id ? `data-user-id="${userData.id}"` : '';
+    const qrAttr = userData.qr_code ? `data-qr="${userData.qr_code}"` : '';
     const badgeDept = userData.departemen ? `<span class="badge badge-dept" style="font-size: 11px; padding: 2px 7px;">${escapeHTML(userData.departemen)}</span>` : '';
     const jabatanText = userData.jabatan ? `<span>${escapeHTML(userData.jabatan)}</span>` : '';
     let spBadge = '';
@@ -264,7 +349,7 @@ function addToScannedList(userData, scannedAt) {
     }
 
     const itemHTML = `
-        <div class="scanned-item" ${userIdAttr} style="animation: slideDown 0.3s ease;">
+        <div class="scanned-item" ${userIdAttr} ${qrAttr} style="animation: slideDown 0.3s ease;">
             <div class="scanned-item-avatar">
                 <i class="fas fa-check"></i>
             </div>
@@ -352,12 +437,28 @@ function saveState() {
         meetingId: MEETING_ID,
         scannedUsers: scannedUsers,
         scannedUserIds: SCANNED_USER_IDS,
+        scannedQrCodes: Array.from(scannedQrCodes),
         timestamp: new Date().toISOString()
     };
     localStorage.setItem('scan_state_' + MEETING_ID, JSON.stringify(state));
 }
 
 function restoreState() {
+    // Index existing DOM items rendered from server
+    document.querySelectorAll('#scannedList .scanned-item').forEach(el => {
+        const qr = el.getAttribute('data-qr');
+        const uid = el.getAttribute('data-user-id');
+        if (qr) {
+            scannedQrCodes.add(qr);
+        }
+        if (uid) {
+            const numId = parseInt(uid, 10);
+            if (!isNaN(numId) && !SCANNED_USER_IDS.includes(numId)) {
+                SCANNED_USER_IDS.push(numId);
+            }
+        }
+    });
+
     const saved = localStorage.getItem('scan_state_' + MEETING_ID);
     if (saved) {
         try {
@@ -369,6 +470,9 @@ function restoreState() {
                     if (!SCANNED_USER_IDS.includes(id)) {
                         SCANNED_USER_IDS.push(id);
                     }
+                });
+                state.scannedQrCodes?.forEach(qr => {
+                    scannedQrCodes.add(qr);
                 });
             }
         } catch (e) {

@@ -487,4 +487,56 @@ class InternalMeetingAttendanceTest extends TestCase
         $resOnlineClosed->assertSee('Rapat Telah Selesai');
         $resOnlineClosed->assertDontSee('Isi Presensi Kehadiran');
     }
+
+    public function test_scanning_already_present_member_returns_duplicate_response(): void
+    {
+        $creator = Member::where('departemen', 'Inti')->first();
+        $this->assertNotNull($creator);
+
+        $meeting = Meeting::create([
+            'created_by' => $creator->id,
+            'jenis_rapat' => 'perdana',
+            'mode_rapat' => 'offline',
+            'fokus_bahasan' => 'Uji Coba Duplikasi Scan',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '10:00:00',
+            'status' => 'scanning',
+            'unique_link' => Str::lower(Str::random(12)),
+            'absent_link' => Str::lower(Str::random(12)),
+        ]);
+
+        $member = Member::where('departemen', '!=', 'Inti')->first();
+        $this->assertNotNull($member);
+
+        // Scan pertama -> Sukses hadir
+        $firstScan = $this->postJson('/meeting/process/process_scan.php', [
+            'meeting_id' => $meeting->id,
+            'user_id' => $member->id,
+            'qr_code' => $member->qr_code,
+        ]);
+        $firstScan->assertStatus(200)->assertJson([
+            'success' => true,
+            'user' => [
+                'id' => $member->id,
+                'qr_code' => $member->qr_code,
+            ],
+        ]);
+
+        // Scan kedua -> Ditolak sebagai duplicate
+        $secondScan = $this->postJson('/meeting/process/process_scan.php', [
+            'meeting_id' => $meeting->id,
+            'user_id' => $member->id,
+            'qr_code' => $member->qr_code,
+        ]);
+        $secondScan->assertStatus(200)->assertJson([
+            'success' => false,
+            'duplicate' => true,
+        ]);
+
+        // Pastikan record di database tetap 1 dan status hadir
+        $this->assertEquals(
+            1,
+            Attendance::where('meeting_id', $meeting->id)->where('user_id', $member->id)->where('status', 'hadir')->count()
+        );
+    }
 }

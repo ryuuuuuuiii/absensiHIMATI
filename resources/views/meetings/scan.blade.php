@@ -188,7 +188,7 @@
             <div id="scannedList" style="max-height: 520px; overflow-y: auto;">
                 @foreach ($attendances as $a)
                     @if ($a->status === 'hadir')
-                    <div class="scanned-item" data-user-id="{{ $a->user_id }}">
+                    <div class="scanned-item" data-user-id="{{ $a->user_id }}" data-qr="{{ $a->member ? $a->member->qr_code : '' }}">
                         <div class="scanned-item-avatar">
                             <i class="fas fa-check"></i>
                         </div>
@@ -277,6 +277,7 @@
         'status'      => $meeting->status,
     ]) !!};
     const SCANNED_USER_IDS = @json($scannedUserIds);
+    const SCANNED_QR_CODES = @json($scannedQrCodes ?? []);
     const DOC_PHOTOS = @json($docPhotos ?? []);
     const BASE_URL = '{{ url('/') }}';
     const CSRF_TOKEN = '{{ csrf_token() }}';

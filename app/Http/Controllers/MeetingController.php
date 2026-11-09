@@ -300,6 +300,7 @@ class MeetingController extends Controller
 
         $hadirCount = $attendances->where('status', 'hadir')->count();
         $scannedUserIds = $attendances->where('status', 'hadir')->pluck('user_id')->toArray();
+        $scannedQrCodes = $attendances->where('status', 'hadir')->pluck('member.qr_code')->filter()->values()->toArray();
 
         $absentUrl = route('public.absent', $meeting->absent_link);
         $onlineUrl = route('public.online', $meeting->unique_link);
@@ -312,7 +313,7 @@ class MeetingController extends Controller
             return file_exists(public_path('uploads/dokumentasi/'.$p)) ? asset('uploads/dokumentasi/'.$p) : null;
         }, $rawPhotos)));
 
-        return view('meetings.scan', compact('meeting', 'attendances', 'hadirCount', 'scannedUserIds', 'absentUrl', 'onlineUrl', 'docPhotos'));
+        return view('meetings.scan', compact('meeting', 'attendances', 'hadirCount', 'scannedUserIds', 'scannedQrCodes', 'absentUrl', 'onlineUrl', 'docPhotos'));
     }
 
     public function processScan(Request $request, $id)
@@ -363,34 +364,43 @@ class MeetingController extends Controller
             ], 403);
         }
 
-        $attendance = Attendance::where('meeting_id', $meeting->id)
-            ->where('user_id', $member->id)
-            ->first();
-
         $now = now();
 
-        if ($attendance) {
-            if ($attendance->status === 'hadir') {
-                return response()->json([
-                    'success' => false,
-                    'duplicate' => true,
-                    'message' => $member->nama_lengkap.' sudah tercatat hadir sebelumnya.',
+        $scanResult = DB::transaction(function () use ($meeting, $member, $now) {
+            $attendance = Attendance::where('meeting_id', $meeting->id)
+                ->where('user_id', $member->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($attendance) {
+                if ($attendance->status === 'hadir') {
+                    return ['duplicate' => true];
+                }
+
+                $attendance->update([
+                    'status' => 'hadir',
+                    'scanned_at' => $now,
+                    'scan_method' => 'qr_scan',
+                ]);
+            } else {
+                Attendance::create([
+                    'meeting_id' => $meeting->id,
+                    'user_id' => $member->id,
+                    'status' => 'hadir',
+                    'scanned_at' => $now,
+                    'scan_method' => 'qr_scan',
+                    'created_at' => $now,
                 ]);
             }
 
-            $attendance->update([
-                'status' => 'hadir',
-                'scanned_at' => $now,
-                'scan_method' => 'qr_scan',
-            ]);
-        } else {
-            $attendance = Attendance::create([
-                'meeting_id' => $meeting->id,
-                'user_id' => $member->id,
-                'status' => 'hadir',
-                'scanned_at' => $now,
-                'scan_method' => 'qr_scan',
-                'created_at' => $now,
+            return ['duplicate' => false];
+        });
+
+        if ($scanResult['duplicate']) {
+            return response()->json([
+                'success' => false,
+                'duplicate' => true,
+                'message' => $member->nama_lengkap.' sudah tercatat hadir sebelumnya.',
             ]);
         }
 
@@ -404,6 +414,7 @@ class MeetingController extends Controller
             'user' => [
                 'id' => $member->id,
                 'nama' => $member->nama_lengkap,
+                'qr_code' => $member->qr_code,
                 'departemen' => $member->departemen,
                 'jabatan' => $member->jabatan,
                 'is_bph_inti' => $member->isBphInti(),

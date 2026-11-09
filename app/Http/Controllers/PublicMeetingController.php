@@ -337,6 +337,7 @@ class PublicMeetingController extends Controller
 
         $hadirCount = $attendances->where('status', 'hadir')->count();
         $scannedUserIds = $attendances->where('status', 'hadir')->pluck('user_id')->toArray();
+        $scannedQrCodes = $attendances->where('status', 'hadir')->pluck('member.qr_code')->filter()->values()->toArray();
 
         $absentUrl = route('public.absent', $meeting->absent_link);
         $onlineUrl = route('public.online', $meeting->unique_link);
@@ -354,6 +355,7 @@ class PublicMeetingController extends Controller
             'attendances',
             'hadirCount',
             'scannedUserIds',
+            'scannedQrCodes',
             'absentUrl',
             'onlineUrl',
             'docPhotos'
