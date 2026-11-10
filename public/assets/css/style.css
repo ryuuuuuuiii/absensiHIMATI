@@ -8887,6 +8887,18 @@ textarea.form-control {
             0 -18px 0 0 #061A2E,
             0 -30px 0 0 #92EEFF !important;
     }
+
+    /* Mobile Tabs Responsiveness */
+    .tabs {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .tabs .tab-btn {
+        padding: 8px 10px !important;
+        font-size: 0.8rem !important;
+        gap: 5px !important;
+    }
 }
 
 /* 16. Dark Mode Compatibility for Pomegranate System */

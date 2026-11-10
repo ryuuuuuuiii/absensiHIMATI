@@ -18,16 +18,18 @@
 </div>
 
 <!-- Tabs -->
-<div class="tabs mb-6">
-    <button class="tab-btn active" onclick="switchEventTab('active', this)">
-        <i class="fas fa-calendar-check"></i> Event Aktif <span class="tab-badge">{{ $activeEvents->count() }}</span>
-    </button>
-    <button class="tab-btn" onclick="switchEventTab('completed', this)">
-        <i class="fas fa-trophy"></i> Event Selesai <span class="tab-badge" style="background: #10B981; color: white;">{{ $completedEvents->count() }}</span>
-    </button>
-    <button class="tab-btn" onclick="switchEventTab('archived', this)">
-        <i class="fas fa-archive"></i> Arsip <span class="tab-badge">{{ $archivedEvents->count() }}</span>
-    </button>
+<div class="event-tabs-wrapper mb-6">
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchEventTab('active', this)">
+            <i class="fas fa-calendar-check"></i> <span>Event Aktif</span> <span class="tab-badge">{{ $activeEvents->count() }}</span>
+        </button>
+        <button class="tab-btn" onclick="switchEventTab('completed', this)">
+            <i class="fas fa-trophy"></i> <span>Event Selesai</span> <span class="tab-badge" style="background: #10B981; color: white;">{{ $completedEvents->count() }}</span>
+        </button>
+        <button class="tab-btn" onclick="switchEventTab('archived', this)">
+            <i class="fas fa-archive"></i> <span>Arsip</span> <span class="tab-badge">{{ $archivedEvents->count() }}</span>
+        </button>
+    </div>
 </div>
 
 <!-- Active Events -->
@@ -39,7 +41,7 @@
             <p>Klik tombol "Tambah Event Baru" untuk mulai mendata event dan panitia.</p>
         </div>
     @else
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-4);">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4);">
             @foreach ($activeEvents as $evt)
             <div class="card">
                 <div class="d-flex justify-between align-center mb-3">
@@ -97,7 +99,7 @@
             <p>Selesaikan event yang telah rampung untuk membagikan lencana dan EXP kepanitiaan kepada seluruh panitia.</p>
         </div>
     @else
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-4);">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4);">
             @foreach ($completedEvents as $evt)
             <div class="card" style="border-top: 3px solid #10B981;">
                 <div class="d-flex justify-between align-center mb-3">
@@ -166,7 +168,7 @@
             <p>Event yang sudah selesai dapat diarsipkan agar tidak muncul di pilihan rapat.</p>
         </div>
     @else
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-4);">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4);">
             @foreach ($archivedEvents as $evt)
             <div class="card" style="opacity: 0.85;">
                 <div class="d-flex justify-between align-center mb-3">
@@ -232,6 +234,61 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+.event-tabs-wrapper {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 2px 2px 6px 2px;
+    box-sizing: border-box;
+}
+.event-tabs-wrapper::-webkit-scrollbar {
+    display: none;
+}
+.event-tabs-wrapper .tabs {
+    display: inline-flex;
+    min-width: 100%;
+    box-sizing: border-box;
+}
+@media (max-width: 640px) {
+    .event-tabs-wrapper .tabs {
+        width: 100%;
+        display: flex;
+        padding: 4px !important;
+        gap: 4px !important;
+    }
+    .event-tabs-wrapper .tab-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 8px 6px !important;
+        font-size: 0.78rem !important;
+        gap: 5px !important;
+        white-space: nowrap;
+    }
+    .event-tabs-wrapper .tab-btn i {
+        font-size: 0.82rem;
+    }
+    .event-tabs-wrapper .tab-badge {
+        font-size: 0.68rem;
+        padding: 1px 6px;
+    }
+}
+@media (max-width: 400px) {
+    .event-tabs-wrapper .tab-btn {
+        padding: 7px 4px !important;
+        font-size: 0.72rem !important;
+        gap: 3px !important;
+    }
+    .event-tabs-wrapper .tab-btn i {
+        font-size: 0.74rem;
+    }
+}
+</style>
+@endpush
 
 @push('scripts')
 <script>

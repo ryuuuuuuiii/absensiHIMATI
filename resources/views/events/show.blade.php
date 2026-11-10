@@ -38,7 +38,7 @@
                 </div>
             @endif
         </div>
-        <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
+        <div class="event-header-actions">
             <a href="{{ route('events.index') }}" class="btn btn-sm btn-secondary">
                 <i class="fas fa-arrow-left"></i> Kembali ke Event
             </a>
@@ -84,21 +84,21 @@
         @else
             @foreach($divisions as $div)
             <div class="card mb-4">
-                <div class="card-header" style="border-bottom: 1px solid var(--dark-border);">
-                    <div class="d-flex align-center gap-3">
+                <div class="card-header division-card-header">
+                    <div class="division-title-wrap">
                         <span class="badge badge-primary" style="font-size: var(--font-sm);">
                             <i class="fas fa-layer-group"></i> {{ $div->nama_divisi }}
                         </span>
-                        <small style="color: var(--text-muted);">{{ $div->members->count() }} orang</small>
+                        <small style="color: var(--text-muted); font-weight: 600;">{{ $div->members->count() }} orang</small>
                     </div>
-                    <div style="display: flex; gap: var(--space-2);">
-                        <button class="btn btn-sm btn-outline-primary" onclick="openAddMemberModal({{ $div->id }}, '{{ addslashes($div->nama_divisi) }}')">
+                    <div class="division-actions-wrap">
+                        <button class="btn btn-sm btn-outline-primary btn-add-panitia" onclick="openAddMemberModal({{ $div->id }}, '{{ addslashes($div->nama_divisi) }}')">
                             <i class="fas fa-user-plus"></i> Tambah Panitia
                         </button>
                         <form action="{{ route('events.divisions.destroy', [$event->id, $div->id]) }}" method="POST" onsubmit="return confirm('Hapus divisi ini beserta seluruh anggota di dalamnya?')" style="margin: 0;">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-ghost text-danger" title="Hapus Divisi">
+                            <button type="submit" class="btn btn-sm btn-ghost text-danger btn-del-divisi" title="Hapus Divisi">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </form>
@@ -110,8 +110,9 @@
                         Belum ada anggota yang ditugaskan ke divisi ini.
                     </p>
                 @else
-                    <div class="table-wrapper mt-3">
-                        <table class="table" style="margin: 0;">
+                    <!-- Desktop View: Table -->
+                    <div class="table-wrapper mt-3 panitia-desktop-table">
+                        <table class="table" style="margin: 0; min-width: 520px;">
                             <thead>
                                 <tr>
                                     <th>Nama Panitia</th>
@@ -159,6 +160,42 @@
                                 @endforeach
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Mobile View: Clean Card List -->
+                    <div class="panitia-mobile-cards mt-3">
+                        @foreach($div->members as $em)
+                        @php
+                            $memberExp = app(\App\Services\GamificationService::class)->calculateEventMemberExp($em->jabatan_panitia);
+                        @endphp
+                        <div class="panitia-mobile-item">
+                            <div class="panitia-mobile-top">
+                                <div style="flex: 1; min-width: 0;">
+                                    <strong class="panitia-mobile-name">{{ $em->member ? $em->member->nama_lengkap : 'Unknown' }}</strong>
+                                    <div class="panitia-mobile-email">{{ $em->member ? $em->member->email : '-' }}</div>
+                                </div>
+                                <form action="{{ route('events.members.destroy', [$event->id, $em->id]) }}" method="POST" onsubmit="return confirm('Keluarkan anggota ini dari kepanitiaan?')" style="margin: 0; flex-shrink: 0;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="panitia-mobile-del-btn" title="Keluarkan dari Divisi">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="panitia-mobile-badges">
+                                <span class="badge badge-dept" style="font-size: 0.72rem;">{{ $em->member ? $em->member->departemen : '-' }}</span>
+                                <span class="badge badge-info" style="font-size: 0.72rem;">{{ $em->jabatan_panitia }}</span>
+                                <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #F59E0B; font-weight: 700; font-size: 0.72rem; padding: 2px 7px;">
+                                    <i class="fas fa-bolt"></i> +{{ $memberExp }} EXP
+                                </span>
+                                @if($event->isCompleted())
+                                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; font-size: 0.72rem; padding: 2px 7px;">
+                                        <i class="fas fa-medal"></i> Lencana Diterima
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                        @endforeach
                     </div>
                 @endif
             </div>
@@ -329,6 +366,162 @@
     }
     .member-checkbox-row:hover {
         background: var(--blue-subtle);
+    }
+
+    /* Event Header Actions on Mobile */
+    .event-header-actions {
+        display: flex;
+        gap: var(--space-3);
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    @media (max-width: 640px) {
+        .event-header-actions {
+            width: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 8px !important;
+        }
+        .event-header-actions a,
+        .event-header-actions button,
+        .event-header-actions form,
+        .event-header-actions form button {
+            width: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-sizing: border-box !important;
+        }
+    }
+
+    /* Division Header Responsive Layout */
+    .division-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .division-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .division-actions-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    @media (max-width: 576px) {
+        .division-card-header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 10px !important;
+        }
+        .division-title-wrap {
+            justify-content: space-between !important;
+            width: 100% !important;
+        }
+        .division-actions-wrap {
+            width: 100% !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            gap: 8px !important;
+        }
+        .division-actions-wrap .btn-add-panitia {
+            flex: 1 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 8px 12px !important;
+            font-size: 0.82rem !important;
+        }
+        .division-actions-wrap .btn-del-divisi {
+            flex-shrink: 0 !important;
+        }
+    }
+
+    /* Panitia View Switching: Desktop Table vs Mobile Cards */
+    .panitia-desktop-table {
+        display: block;
+    }
+    .panitia-mobile-cards {
+        display: none;
+    }
+
+    @media (max-width: 640px) {
+        .panitia-desktop-table {
+            display: none !important;
+        }
+        .panitia-mobile-cards {
+            display: flex !important;
+            flex-direction: column;
+            gap: 10px;
+        }
+    }
+
+    .panitia-mobile-item {
+        background: var(--bg-surface-subtle);
+        border: 1.5px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 12px 14px;
+        box-sizing: border-box;
+        transition: all var(--transition-fast);
+    }
+
+    .panitia-mobile-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .panitia-mobile-name {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: block;
+        line-height: 1.25;
+    }
+
+    .panitia-mobile-email {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+        word-break: break-all;
+    }
+
+    .panitia-mobile-del-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: rgba(239, 68, 68, 0.12);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: var(--danger);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .panitia-mobile-del-btn:hover {
+        background: var(--danger);
+        color: #FFFFFF;
+    }
+
+    .panitia-mobile-badges {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    [data-theme="dark"] .panitia-mobile-item {
+        background: #0D1B2A;
+        border-color: rgba(48, 175, 255, 0.25);
     }
 </style>
 @endpush
