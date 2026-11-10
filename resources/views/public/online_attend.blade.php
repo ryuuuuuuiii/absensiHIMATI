@@ -202,15 +202,15 @@
                 <label class="form-label">Status Kehadiran <span class="required">*</span></label>
                 <div style="display: flex; gap: var(--space-4); flex-wrap: wrap;">
                     <label class="form-check">
-                        <input type="radio" name="status" value="hadir" {{ old('status', $existingAttendance?->status ?? 'hadir') === 'hadir' ? 'checked' : '' }}>
+                        <input type="radio" name="status" value="hadir" id="statusHadir" {{ old('status', $existingAttendance?->status ?? 'hadir') === 'hadir' ? 'checked' : '' }} onchange="updateDocRequirement()">
                         <span class="form-check-label"><i class="fas fa-check-circle text-success"></i> Hadir</span>
                     </label>
                     <label class="form-check">
-                        <input type="radio" name="status" value="izin" {{ old('status', $existingAttendance?->status) === 'izin' ? 'checked' : '' }}>
+                        <input type="radio" name="status" value="izin" id="statusIzin" {{ old('status', $existingAttendance?->status) === 'izin' ? 'checked' : '' }} onchange="updateDocRequirement()">
                         <span class="form-check-label"><i class="fas fa-info-circle text-info"></i> Izin</span>
                     </label>
                     <label class="form-check">
-                        <input type="radio" name="status" value="sakit" {{ old('status', $existingAttendance?->status) === 'sakit' ? 'checked' : '' }}>
+                        <input type="radio" name="status" value="sakit" id="statusSakit" {{ old('status', $existingAttendance?->status) === 'sakit' ? 'checked' : '' }} onchange="updateDocRequirement()">
                         <span class="form-check-label"><i class="fas fa-medkit text-warning"></i> Sakit</span>
                     </label>
                 </div>
@@ -222,16 +222,23 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="bukti_foto">Foto Bukti / Selfie (Opsional)</label>
+                <label class="form-label" for="bukti_foto" id="labelBuktiFoto">
+                    Foto Bukti Dokumentasi <span class="required" id="reqBuktiFoto" style="color: var(--danger);">* Wajib</span>
+                </label>
                 @if($existingAttendance?->bukti_foto_url)
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                         <img src="{{ $existingAttendance->bukti_foto_url }}" alt="Bukti Foto Sebelumnya" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--border-color);">
                         <span style="font-size: 0.8rem; color: var(--text-muted);">Foto bukti sebelumnya sudah tersimpan. Unggah foto baru jika ingin mengganti.</span>
                     </div>
                 @endif
-                <input type="file" name="bukti_foto" id="bukti_foto" class="form-control" accept="image/*">
-                <small style="color: var(--text-muted); display: block; margin-top: 4px;">
-                    Screenshot tampilan Google Meet/Zoom atau foto kehadiran Anda (maksimal 5MB).
+                <input type="file" name="bukti_foto" id="bukti_foto" class="form-control @error('bukti_foto') is-invalid @enderror" accept="image/*" {{ $existingAttendance?->bukti_foto ? '' : 'required' }}>
+                @error('bukti_foto')
+                    <div class="invalid-feedback" style="display: block; color: var(--danger); font-size: 0.8rem; margin-top: 4px;">
+                        <i class="fas fa-exclamation-circle"></i> {{ $message }}
+                    </div>
+                @enderror
+                <small id="helperBuktiFoto" style="color: var(--text-muted); display: block; margin-top: 4px;">
+                    Wajib melampirkan screenshot layar rapat online (Google Meet, Zoom, dll.) atau foto kehadiran Anda (maksimal 5MB).
                 </small>
             </div>
 
@@ -242,3 +249,36 @@
     </div>
 @endif
 @endsection
+
+@push('scripts')
+<script>
+    const hasExistingProof = {{ ($existingAttendance && filled($existingAttendance->bukti_foto)) ? 'true' : 'false' }};
+
+    function updateDocRequirement() {
+        const isHadir = document.getElementById('statusHadir')?.checked ?? true;
+        const inputBukti = document.getElementById('bukti_foto');
+        const reqBadge = document.getElementById('reqBuktiFoto');
+        const helper = document.getElementById('helperBuktiFoto');
+
+        if (!inputBukti) return;
+
+        if (isHadir) {
+            if (reqBadge) reqBadge.style.display = 'inline';
+            if (!hasExistingProof) {
+                inputBukti.required = true;
+            }
+            if (helper) {
+                helper.textContent = 'Wajib melampirkan screenshot layar rapat online (Google Meet, Zoom, dll.) atau foto kehadiran Anda (maksimal 5MB).';
+            }
+        } else {
+            if (reqBadge) reqBadge.style.display = 'none';
+            inputBukti.required = false;
+            if (helper) {
+                helper.textContent = 'Lampirkan surat keterangan izin atau surat sakit jika ada (opsional, maksimal 5MB).';
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', updateDocRequirement);
+</script>
+@endpush

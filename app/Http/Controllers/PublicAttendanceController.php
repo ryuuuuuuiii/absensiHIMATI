@@ -84,19 +84,28 @@ class PublicAttendanceController extends Controller
             return back()->with('error', $eligibilityError);
         }
 
-        $request->validate([
-            'status' => ['required', 'in:hadir,izin,sakit'],
-            'keterangan' => ['nullable', 'string', 'max:255'],
-            'bukti_foto' => ['nullable', 'image', 'max:5120'], // 5MB
-        ]);
-
         $userId = $member->id;
-        $status = $request->input('status');
-        $keterangan = $request->input('keterangan');
-
         $attendance = Attendance::where('meeting_id', $meeting->id)
             ->where('user_id', $userId)
             ->first();
+
+        $hasExistingProof = $attendance && filled($attendance->bukti_foto);
+        $status = $request->input('status');
+        $isProofRequired = ($status === 'hadir' || ! $status) && ! $hasExistingProof;
+
+        $request->validate([
+            'status' => ['required', 'in:hadir,izin,sakit'],
+            'keterangan' => ['nullable', 'string', 'max:255'],
+            'bukti_foto' => [$isProofRequired ? 'required' : 'nullable', 'image', 'max:5120'], // 5MB
+        ], [
+            'status.required' => 'Status kehadiran wajib dipilih.',
+            'bukti_foto.required' => 'Foto bukti dokumentasi rapat online (screenshot Google Meet/Zoom atau foto kehadiran) wajib diunggah.',
+            'bukti_foto.image' => 'File bukti dokumentasi harus berupa file gambar (JPG, PNG, JPEG, dll.).',
+            'bukti_foto.max' => 'Ukuran file foto bukti dokumentasi maksimal 5MB.',
+        ]);
+
+        $status = $request->input('status');
+        $keterangan = $request->input('keterangan');
 
         $data = [
             'status' => $status,

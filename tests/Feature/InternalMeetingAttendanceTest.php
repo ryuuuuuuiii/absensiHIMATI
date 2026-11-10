@@ -6,6 +6,7 @@ use App\Models\Attendance;
 use App\Models\Meeting;
 use App\Models\Member;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -461,6 +462,7 @@ class InternalMeetingAttendanceTest extends TestCase
         $resSubmit = $this->actingAs($attendee, 'member')->post('/rapat/'.$meeting->unique_link.'/online', [
             'status' => 'hadir',
             'keterangan' => 'Hadir via online',
+            'bukti_foto' => UploadedFile::fake()->image('bukti_kehadiran.jpg'),
         ]);
         $resSubmit->assertSessionHas('success');
 
@@ -598,6 +600,7 @@ class InternalMeetingAttendanceTest extends TestCase
         $resSubmit = $this->actingAs($attendee, 'member')->post('/rapat/'.$meeting->unique_link.'/online', [
             'status' => 'hadir',
             'keterangan' => 'Hadir melalui akun sendiri',
+            'bukti_foto' => UploadedFile::fake()->image('bukti_mandiri.jpg'),
         ]);
         $resSubmit->assertSessionHas('success');
 
@@ -608,6 +611,106 @@ class InternalMeetingAttendanceTest extends TestCase
         $this->assertEquals('hadir', $record->status);
         $this->assertEquals('Hadir melalui akun sendiri', $record->keterangan);
         $this->assertEquals('online_link', $record->scan_method);
+        $this->assertNotNull($record->bukti_foto);
+    }
+
+    public function test_submitting_online_attend_hadir_without_proof_photo_fails_validation(): void
+    {
+        $creator = Member::where('departemen', 'PSDM')->first();
+        $meeting = Meeting::create([
+            'created_by' => $creator->id,
+            'jenis_rapat' => 'internal_dept',
+            'mode_rapat' => 'online',
+            'departemen' => 'PSDM',
+            'fokus_bahasan' => 'Uji Validasi Foto Bukti Wajib',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => now()->format('H:i:s'),
+            'status' => 'scanning',
+            'unique_link' => Str::lower(Str::random(12)),
+            'absent_link' => Str::lower(Str::random(12)),
+        ]);
+
+        $attendee = Member::where('departemen', 'PSDM')->first();
+
+        // Hadir tanpa file foto bukti -> Gagal validasi
+        $res = $this->actingAs($attendee, 'member')->post('/rapat/'.$meeting->unique_link.'/online', [
+            'status' => 'hadir',
+            'keterangan' => 'Mencoba absen tanpa foto bukti',
+        ]);
+
+        $res->assertSessionHasErrors(['bukti_foto']);
+        $this->assertNull(Attendance::where('meeting_id', $meeting->id)->where('user_id', $attendee->id)->first());
+    }
+
+    public function test_updating_online_attend_when_proof_already_exists_allows_empty_file(): void
+    {
+        $creator = Member::where('departemen', 'PSDM')->first();
+        $meeting = Meeting::create([
+            'created_by' => $creator->id,
+            'jenis_rapat' => 'internal_dept',
+            'mode_rapat' => 'online',
+            'departemen' => 'PSDM',
+            'fokus_bahasan' => 'Uji Update Keterangan dengan Bukti Tersimpan',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => now()->format('H:i:s'),
+            'status' => 'scanning',
+            'unique_link' => Str::lower(Str::random(12)),
+            'absent_link' => Str::lower(Str::random(12)),
+        ]);
+
+        $attendee = Member::where('departemen', 'PSDM')->first();
+
+        // 1. Submit pertama dengan foto
+        $this->actingAs($attendee, 'member')->post('/rapat/'.$meeting->unique_link.'/online', [
+            'status' => 'hadir',
+            'keterangan' => 'Hadir awal',
+            'bukti_foto' => UploadedFile::fake()->image('bukti_pertama.jpg'),
+        ])->assertSessionHas('success');
+
+        $attendance = Attendance::where('meeting_id', $meeting->id)->where('user_id', $attendee->id)->first();
+        $this->assertNotNull($attendance);
+        $initialPhoto = $attendance->bukti_foto;
+        $this->assertNotEmpty($initialPhoto);
+
+        // 2. Update keterangan tanpa mengunggah file baru -> Berhasil dan foto tidak hilang
+        $this->actingAs($attendee, 'member')->post('/rapat/'.$meeting->unique_link.'/online', [
+            'status' => 'hadir',
+            'keterangan' => 'Keterangan diperbarui',
+        ])->assertSessionHas('success');
+
+        $attendance->refresh();
+        $this->assertEquals('Keterangan diperbarui', $attendance->keterangan);
+        $this->assertEquals($initialPhoto, $attendance->bukti_foto);
+    }
+
+    public function test_submitting_online_attend_izin_allows_empty_file(): void
+    {
+        $creator = Member::where('departemen', 'PSDM')->first();
+        $meeting = Meeting::create([
+            'created_by' => $creator->id,
+            'jenis_rapat' => 'internal_dept',
+            'mode_rapat' => 'online',
+            'departemen' => 'PSDM',
+            'fokus_bahasan' => 'Uji Izin Pada Rapat Online',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => now()->format('H:i:s'),
+            'status' => 'scanning',
+            'unique_link' => Str::lower(Str::random(12)),
+            'absent_link' => Str::lower(Str::random(12)),
+        ]);
+
+        $attendee = Member::where('departemen', 'PSDM')->first();
+
+        // Izin tanpa foto bukti -> Boleh / nullable
+        $this->actingAs($attendee, 'member')->post('/rapat/'.$meeting->unique_link.'/online', [
+            'status' => 'izin',
+            'keterangan' => 'Izin praktikum kuliah',
+        ])->assertSessionHas('success');
+
+        $attendance = Attendance::where('meeting_id', $meeting->id)->where('user_id', $attendee->id)->first();
+        $this->assertNotNull($attendance);
+        $this->assertEquals('izin', $attendance->status);
+        $this->assertEquals('Izin praktikum kuliah', $attendance->keterangan);
     }
 
     public function test_ineligible_member_submitting_online_attend_is_rejected(): void
