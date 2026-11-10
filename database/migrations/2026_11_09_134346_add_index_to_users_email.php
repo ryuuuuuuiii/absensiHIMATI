@@ -11,9 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->index('email', 'users_email_index');
-        });
+        try {
+            Schema::table('users', function (Blueprint $table) {
+                $table->index('email', 'users_email_index');
+            });
+        } catch (Throwable $e) {
+            // Index already exists
+        }
     }
 
     /**
