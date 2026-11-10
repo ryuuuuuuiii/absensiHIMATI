@@ -134,31 +134,36 @@ class Member extends Authenticatable
         $progress = $exp - $currentMin;
         $percentage = $needed > 0 ? min(100, max(0, round(($progress / $needed) * 100, 1))) : 100;
 
-        $titles = [
-            1 => ['title' => 'Pengurus Pemula', 'icon' => 'seedling', 'badge_color' => '#10B981'],
-            2 => ['title' => 'Pengurus Pemula', 'icon' => 'seedling', 'badge_color' => '#10B981'],
-            3 => ['title' => 'Pengurus Aktif', 'icon' => 'bolt', 'badge_color' => '#3B82F6'],
-            4 => ['title' => 'Pengurus Aktif', 'icon' => 'bolt', 'badge_color' => '#3B82F6'],
-            5 => ['title' => 'Pengurus Terampil', 'icon' => 'star', 'badge_color' => '#8B5CF6'],
-            6 => ['title' => 'Pengurus Terampil', 'icon' => 'star', 'badge_color' => '#8B5CF6'],
-            7 => ['title' => 'Pengurus Berdedikasi', 'icon' => 'shield-alt', 'badge_color' => '#EC4899'],
-            8 => ['title' => 'Pengurus Berdedikasi', 'icon' => 'shield-alt', 'badge_color' => '#EC4899'],
-            9 => ['title' => 'Teladan HIMA TI', 'icon' => 'medal', 'badge_color' => '#F59E0B'],
-            10 => ['title' => 'Teladan HIMA TI', 'icon' => 'medal', 'badge_color' => '#F59E0B'],
-            11 => ['title' => 'Tokoh Inspiratif', 'icon' => 'gem', 'badge_color' => '#06B6D4'],
-            12 => ['title' => 'Tokoh Inspiratif', 'icon' => 'gem', 'badge_color' => '#06B6D4'],
-            13 => ['title' => 'Tokoh Inspiratif', 'icon' => 'gem', 'badge_color' => '#06B6D4'],
-            14 => ['title' => 'Tokoh Inspiratif', 'icon' => 'gem', 'badge_color' => '#06B6D4'],
-            15 => ['title' => 'Legenda HIMA TI', 'icon' => 'crown', 'badge_color' => '#FBBF24'],
+        // Rank tiering Minecraft per 5 level:
+        // Kayu (1-5) -> Batu (6-10) -> Besi (11-15) -> Gold (16-20) -> Amethyst (21-25) -> Diamond (26-30) -> Emerald (31-35) -> Netherite (36+)
+        $minecraftTiers = [
+            0 => ['name' => 'Kayu', 'color' => '#B45309', 'badge_bg' => 'rgba(180, 83, 9, 0.15)', 'icon' => 'cube', 'eng' => 'Wood'],
+            1 => ['name' => 'Batu', 'color' => '#78716C', 'badge_bg' => 'rgba(120, 113, 108, 0.15)', 'icon' => 'cubes', 'eng' => 'Stone'],
+            2 => ['name' => 'Besi', 'color' => '#94A3B8', 'badge_bg' => 'rgba(148, 163, 184, 0.15)', 'icon' => 'shield-alt', 'eng' => 'Iron'],
+            3 => ['name' => 'Gold', 'color' => '#F59E0B', 'badge_bg' => 'rgba(245, 158, 11, 0.15)', 'icon' => 'coins', 'eng' => 'Gold'],
+            4 => ['name' => 'Amethyst', 'color' => '#A855F7', 'badge_bg' => 'rgba(168, 85, 247, 0.15)', 'icon' => 'gem', 'eng' => 'Amethyst'],
+            5 => ['name' => 'Diamond', 'color' => '#00F0FF', 'badge_bg' => 'rgba(0, 240, 255, 0.15)', 'icon' => 'gem', 'eng' => 'Diamond'],
+            6 => ['name' => 'Emerald', 'color' => '#10B981', 'badge_bg' => 'rgba(16, 185, 129, 0.15)', 'icon' => 'gem', 'eng' => 'Emerald'],
+            7 => ['name' => 'Netherite', 'color' => '#C084FC', 'badge_bg' => 'rgba(192, 132, 252, 0.2)', 'icon' => 'dragon', 'eng' => 'Netherite'],
         ];
 
-        $meta = $titles[min($level, 15)] ?? $titles[15];
+        $tierIndex = min((int) floor(($level - 1) / 5), 7);
+        $subRankNum = (($level - 1) % 5) + 1;
+        $romans = [1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV', 5 => 'V'];
+        $subRankRoman = ($level > 40 && $tierIndex === 7) ? 'V+' : ($romans[$subRankNum] ?? 'V');
+
+        $tier = $minecraftTiers[$tierIndex];
+        $title = "Tier {$tier['name']} {$subRankRoman}";
 
         return [
             'level' => $level,
-            'title' => $meta['title'],
-            'icon' => $meta['icon'],
-            'badge_color' => $meta['badge_color'],
+            'title' => $title,
+            'tier_name' => $tier['name'],
+            'sub_rank' => $subRankRoman,
+            'tier_item' => $tier['eng'],
+            'icon' => $tier['icon'],
+            'badge_color' => $tier['color'],
+            'badge_bg' => $tier['badge_bg'],
             'exp' => $exp,
             'current_min' => $currentMin,
             'next_min' => $nextMin,

@@ -1133,6 +1133,21 @@
                                 <span>&bull;</span>
                                 <span>{{ $badge->created_at ? $badge->created_at->format('d M Y') : '' }}</span>
                             </div>
+                            @php $track = $badge->track_record; @endphp
+                            @if($track)
+                            <div style="margin-top: 6px; padding: 4px 8px; background: {{ $track['badge_bg'] }}; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                                <span style="font-size: 0.68rem; font-weight: 700; color: {{ $track['badge_color'] }}; display: flex; align-items: center; gap: 4px;">
+                                    <i class="fas {{ $track['icon'] }}"></i> {{ $track['status_label'] }}
+                                </span>
+                                <span style="font-size: 0.68rem; color: var(--text-primary); font-weight: 600;">
+                                    @if($track['total_meetings'] > 0)
+                                        {{ $track['attended_count'] }}/{{ $track['total_meetings'] }} Rapat ({{ $track['attendance_rate'] }}%)
+                                    @else
+                                        0 Rapat
+                                    @endif
+                                </span>
+                            </div>
+                            @endif
                         </div>
                     </div>
                 @endforeach

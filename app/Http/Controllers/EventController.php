@@ -49,7 +49,7 @@ class EventController extends Controller
             ->with('success', 'Event '.$event->nama_event.' berhasil dibuat. Silakan tambahkan divisi dan panitia.');
     }
 
-    public function show($id)
+    public function show($id, GamificationService $gamificationService)
     {
         $event = Event::with([
             'divisions.members.member',
@@ -68,7 +68,10 @@ class EventController extends Controller
 
         $allMembers = Member::orderBy('departemen')->orderBy('nama_lengkap')->get();
 
-        return view('events.show', compact('event', 'divisions', 'availableMembers', 'allMembers'));
+        // Preload track record keaktifan untuk seluruh panitia event
+        $trackRecords = $gamificationService->getEventMembersTrackRecords($event, $existingMemberIds);
+
+        return view('events.show', compact('event', 'divisions', 'availableMembers', 'allMembers', 'trackRecords'));
     }
 
     public function update(Request $request, $id)

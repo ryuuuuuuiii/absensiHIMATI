@@ -51,22 +51,31 @@ class GamificationAndEventBadgeTest extends TestCase
         $data = $member->level_data;
 
         $this->assertEquals(1, $data['level']);
-        $this->assertEquals('Pengurus Pemula', $data['title']);
+        $this->assertEquals('Tier Kayu I', $data['title']);
+        $this->assertEquals('Kayu', $data['tier_name']);
+        $this->assertEquals('I', $data['sub_rank']);
         $this->assertEquals(0, $data['progress']);
         $this->assertEquals(0.0, $data['percentage']);
 
-        // 100 EXP triggers Level 2
+        // 100 EXP triggers Level 2 -> Tier Kayu II
         $member->exp = 100;
         $data2 = $member->level_data;
         $this->assertEquals(2, $data2['level']);
-        $this->assertEquals('Pengurus Pemula', $data2['title']);
-        $this->assertEquals(0, $data2['progress']); // Current min is 100, next is 250 (step 150)
+        $this->assertEquals('Tier Kayu II', $data2['title']);
+        $this->assertEquals(0, $data2['progress']);
 
-        // 250 EXP triggers Level 3
+        // 250 EXP triggers Level 3 -> Tier Kayu III
         $member->exp = 250;
         $data3 = $member->level_data;
         $this->assertEquals(3, $data3['level']);
-        $this->assertEquals('Pengurus Aktif', $data3['title']);
+        $this->assertEquals('Tier Kayu III', $data3['title']);
+
+        // 1000 EXP triggers Level 6 -> Tier Batu I
+        $member->exp = 1000;
+        $data6 = $member->level_data;
+        $this->assertEquals(6, $data6['level']);
+        $this->assertEquals('Tier Batu I', $data6['title']);
+        $this->assertEquals('Batu', $data6['tier_name']);
     }
 
     public function test_offline_qr_scan_awards_exp_idempotently(): void
@@ -372,5 +381,120 @@ class GamificationAndEventBadgeTest extends TestCase
         $this->assertEquals(350, $badge->fresh()->exp_earned);
         // 500 - (500 - 350) = 350 EXP
         $this->assertEquals(350, $member->fresh()->exp);
+    }
+
+    public function test_event_member_track_record_calculation_and_badge_persistence(): void
+    {
+        $admin = $this->createAdmin();
+        $memberActive = $this->createMember(['nama_lengkap' => 'Panitia Rajin', 'exp' => 0]);
+        $memberLazy = $this->createMember(['nama_lengkap' => 'Panitia Alpha', 'exp' => 0]);
+
+        $event = Event::create([
+            'nama_event' => 'Expo TI 2026',
+            'status' => 'active',
+        ]);
+
+        $division = EventDivision::create([
+            'event_id' => $event->id,
+            'nama_divisi' => 'Divisi Acara',
+        ]);
+
+        $emActive = EventMember::create([
+            'event_id' => $event->id,
+            'division_id' => $division->id,
+            'user_id' => $memberActive->id,
+            'jabatan_panitia' => 'Koordinator Acara',
+        ]);
+
+        $emLazy = EventMember::create([
+            'event_id' => $event->id,
+            'division_id' => $division->id,
+            'user_id' => $memberLazy->id,
+            'jabatan_panitia' => 'Anggota Divisi',
+        ]);
+
+        // Buat 2 rapat untuk event ini
+        $m1 = Meeting::create([
+            'nama_rapat' => 'Rapat Perdana Expo TI',
+            'created_by' => $memberActive->id,
+            'event_id' => $event->id,
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '09:00:00',
+            'waktu_selesai' => '11:00:00',
+            'tipe_rapat' => 'event',
+            'mode_rapat' => 'offline',
+            'status' => 'completed',
+            'unique_link' => Str::random(32),
+            'absent_link' => Str::random(32),
+        ]);
+
+        $m2 = Meeting::create([
+            'nama_rapat' => 'Rapat Pemantapan Expo TI',
+            'created_by' => $memberActive->id,
+            'event_id' => $event->id,
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '13:00:00',
+            'waktu_selesai' => '15:00:00',
+            'tipe_rapat' => 'event',
+            'mode_rapat' => 'offline',
+            'status' => 'completed',
+            'unique_link' => Str::random(32),
+            'absent_link' => Str::random(32),
+        ]);
+
+        // Panitia Rajin hadir di kedua rapat
+        Attendance::create(['meeting_id' => $m1->id, 'user_id' => $memberActive->id, 'status' => 'hadir']);
+        Attendance::create(['meeting_id' => $m2->id, 'user_id' => $memberActive->id, 'status' => 'hadir']);
+
+        // Panitia Alpha: 1 izin, 1 alpha (0 hadir)
+        Attendance::create(['meeting_id' => $m1->id, 'user_id' => $memberLazy->id, 'status' => 'izin']);
+        Attendance::create(['meeting_id' => $m2->id, 'user_id' => $memberLazy->id, 'status' => 'alpha']);
+
+        $service = app(GamificationService::class);
+
+        // Track record Panitia Rajin: 2/2 Hadir (100% — Sangat Aktif)
+        $trackActive = $service->calculateEventMemberTrackRecord($event, $memberActive->id);
+        $this->assertEquals(2, $trackActive['total_meetings']);
+        $this->assertEquals(2, $trackActive['attended_count']);
+        $this->assertEquals(100.0, $trackActive['attendance_rate']);
+        $this->assertEquals('Sangat Aktif', $trackActive['status_label']);
+
+        // Track record Panitia Alpha: 0/2 Hadir (0% — Tidak Aktif)
+        $trackLazy = $service->calculateEventMemberTrackRecord($event, $memberLazy->id);
+        $this->assertEquals(2, $trackLazy['total_meetings']);
+        $this->assertEquals(0, $trackLazy['attended_count']);
+        $this->assertEquals(0.0, $trackLazy['attendance_rate']);
+        $this->assertEquals('Tidak Aktif', $trackLazy['status_label']);
+        $this->assertEquals(1, $trackLazy['izin_count']);
+        $this->assertEquals(1, $trackLazy['alpha_count']);
+
+        // Admin lihat detail event
+        $this->actingAs($admin);
+        $showResponse = $this->get(route('events.show', $event->id));
+        $showResponse->assertOk()
+            ->assertSee('Sangat Aktif')
+            ->assertSee('Tidak Aktif')
+            ->assertSee('2/2 Hadir (100%)');
+
+        // Selesaikan event dan verifikasi penyimpanan track record di member_badges
+        $this->post(route('events.complete', $event->id));
+
+        $badgeActive = MemberBadge::where('event_id', $event->id)->where('user_id', $memberActive->id)->first();
+        $this->assertNotNull($badgeActive);
+        $this->assertNotNull($badgeActive->attendance_summary);
+        $this->assertEquals(100.0, $badgeActive->track_record['attendance_rate']);
+        $this->assertEquals('Sangat Aktif', $badgeActive->track_record['status_label']);
+
+        $badgeLazy = MemberBadge::where('event_id', $event->id)->where('user_id', $memberLazy->id)->first();
+        $this->assertNotNull($badgeLazy);
+        $this->assertEquals('Tidak Aktif', $badgeLazy->track_record['status_label']);
+
+        // Halaman profil pengurus menampilkan track record lencana
+        $this->actingAs($memberActive, 'member');
+        $profileResponse = $this->get(route('portal.profile'));
+        $profileResponse->assertOk()
+            ->assertSee('Expo TI 2026')
+            ->assertSee('Sangat Aktif')
+            ->assertSee('2/2 Rapat (100%)');
     }
 }

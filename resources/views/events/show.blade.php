@@ -112,12 +112,13 @@
                 @else
                     <!-- Desktop View: Table -->
                     <div class="table-wrapper mt-3 panitia-desktop-table">
-                        <table class="table" style="margin: 0; min-width: 520px;">
+                        <table class="table" style="margin: 0; min-width: 600px;">
                             <thead>
                                 <tr>
                                     <th>Nama Panitia</th>
                                     <th>Departemen Asal</th>
                                     <th>Jabatan Kepanitiaan</th>
+                                    <th>Track Record Keaktifan</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -148,6 +149,31 @@
                                         @endif
                                     </td>
                                     <td>
+                                        @php
+                                            $track = $trackRecords[$em->user_id] ?? $em->track_record;
+                                        @endphp
+                                        <div style="display: flex; flex-direction: column; gap: 3px;">
+                                            <span class="badge" style="background: {{ $track['badge_bg'] }}; color: {{ $track['badge_color'] }}; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; width: fit-content;">
+                                                <i class="fas {{ $track['icon'] }}"></i> {{ $track['status_label'] }}
+                                            </span>
+                                            @if($track['total_meetings'] > 0)
+                                                <div style="font-size: 0.72rem; color: var(--text-muted);">
+                                                    {{ $track['attended_count'] }}/{{ $track['total_meetings'] }} Hadir ({{ $track['attendance_rate'] }}%)
+                                                    @if($track['alpha_count'] > 0)
+                                                        &bull; <span style="color: var(--danger); font-weight: 600;">{{ $track['alpha_count'] }} Alpha</span>
+                                                    @endif
+                                                    @if(($track['izin_count'] + $track['sakit_count']) > 0)
+                                                        &bull; <span>{{ $track['izin_count'] + $track['sakit_count'] }} Izin/Sakit</span>
+                                                    @endif
+                                                </div>
+                                            @else
+                                                <div style="font-size: 0.72rem; color: var(--text-muted);">
+                                                    Belum ada rapat kegiatan
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td>
                                         <div style="display: flex; gap: 4px; align-items: center;">
                                             <button type="button" class="btn btn-sm btn-ghost text-primary" onclick="openEditRoleModal({{ $em->id }}, '{{ addslashes($em->member ? $em->member->nama_lengkap : 'Unknown') }}', '{{ addslashes($em->jabatan_panitia) }}')" title="Ubah Jabatan Panitia">
                                                 <i class="fas fa-edit"></i>
@@ -172,6 +198,7 @@
                         @foreach($div->members as $em)
                         @php
                             $memberExp = app(\App\Services\GamificationService::class)->calculateEventMemberExp($em->jabatan_panitia);
+                            $track = $trackRecords[$em->user_id] ?? $em->track_record;
                         @endphp
                         <div class="panitia-mobile-item">
                             <div class="panitia-mobile-top">
@@ -203,6 +230,18 @@
                                         <i class="fas fa-medal"></i> Lencana Diterima
                                     </span>
                                 @endif
+                            </div>
+                            <div style="margin-top: 8px; padding: 6px 10px; background: {{ $track['badge_bg'] }}; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                                <div style="font-size: 0.72rem; font-weight: 700; color: {{ $track['badge_color'] }}; display: flex; align-items: center; gap: 4px;">
+                                    <i class="fas {{ $track['icon'] }}"></i> Keaktifan: {{ $track['status_label'] }}
+                                </div>
+                                <div style="font-size: 0.7rem; color: var(--text-primary); font-weight: 600;">
+                                    @if($track['total_meetings'] > 0)
+                                        {{ $track['attended_count'] }}/{{ $track['total_meetings'] }} Rapat ({{ $track['attendance_rate'] }}%)
+                                    @else
+                                        0 Rapat
+                                    @endif
+                                </div>
                             </div>
                         </div>
                         @endforeach

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\GamificationService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -17,12 +18,42 @@ class MemberBadge extends Model
         'divisi',
         'badge_type',
         'exp_earned',
+        'attendance_summary',
     ];
 
     protected function casts(): array
     {
         return [
             'exp_earned' => 'integer',
+            'attendance_summary' => 'array',
+        ];
+    }
+
+    public function getTrackRecordAttribute(): array
+    {
+        if (! empty($this->attendance_summary)) {
+            return is_array($this->attendance_summary)
+                ? $this->attendance_summary
+                : (json_decode((string) $this->attendance_summary, true) ?: []);
+        }
+
+        if ($this->event) {
+            return app(GamificationService::class)->calculateEventMemberTrackRecord($this->event, (int) $this->user_id);
+        }
+
+        return [
+            'total_meetings' => 0,
+            'attended_count' => 0,
+            'izin_count' => 0,
+            'sakit_count' => 0,
+            'alpha_count' => 0,
+            'attendance_rate' => 0.0,
+            'status_label' => 'Belum Ada Rapat',
+            'status_class' => 'neutral',
+            'badge_color' => '#64748B',
+            'badge_bg' => 'rgba(100, 116, 139, 0.15)',
+            'icon' => 'fa-info-circle',
+            'summary_text' => 'Belum ada rapat kepanitiaan',
         ];
     }
 
