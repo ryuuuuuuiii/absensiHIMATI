@@ -10,13 +10,13 @@ use Illuminate\Support\Facades\DB;
 
 class GamificationService
 {
-    public const ATTENDANCE_EXP = 50;
+    public const ATTENDANCE_EXP = 100;
 
-    public const EVENT_LEADER_EXP = 500;
+    public const EVENT_LEADER_EXP = 1500;
 
-    public const EVENT_COORDINATOR_EXP = 350;
+    public const EVENT_COORDINATOR_EXP = 1000;
 
-    public const EVENT_STAFF_EXP = 250;
+    public const EVENT_STAFF_EXP = 600;
 
     /**
      * Memberikan EXP kehadiran saat pengurus hadir rapat.
@@ -82,7 +82,7 @@ class GamificationService
     {
         $role = strtolower(trim($jabatan ?? ''));
 
-        // Tingkat 1: Penanggung Jawab, Ketua Pelaksana, Wakil Pelaksana (+500 EXP)
+        // Tingkat 1: Penanggung Jawab, Ketua Pelaksana, Wakil Pelaksana (+1500 EXP)
         if (
             str_contains($role, 'ketua') ||
             str_contains($role, 'project officer') ||
@@ -97,7 +97,7 @@ class GamificationService
             return self::EVENT_LEADER_EXP;
         }
 
-        // Tingkat 2: Koordinator Divisi (Koor), Sekretaris, Bendahara, BPH (+350 EXP)
+        // Tingkat 2: Koordinator Divisi (Koor), Sekretaris, Bendahara, BPH (+1000 EXP)
         if (
             str_contains($role, 'koor') ||
             str_contains($role, 'sekretaris') ||
@@ -109,7 +109,7 @@ class GamificationService
             return self::EVENT_COORDINATOR_EXP;
         }
 
-        // Tingkat 3: Anggota Panitia (+250 EXP)
+        // Tingkat 3: Anggota Panitia (+600 EXP)
         return self::EVENT_STAFF_EXP;
     }
 

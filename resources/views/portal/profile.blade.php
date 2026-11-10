@@ -1122,7 +1122,7 @@
                                     {{ $badge->role_title }}
                                 </span>
                                 <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #F59E0B; font-weight: 700; font-size: 0.68rem; padding: 2px 6px;">
-                                    +{{ $badge->exp_earned }} EXP
+                                    +{{ number_format($badge->exp_earned, 0, ',', '.') }} EXP
                                 </span>
                             </div>
                             <div style="font-size: 0.86rem; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 2px 0;" title="{{ $badge->event_name }}">

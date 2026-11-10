@@ -118,16 +118,28 @@ class Member extends Authenticatable
         $exp = (int) ($this->exp ?? 0);
         $level = 1;
         $currentMin = 0;
-        $step = 100;
 
+        // Kebutuhan EXP per level konsisten 3-4 kali absen (100 EXP per hadir) naik 1 level:
+        // Tier Kayu (Lv 1-5): 300 EXP per level (~3 kali absen)
+        // Tier Batu & Besi (Lv 6-15): 350 EXP per level (~3-4 kali absen)
+        // Tier Gold & Amethyst (Lv 16-25): 400 EXP per level (~4 kali absen)
+        // Tier Diamond & Emerald (Lv 26-35): 450 EXP per level (~4-5 kali absen)
+        // Tier Netherite (Lv 36+): 500 EXP per level (~5 kali absen)
         while (true) {
+            $step = match (true) {
+                $level <= 5 => 300,
+                $level <= 15 => 350,
+                $level <= 25 => 400,
+                $level <= 35 => 450,
+                default => 500,
+            };
+
             $nextMin = $currentMin + $step;
             if ($exp < $nextMin) {
                 break;
             }
             $currentMin = $nextMin;
             $level++;
-            $step += 50; // Tiap level berikutnya membutuhkan tambahan 50 EXP lebih banyak
         }
 
         $needed = $nextMin - $currentMin;

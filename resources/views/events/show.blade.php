@@ -140,7 +140,7 @@
                                             $memberExp = app(\App\Services\GamificationService::class)->calculateEventMemberExp($em->jabatan_panitia);
                                         @endphp
                                         <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #F59E0B; font-weight: 600; font-size: 11px; margin-left: 4px;" title="Bonus EXP penyelesaian event">
-                                            <i class="fas fa-bolt"></i> +{{ $memberExp }} EXP
+                                            <i class="fas fa-bolt"></i> +{{ number_format($memberExp, 0, ',', '.') }} EXP
                                         </span>
                                         @if($event->isCompleted())
                                             <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; font-size: 11px; margin-left: 4px;" title="Lencana telah disematkan ke profil panitia">
@@ -223,7 +223,7 @@
                                 <span class="badge badge-dept" style="font-size: 0.72rem;">{{ $em->member ? $em->member->departemen : '-' }}</span>
                                 <span class="badge badge-info" style="font-size: 0.72rem;">{{ $em->jabatan_panitia }}</span>
                                 <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #F59E0B; font-weight: 700; font-size: 0.72rem; padding: 2px 7px;">
-                                    <i class="fas fa-bolt"></i> +{{ $memberExp }} EXP
+                                    <i class="fas fa-bolt"></i> +{{ number_format($memberExp, 0, ',', '.') }} EXP
                                 </span>
                                 @if($event->isCompleted())
                                     <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; font-size: 0.72rem; padding: 2px 7px;">
@@ -392,13 +392,13 @@
                     <div class="form-group mb-3">
                         <label class="form-label" for="add_jabatan_preset">Jabatan dalam Kepanitiaan <span class="required">*</span></label>
                         <select id="add_jabatan_preset" class="form-control" onchange="onRolePresetChange('add')">
-                            <option value="Anggota Divisi" data-exp="250" selected>Anggota Divisi (+250 EXP)</option>
-                            <option value="Koordinator Divisi" data-exp="350">Koordinator Divisi (Koor) (+350 EXP)</option>
-                            <option value="Ketua Pelaksana" data-exp="500">Ketua Pelaksana / Project Officer (+500 EXP)</option>
-                            <option value="Wakil Ketua Pelaksana" data-exp="500">Wakil Ketua Pelaksana (+500 EXP)</option>
-                            <option value="Penanggung Jawab" data-exp="500">Penanggung Jawab (PJ) (+500 EXP)</option>
-                            <option value="Sekretaris" data-exp="350">Sekretaris Event (+350 EXP)</option>
-                            <option value="Bendahara" data-exp="350">Bendahara Event (+350 EXP)</option>
+                            <option value="Anggota Divisi" data-exp="600" selected>Anggota Divisi (+600 EXP)</option>
+                            <option value="Koordinator Divisi" data-exp="1000">Koordinator Divisi (Koor) (+1.000 EXP)</option>
+                            <option value="Ketua Pelaksana" data-exp="1500">Ketua Pelaksana / Project Officer (+1.500 EXP)</option>
+                            <option value="Wakil Ketua Pelaksana" data-exp="1500">Wakil Ketua Pelaksana (+1.500 EXP)</option>
+                            <option value="Penanggung Jawab" data-exp="1500">Penanggung Jawab (PJ) (+1.500 EXP)</option>
+                            <option value="Sekretaris" data-exp="1000">Sekretaris Event (+1.000 EXP)</option>
+                            <option value="Bendahara" data-exp="1000">Bendahara Event (+1.000 EXP)</option>
                             <option value="custom">Jabatan Lainnya (Ketik Manual)...</option>
                         </select>
                     </div>
@@ -413,12 +413,12 @@
                     <div class="role-exp-preview mb-2" id="add_exp_preview" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(59, 130, 246, 0.08); border: 1.5px solid var(--border-color); border-radius: var(--radius-md);">
                         <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary);">Bonus EXP untuk Jabatan ini:</span>
                         <span class="badge" id="add_exp_badge" style="background: rgba(245, 158, 11, 0.2); color: #F59E0B; font-weight: 800; font-size: 0.82rem; padding: 3px 8px;">
-                            <i class="fas fa-bolt"></i> +250 EXP
+                            <i class="fas fa-bolt"></i> +600 EXP
                         </span>
                     </div>
 
                     <div style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.45; margin-top: 6px;">
-                        <i class="fas fa-info-circle text-primary"></i> <strong>Tingkatan EXP:</strong> Penanggung Jawab, Ketua & Wakil (+500 EXP) &bull; Koordinator Divisi/Koor, Sekretaris, Bendahara (+350 EXP) &bull; Anggota (+250 EXP).
+                        <i class="fas fa-info-circle text-primary"></i> <strong>Tingkatan EXP:</strong> Penanggung Jawab, Ketua & Wakil (+1.500 EXP) &bull; Koordinator Divisi/Koor, Sekretaris, Bendahara (+1.000 EXP) &bull; Anggota (+600 EXP).
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -451,13 +451,13 @@
                     <div class="form-group mb-3">
                         <label class="form-label" for="edit_jabatan_preset">Pilih Jabatan Kepanitiaan <span class="required">*</span></label>
                         <select id="edit_jabatan_preset" class="form-control" onchange="onRolePresetChange('edit')">
-                            <option value="Penanggung Jawab" data-exp="500">Penanggung Jawab (PJ) (+500 EXP)</option>
-                            <option value="Ketua Pelaksana" data-exp="500">Ketua Pelaksana / Project Officer (+500 EXP)</option>
-                            <option value="Wakil Ketua Pelaksana" data-exp="500">Wakil Ketua Pelaksana (+500 EXP)</option>
-                            <option value="Koordinator Divisi" data-exp="350">Koordinator Divisi / Koor (+350 EXP)</option>
-                            <option value="Sekretaris" data-exp="350">Sekretaris Event (+350 EXP)</option>
-                            <option value="Bendahara" data-exp="350">Bendahara Event (+350 EXP)</option>
-                            <option value="Anggota Divisi" data-exp="250">Anggota Divisi (+250 EXP)</option>
+                            <option value="Penanggung Jawab" data-exp="1500">Penanggung Jawab (PJ) (+1.500 EXP)</option>
+                            <option value="Ketua Pelaksana" data-exp="1500">Ketua Pelaksana / Project Officer (+1.500 EXP)</option>
+                            <option value="Wakil Ketua Pelaksana" data-exp="1500">Wakil Ketua Pelaksana (+1.500 EXP)</option>
+                            <option value="Koordinator Divisi" data-exp="1000">Koordinator Divisi / Koor (+1.000 EXP)</option>
+                            <option value="Sekretaris" data-exp="1000">Sekretaris Event (+1.000 EXP)</option>
+                            <option value="Bendahara" data-exp="1000">Bendahara Event (+1.000 EXP)</option>
+                            <option value="Anggota Divisi" data-exp="600">Anggota Divisi (+600 EXP)</option>
                             <option value="custom">Jabatan Lainnya (Ketik Manual)...</option>
                         </select>
                     </div>
@@ -472,7 +472,7 @@
                     <div class="role-exp-preview mb-2" id="edit_exp_preview" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(245, 158, 11, 0.1); border: 1.5px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-md);">
                         <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-primary);">Estimasi Perolehan Bonus:</span>
                         <span class="badge" id="edit_exp_badge" style="background: rgba(245, 158, 11, 0.2); color: #F59E0B; font-weight: 800; font-size: 0.85rem; padding: 4px 10px;">
-                            <i class="fas fa-bolt"></i> +350 EXP
+                            <i class="fas fa-bolt"></i> +1.000 EXP
                         </span>
                     </div>
 
@@ -740,7 +740,7 @@ function estimateExpFromRole(roleName) {
         role.includes('wakil') ||
         role.includes('vice')
     ) {
-        return 500;
+        return 1500;
     }
     if (
         role.includes('koor') ||
@@ -750,15 +750,15 @@ function estimateExpFromRole(roleName) {
         role.includes('bendum') ||
         role.includes('bph')
     ) {
-        return 350;
+        return 1000;
     }
-    return 250;
+    return 600;
 }
 
 function updateRoleExpPreview(mode, exp) {
     const badge = document.getElementById(mode + '_exp_badge');
     if (!badge) return;
-    badge.innerHTML = '<i class="fas fa-bolt"></i> +' + exp + ' EXP';
+    badge.innerHTML = '<i class="fas fa-bolt"></i> +' + Number(exp).toLocaleString('id-ID') + ' EXP';
 }
 
 function onRolePresetChange(mode) {
@@ -775,7 +775,7 @@ function onRolePresetChange(mode) {
         customWrap.style.display = 'none';
         finalInput.value = preset.value;
         const opt = preset.options[preset.selectedIndex];
-        const exp = opt.getAttribute('data-exp') || 250;
+        const exp = opt.getAttribute('data-exp') || 600;
         updateRoleExpPreview(mode, exp);
     }
 }
@@ -833,7 +833,7 @@ function openEditRoleModal(memberId, memberName, currentRole) {
         customWrap.style.display = 'none';
         customInput.value = '';
         finalInput.value = preset.value;
-        const exp = preset.options[preset.selectedIndex].getAttribute('data-exp') || 250;
+        const exp = preset.options[preset.selectedIndex].getAttribute('data-exp') || 600;
         updateRoleExpPreview('edit', exp);
     } else {
         preset.value = 'custom';

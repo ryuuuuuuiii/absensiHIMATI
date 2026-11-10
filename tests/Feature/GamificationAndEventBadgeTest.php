@@ -57,21 +57,21 @@ class GamificationAndEventBadgeTest extends TestCase
         $this->assertEquals(0, $data['progress']);
         $this->assertEquals(0.0, $data['percentage']);
 
-        // 100 EXP triggers Level 2 -> Tier Kayu II
-        $member->exp = 100;
+        // 300 EXP triggers Level 2 -> Tier Kayu II (3 kali absen @ 100 EXP)
+        $member->exp = 300;
         $data2 = $member->level_data;
         $this->assertEquals(2, $data2['level']);
         $this->assertEquals('Tier Kayu II', $data2['title']);
         $this->assertEquals(0, $data2['progress']);
 
-        // 250 EXP triggers Level 3 -> Tier Kayu III
-        $member->exp = 250;
+        // 600 EXP triggers Level 3 -> Tier Kayu III
+        $member->exp = 600;
         $data3 = $member->level_data;
         $this->assertEquals(3, $data3['level']);
         $this->assertEquals('Tier Kayu III', $data3['title']);
 
-        // 1000 EXP triggers Level 6 -> Tier Batu I
-        $member->exp = 1000;
+        // 1500 EXP triggers Level 6 -> Tier Batu I
+        $member->exp = 1500;
         $data6 = $member->level_data;
         $this->assertEquals(6, $data6['level']);
         $this->assertEquals('Tier Batu I', $data6['title']);
@@ -162,16 +162,16 @@ class GamificationAndEventBadgeTest extends TestCase
 
         $this->actingAs($admin);
 
-        // Change from alpha to hadir -> awards 50 EXP
+        // Change from alpha to hadir -> awards 100 EXP
         $this->post(route('meetings.update_attendance', [$meeting->id, $attendance->id]), [
             'status' => 'hadir',
             'keterangan' => 'Hadir manual oleh admin',
         ])->assertSessionHas('success');
 
-        $this->assertEquals(50, $member->fresh()->exp);
+        $this->assertEquals(100, $member->fresh()->exp);
         $this->assertTrue((bool) $attendance->fresh()->exp_awarded);
 
-        // Change from hadir to izin -> revokes 50 EXP
+        // Change from hadir to izin -> revokes 100 EXP
         $this->post(route('meetings.update_attendance', [$meeting->id, $attendance->id]), [
             'status' => 'izin',
             'keterangan' => 'Ada keperluan keluarga',
@@ -229,11 +229,11 @@ class GamificationAndEventBadgeTest extends TestCase
         $this->assertEquals('completed', $event->fresh()->status);
         $this->assertNotNull($event->fresh()->completed_at);
 
-        // Ketua gets 500 EXP
+        // Ketua gets 1500 EXP
         $this->assertEquals(GamificationService::EVENT_LEADER_EXP, $ketua->fresh()->exp);
-        // Koordinator gets 350 EXP
+        // Koordinator gets 1000 EXP
         $this->assertEquals(GamificationService::EVENT_COORDINATOR_EXP, $koordinator->fresh()->exp);
-        // Anggota gets 250 EXP
+        // Anggota gets 600 EXP
         $this->assertEquals(GamificationService::EVENT_STAFF_EXP, $anggota->fresh()->exp);
 
         // Check badge records
@@ -242,7 +242,7 @@ class GamificationAndEventBadgeTest extends TestCase
             'event_id' => $event->id,
             'event_name' => 'Dies Natalis HIMA TI #7',
             'jabatan' => 'Ketua Pelaksana',
-            'exp_earned' => 500,
+            'exp_earned' => 1500,
         ]);
 
         $this->assertDatabaseHas('member_badges', [
@@ -250,7 +250,7 @@ class GamificationAndEventBadgeTest extends TestCase
             'event_id' => $event->id,
             'event_name' => 'Dies Natalis HIMA TI #7',
             'jabatan' => 'Anggota Panitia',
-            'exp_earned' => 250,
+            'exp_earned' => 600,
         ]);
 
         // Member profile should render the badge
@@ -259,7 +259,7 @@ class GamificationAndEventBadgeTest extends TestCase
         $profileResponse->assertOk()
             ->assertSee('Dies Natalis HIMA TI #7')
             ->assertSee('Pimpinan / Ketua')
-            ->assertSee('+500 EXP');
+            ->assertSee('+1.500 EXP');
     }
 
     public function test_admin_can_reopen_event_and_safely_revoke_badges_and_exp(): void
@@ -286,12 +286,12 @@ class GamificationAndEventBadgeTest extends TestCase
 
         $this->actingAs($admin);
 
-        // Complete event -> awards 250 EXP
+        // Complete event -> awards 600 EXP
         $this->post(route('events.complete', $event->id));
-        $this->assertEquals(250, $member->fresh()->exp);
+        $this->assertEquals(600, $member->fresh()->exp);
         $this->assertCount(1, MemberBadge::where('event_id', $event->id)->get());
 
-        // Reopen event -> revokes 250 EXP & deletes badge
+        // Reopen event -> revokes 600 EXP & deletes badge
         $reopenResponse = $this->post(route('events.reopen', $event->id));
         $reopenResponse->assertSessionHas('success');
 
@@ -305,29 +305,29 @@ class GamificationAndEventBadgeTest extends TestCase
     {
         $service = app(GamificationService::class);
 
-        // Leader tier (+500 EXP)
-        $this->assertEquals(500, $service->calculateEventMemberExp('Penanggung Jawab'));
-        $this->assertEquals(500, $service->calculateEventMemberExp('PJ'));
-        $this->assertEquals(500, $service->calculateEventMemberExp('pj acara'));
-        $this->assertEquals(500, $service->calculateEventMemberExp('Ketua Pelaksana'));
-        $this->assertEquals(500, $service->calculateEventMemberExp('Project Officer'));
-        $this->assertEquals(500, $service->calculateEventMemberExp('Wakil Ketua Pelaksana'));
-        $this->assertEquals(500, $service->calculateEventMemberExp('Vice PO'));
+        // Leader tier (+1500 EXP)
+        $this->assertEquals(1500, $service->calculateEventMemberExp('Penanggung Jawab'));
+        $this->assertEquals(1500, $service->calculateEventMemberExp('PJ'));
+        $this->assertEquals(1500, $service->calculateEventMemberExp('pj acara'));
+        $this->assertEquals(1500, $service->calculateEventMemberExp('Ketua Pelaksana'));
+        $this->assertEquals(1500, $service->calculateEventMemberExp('Project Officer'));
+        $this->assertEquals(1500, $service->calculateEventMemberExp('Wakil Ketua Pelaksana'));
+        $this->assertEquals(1500, $service->calculateEventMemberExp('Vice PO'));
 
-        // Coordinator & Core tier (+350 EXP)
-        $this->assertEquals(350, $service->calculateEventMemberExp('koor'));
-        $this->assertEquals(350, $service->calculateEventMemberExp('Koor Divisi'));
-        $this->assertEquals(350, $service->calculateEventMemberExp('Koordinator Acara'));
-        $this->assertEquals(350, $service->calculateEventMemberExp('Sekretaris'));
-        $this->assertEquals(350, $service->calculateEventMemberExp('Sekre'));
-        $this->assertEquals(350, $service->calculateEventMemberExp('Bendahara'));
-        $this->assertEquals(350, $service->calculateEventMemberExp('BPH'));
+        // Coordinator & Core tier (+1000 EXP)
+        $this->assertEquals(1000, $service->calculateEventMemberExp('koor'));
+        $this->assertEquals(1000, $service->calculateEventMemberExp('Koor Divisi'));
+        $this->assertEquals(1000, $service->calculateEventMemberExp('Koordinator Acara'));
+        $this->assertEquals(1000, $service->calculateEventMemberExp('Sekretaris'));
+        $this->assertEquals(1000, $service->calculateEventMemberExp('Sekre'));
+        $this->assertEquals(1000, $service->calculateEventMemberExp('Bendahara'));
+        $this->assertEquals(1000, $service->calculateEventMemberExp('BPH'));
 
-        // Staff / Anggota tier (+250 EXP)
-        $this->assertEquals(250, $service->calculateEventMemberExp('Anggota Panitia'));
-        $this->assertEquals(250, $service->calculateEventMemberExp('Staff'));
-        $this->assertEquals(250, $service->calculateEventMemberExp(''));
-        $this->assertEquals(250, $service->calculateEventMemberExp(null));
+        // Staff / Anggota tier (+600 EXP)
+        $this->assertEquals(600, $service->calculateEventMemberExp('Anggota Panitia'));
+        $this->assertEquals(600, $service->calculateEventMemberExp('Staff'));
+        $this->assertEquals(600, $service->calculateEventMemberExp(''));
+        $this->assertEquals(600, $service->calculateEventMemberExp(null));
     }
 
     public function test_admin_can_update_member_role_before_and_after_event_completion(): void
@@ -361,14 +361,14 @@ class GamificationAndEventBadgeTest extends TestCase
         $response->assertSessionHas('success');
         $this->assertEquals('Penanggung Jawab', $eventMember->fresh()->jabatan_panitia);
 
-        // Complete event -> should award 500 EXP
+        // Complete event -> should award 1500 EXP
         $this->post(route('events.complete', $event->id));
-        $this->assertEquals(500, $member->fresh()->exp);
+        $this->assertEquals(1500, $member->fresh()->exp);
 
         $badge = MemberBadge::where('event_id', $event->id)->where('user_id', $member->id)->first();
         $this->assertNotNull($badge);
         $this->assertEquals('Penanggung Jawab', $badge->jabatan);
-        $this->assertEquals(500, $badge->exp_earned);
+        $this->assertEquals(1500, $badge->exp_earned);
 
         // Update role after event is already completed to 'Koordinator Divisi' -> adjustments occur
         $updateCompletedResponse = $this->put(route('events.members.update_role', [$event->id, $eventMember->id]), [
@@ -378,9 +378,9 @@ class GamificationAndEventBadgeTest extends TestCase
 
         $this->assertEquals('Koordinator Divisi', $eventMember->fresh()->jabatan_panitia);
         $this->assertEquals('Koordinator Divisi', $badge->fresh()->jabatan);
-        $this->assertEquals(350, $badge->fresh()->exp_earned);
-        // 500 - (500 - 350) = 350 EXP
-        $this->assertEquals(350, $member->fresh()->exp);
+        $this->assertEquals(1000, $badge->fresh()->exp_earned);
+        // 1500 - (1500 - 1000) = 1000 EXP
+        $this->assertEquals(1000, $member->fresh()->exp);
     }
 
     public function test_event_member_track_record_calculation_and_badge_persistence(): void
