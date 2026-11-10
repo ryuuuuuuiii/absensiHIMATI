@@ -20,14 +20,20 @@
 <!-- Tabs -->
 <div class="event-tabs-wrapper mb-6">
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchEventTab('active', this)">
-            <i class="fas fa-calendar-check"></i> <span>Event Aktif</span> <span class="tab-badge">{{ $activeEvents->count() }}</span>
+        <button class="tab-btn active" onclick="switchEventTab('active', this)" title="Event Aktif">
+            <i class="fas fa-calendar-check"></i>
+            <span class="tab-label"><span class="tab-prefix">Event </span>Aktif</span>
+            <span class="tab-badge">{{ $activeEvents->count() }}</span>
         </button>
-        <button class="tab-btn" onclick="switchEventTab('completed', this)">
-            <i class="fas fa-trophy"></i> <span>Event Selesai</span> <span class="tab-badge" style="background: #10B981; color: white;">{{ $completedEvents->count() }}</span>
+        <button class="tab-btn" onclick="switchEventTab('completed', this)" title="Event Selesai">
+            <i class="fas fa-trophy"></i>
+            <span class="tab-label"><span class="tab-prefix">Event </span>Selesai</span>
+            <span class="tab-badge tab-badge-success">{{ $completedEvents->count() }}</span>
         </button>
-        <button class="tab-btn" onclick="switchEventTab('archived', this)">
-            <i class="fas fa-archive"></i> <span>Arsip</span> <span class="tab-badge">{{ $archivedEvents->count() }}</span>
+        <button class="tab-btn" onclick="switchEventTab('archived', this)" title="Arsip Event">
+            <i class="fas fa-archive"></i>
+            <span class="tab-label">Arsip</span>
+            <span class="tab-badge">{{ $archivedEvents->count() }}</span>
         </button>
     </div>
 </div>
@@ -170,19 +176,38 @@
     @else
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4);">
             @foreach ($archivedEvents as $evt)
-            <div class="card" style="opacity: 0.85;">
+            <div class="card" style="opacity: 0.9;">
                 <div class="d-flex justify-between align-center mb-3">
                     <span class="badge badge-secondary"><i class="fas fa-archive"></i> Diarsipkan</span>
+                    <small style="color: var(--text-muted); font-size: 0.8rem;">
+                        <i class="fas fa-calendar-alt" style="color: var(--blue-primary); font-size: 10px;"></i>
+                        {{ $evt->created_at ? $evt->created_at->locale('id')->translatedFormat('d M Y') : '' }}
+                    </small>
                 </div>
-                <h3 style="font-size: var(--font-lg); margin-bottom: var(--space-2);">
+                <h3 style="font-size: var(--font-lg); font-weight: 700; margin-bottom: var(--space-2); color: var(--text-primary);">
                     {{ $evt->nama_event }}
                 </h3>
-                <p style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--space-4);">
+                <p style="font-size: var(--font-sm); color: var(--text-secondary); min-height: 40px; margin-bottom: var(--space-4);">
                     {{ $evt->deskripsi ?: 'Tidak ada deskripsi.' }}
                 </p>
 
-                <div style="display: flex; gap: var(--space-2);">
-                    <a href="{{ route('events.show', $evt->id) }}" class="btn btn-sm btn-secondary" style="flex: 1; text-align: center;">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; gap: var(--space-2); margin-bottom: var(--space-4); padding: var(--space-3); background: var(--bg-surface-subtle); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                    <div>
+                        <div style="font-size: var(--font-lg); font-weight: 700; color: var(--text-muted);">{{ $evt->divisions_count }}</div>
+                        <small style="color: var(--text-muted);">Divisi</small>
+                    </div>
+                    <div>
+                        <div style="font-size: var(--font-lg); font-weight: 700; color: var(--text-muted);">{{ $evt->members_count }}</div>
+                        <small style="color: var(--text-muted);">Panitia</small>
+                    </div>
+                    <div>
+                        <div style="font-size: var(--font-lg); font-weight: 700; color: var(--text-muted);">{{ $evt->meetings_count }}</div>
+                        <small style="color: var(--text-muted);">Rapat</small>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: var(--space-2); justify-content: space-between;">
+                    <a href="{{ route('events.show', $evt->id) }}" class="btn btn-sm btn-secondary" style="flex: 1; text-align: center; justify-content: center;">
                         <i class="fas fa-eye"></i> Lihat Data
                     </a>
                     <form action="{{ route('events.restore', $evt->id) }}" method="POST" style="margin: 0;">
@@ -239,52 +264,134 @@
 <style>
 .event-tabs-wrapper {
     width: 100%;
-    max-width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding: 2px 2px 6px 2px;
-    box-sizing: border-box;
+    margin-bottom: var(--space-6);
 }
-.event-tabs-wrapper::-webkit-scrollbar {
-    display: none;
-}
+
 .event-tabs-wrapper .tabs {
-    display: inline-flex;
-    min-width: 100%;
+    display: flex;
+    width: 100%;
+    max-width: 580px;
+    padding: 5px !important;
+    gap: 6px !important;
     box-sizing: border-box;
+    border-radius: 9999px !important;
 }
+
+.event-tabs-wrapper .tab-btn {
+    flex: 1;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 9px 12px !important;
+    font-size: 0.85rem !important;
+    font-weight: 700;
+    gap: 7px;
+    white-space: nowrap;
+    border-radius: 9999px !important;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.event-tabs-wrapper .tab-label {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.event-tabs-wrapper .tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    background: rgba(48, 175, 255, 0.15);
+    color: var(--text-primary);
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.event-tabs-wrapper .tab-badge.tab-badge-success {
+    background: rgba(16, 185, 129, 0.2) !important;
+    color: #10B981 !important;
+}
+
+/* Contrast fix for active tab (fixes invisible icon and badge on cyan bg) */
+.event-tabs-wrapper .tab-btn.active {
+    background: #30AFFF !important;
+    color: #061A2E !important;
+}
+
+.event-tabs-wrapper .tab-btn.active i {
+    color: #061A2E !important;
+}
+
+.event-tabs-wrapper .tab-btn.active .tab-label {
+    color: #061A2E !important;
+}
+
+.event-tabs-wrapper .tab-btn.active .tab-badge {
+    background: #061A2E !important;
+    color: #30AFFF !important;
+    border: none !important;
+}
+
+.event-tabs-wrapper .tab-btn.active .tab-badge.tab-badge-success {
+    background: #061A2E !important;
+    color: #10B981 !important;
+}
+
+/* Mobile responsive tabs: Aktif | Selesai | Arsip (no clipping) */
 @media (max-width: 640px) {
     .event-tabs-wrapper .tabs {
-        width: 100%;
-        display: flex;
+        max-width: 100% !important;
         padding: 4px !important;
+        gap: 3px !important;
+    }
+
+    .event-tabs-wrapper .tab-btn {
+        padding: 8px 4px !important;
+        font-size: 0.78rem !important;
         gap: 4px !important;
     }
-    .event-tabs-wrapper .tab-btn {
-        flex: 1;
-        justify-content: center;
-        padding: 8px 6px !important;
-        font-size: 0.78rem !important;
-        gap: 5px !important;
-        white-space: nowrap;
+
+    /* Hide redundant "Event " prefix on mobile: Aktif | Selesai | Arsip */
+    .event-tabs-wrapper .tab-prefix {
+        display: none !important;
     }
+
     .event-tabs-wrapper .tab-btn i {
-        font-size: 0.82rem;
+        font-size: 0.8rem;
     }
+
     .event-tabs-wrapper .tab-badge {
-        font-size: 0.68rem;
-        padding: 1px 6px;
+        min-width: 18px !important;
+        height: 18px !important;
+        padding: 0 4px !important;
+        font-size: 0.68rem !important;
     }
 }
-@media (max-width: 400px) {
+
+@media (max-width: 380px) {
     .event-tabs-wrapper .tab-btn {
-        padding: 7px 4px !important;
+        padding: 7px 3px !important;
         font-size: 0.72rem !important;
         gap: 3px !important;
     }
+
     .event-tabs-wrapper .tab-btn i {
-        font-size: 0.74rem;
+        font-size: 0.72rem;
+    }
+
+    .event-tabs-wrapper .tab-badge {
+        min-width: 16px !important;
+        height: 16px !important;
+        padding: 0 3px !important;
+        font-size: 0.64rem !important;
     }
 }
 </style>
