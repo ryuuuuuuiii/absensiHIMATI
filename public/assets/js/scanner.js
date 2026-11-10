@@ -791,10 +791,40 @@ window.toggleTorch = toggleTorch;
 // ============================================
 // FINISH ATTENDANCE
 // ============================================
+let isFinishingAttendance = false;
+
 async function finishAttendance() {
+    if (isFinishingAttendance) {
+        return;
+    }
+
     const confirmMessage = 'Apakah Anda yakin ingin menyelesaikan absensi? Peserta yang belum scan akan dicatat sebagai Alpha.';
 
     const executeFinish = async () => {
+        if (isFinishingAttendance) return;
+        isFinishingAttendance = true;
+
+        // 1. Hentikan kamera pemindai agar hemat CPU & baterai HP saat memproses
+        stopScanning();
+
+        // 2. Beri indikator visual instan pada tombol
+        const btnFinish = document.getElementById('btnFinish');
+        const btnPhoto = document.getElementById('btnPhoto');
+        const originalHtml = btnFinish ? btnFinish.innerHTML : '';
+
+        if (btnFinish) {
+            btnFinish.disabled = true;
+            btnFinish.style.opacity = '0.85';
+            btnFinish.style.pointerEvents = 'none';
+            btnFinish.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyelesaikan...';
+        }
+        if (btnPhoto) {
+            btnPhoto.disabled = true;
+            btnPhoto.style.pointerEvents = 'none';
+        }
+
+        showToast('info', 'Menyelesaikan Absensi...', 'Menyimpan data kehadiran peserta...');
+
         try {
             const response = await fetch(BASE_URL + '/meeting/process/process_scan.php', {
                 method: 'POST',
@@ -814,9 +844,11 @@ async function finishAttendance() {
             const result = await response.json();
             
             if (result.success) {
-                stopScanning();
                 clearState();
-                showToast('success', 'Selesai!', 'Absensi berhasil diselesaikan.');
+                if (btnFinish) {
+                    btnFinish.innerHTML = '<i class="fas fa-check-circle"></i> Selesai!';
+                }
+                showToast('success', 'Selesai! ✓', 'Absensi berhasil diselesaikan.');
                 
                 let targetUrl = result.redirect_url;
                 if (!targetUrl) {
@@ -829,13 +861,36 @@ async function finishAttendance() {
                     }
                 }
                 
+                // Redirect cepat (250ms) tanpa jeda loading yang lama
                 setTimeout(() => {
                     window.location.href = targetUrl;
-                }, 1200);
+                }, 250);
             } else {
+                isFinishingAttendance = false;
+                if (btnFinish) {
+                    btnFinish.disabled = false;
+                    btnFinish.style.opacity = '1';
+                    btnFinish.style.pointerEvents = '';
+                    btnFinish.innerHTML = originalHtml;
+                }
+                if (btnPhoto) {
+                    btnPhoto.disabled = false;
+                    btnPhoto.style.pointerEvents = '';
+                }
                 showToast('error', 'Error', result.message || 'Gagal menyelesaikan absensi.');
             }
         } catch (error) {
+            isFinishingAttendance = false;
+            if (btnFinish) {
+                btnFinish.disabled = false;
+                btnFinish.style.opacity = '1';
+                btnFinish.style.pointerEvents = '';
+                btnFinish.innerHTML = originalHtml;
+            }
+            if (btnPhoto) {
+                btnPhoto.disabled = false;
+                btnPhoto.style.pointerEvents = '';
+            }
             showToast('error', 'Error', 'Gagal menghubungi server.');
         }
     };

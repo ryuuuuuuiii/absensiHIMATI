@@ -166,21 +166,36 @@ class MeetingSpamProtectionService
     }
 
     /**
+     * Cache in-memory validitas rapat agar tidak melakukan query count berulang-ulang
+     * ketika mengevaluasi puluhan anggota sekaligus pada rapat yang sama.
+     */
+    protected array $meetingValidityCache = [];
+
+    public function clearMeetingValidityCache(): void
+    {
+        $this->meetingValidityCache = [];
+    }
+
+    /**
      * Periksa apakah sebuah rapat yang telah selesai memenuhi syarat validitas untuk evaluasi SP otomatis.
      * Rapat yang diselesaikan secara instan (< 2 menit) tanpa ada peserta lain yang hadir dianggap sebagai
      * sesi uji coba / spam sehingga TIDAK memicu Alpha beruntun pada sistem SP anggota.
      */
     public function isMeetingValidForSp(Meeting $meeting): bool
     {
+        if (isset($this->meetingValidityCache[$meeting->id])) {
+            return $this->meetingValidityCache[$meeting->id];
+        }
+
         if ($meeting->status !== 'completed') {
-            return false;
+            return $this->meetingValidityCache[$meeting->id] = false;
         }
 
         // Rapat terjadwal historis (misal waktu_mulai dan waktu_selesai berselisih wajar)
         if ($meeting->waktu_mulai && $meeting->waktu_selesai) {
             $scheduledDiff = strtotime((string) $meeting->waktu_selesai) - strtotime((string) $meeting->waktu_mulai);
             if ($scheduledDiff >= 300) {
-                return true;
+                return $this->meetingValidityCache[$meeting->id] = true;
             }
         }
 
@@ -195,11 +210,8 @@ class MeetingSpamProtectionService
             ->count();
 
         // Jika rapat berjalan setidaknya 2 menit ATAU ada peserta lain yang scan hadir, rapat ini valid
-        if ($diffSeconds >= self::MIN_VALID_MEETING_DURATION_SECONDS || $otherAttendeesCount > 0) {
-            return true;
-        }
+        $isValid = ($diffSeconds >= self::MIN_VALID_MEETING_DURATION_SECONDS || $otherAttendeesCount > 0);
 
-        // Jika rapat kurang dari 2 menit dan 0 peserta lain yang hadir -> rapat spam/palsu, jangan picu SP!
-        return false;
+        return $this->meetingValidityCache[$meeting->id] = $isValid;
     }
 }

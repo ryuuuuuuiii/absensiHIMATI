@@ -366,19 +366,33 @@ class PublicMeetingController extends Controller
     {
         $meeting = Meeting::where('unique_link', $uniqueLink)->firstOrFail();
 
+        if ($meeting->status === 'completed') {
+            $redirectUrl = route('public.hasil', $meeting->unique_link);
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Rapat telah diselesaikan sebelumnya.',
+                    'redirect_url' => $redirectUrl,
+                ]);
+            }
+
+            return redirect($redirectUrl)->with('info', 'Rapat telah diselesaikan sebelumnya.');
+        }
+
         $meeting->update([
             'status' => 'completed',
             'waktu_selesai' => now()->format('H:i:s'),
         ]);
 
-        $syncResult = $this->syncService->syncMeeting($meeting);
+        // Sync ke Google Sheets secara asinkron di background (tidak menahan response pengguna)
+        $this->syncService->syncMeetingAsync($meeting);
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Rapat telah diselesaikan dan absensi ditutup.',
                 'waktu_selesai' => substr($meeting->waktu_selesai, 0, 5).' WITA',
-                'sync' => $syncResult,
+                'redirect_url' => route('public.hasil', $meeting->unique_link),
             ]);
         }
 

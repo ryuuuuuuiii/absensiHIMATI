@@ -433,36 +433,48 @@ class MeetingController extends Controller
     {
         $meeting = Meeting::findOrFail($id);
 
-        $meeting->update([
-            'status' => 'completed',
-            'waktu_selesai' => now()->format('H:i:s'),
-        ]);
-
-        // Sync to Google Sheets in background / inline
-        $syncResult = $this->syncService->syncMeeting($meeting);
-
         $isAjaxOrJson = $request->ajax()
             || $request->wantsJson()
             || $request->isJson()
             || $request->hasHeader('X-Requested-With')
             || $request->input('action') === 'finish';
 
+        if ($meeting->status === 'completed') {
+            $redirectUrl = route('public.hasil', $meeting->unique_link);
+            if ($isAjaxOrJson) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Rapat telah diselesaikan sebelumnya.',
+                    'redirect_url' => $redirectUrl,
+                ]);
+            }
+
+            return redirect($redirectUrl)->with('info', 'Rapat telah diselesaikan sebelumnya.');
+        }
+
+        $meeting->update([
+            'status' => 'completed',
+            'waktu_selesai' => now()->format('H:i:s'),
+        ]);
+
+        // Sync ke Google Sheets secara asinkron di background (tidak menahan response pengguna)
+        $this->syncService->syncMeetingAsync($meeting);
+
         if ($isAjaxOrJson) {
             return response()->json([
                 'success' => true,
                 'message' => 'Absensi selesai dan berhasil disimpan.',
-                'sync' => $syncResult,
                 'redirect_url' => route('public.hasil', $meeting->unique_link),
             ]);
         }
 
         if (auth()->check()) {
             return redirect()->route('meetings.show', $meeting->id)
-                ->with('success', 'Rapat telah diselesaikan. '.($syncResult['message'] ?? ''));
+                ->with('success', 'Rapat telah diselesaikan dan absensi ditutup.');
         }
 
         return redirect()->route('public.hasil', $meeting->unique_link)
-            ->with('success', 'Rapat telah diselesaikan. '.($syncResult['message'] ?? ''));
+            ->with('success', 'Rapat telah diselesaikan dan absensi ditutup.');
     }
 
     public function cancel(Request $request, $id)

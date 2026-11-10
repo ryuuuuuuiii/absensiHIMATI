@@ -29,6 +29,22 @@ class GoogleSyncService
         return $folderId ?: null;
     }
 
+    /**
+     * Sinkronisasi data rapat ke Google Sheets secara asinkron (background)
+     * setelah response HTTP dikirim ke browser pengguna sehingga tidak membuat loading macet.
+     */
+    public function syncMeetingAsync(Meeting $meeting): void
+    {
+        $url = $this->getScriptUrl();
+        if (! $url) {
+            return;
+        }
+
+        app()->terminating(function () use ($meeting) {
+            $this->syncMeeting($meeting);
+        });
+    }
+
     public function syncMeeting(Meeting $meeting): array
     {
         $url = $this->getScriptUrl();
@@ -64,7 +80,7 @@ class GoogleSyncService
                 return ['success' => false, 'message' => 'Tidak ada data peserta untuk disinkronkan.'];
             }
 
-            $response = Http::timeout(30)
+            $response = Http::timeout(8)
                 ->withoutVerifying()
                 ->post($url, [
                     'action' => 'appendAttendance',

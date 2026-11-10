@@ -212,6 +212,13 @@
                         cancelText: 'Batal',
                         onConfirm: function() {
                             form.setAttribute('data-confirm-handled', 'true');
+                            const submitBtn = form.querySelector('button[type="submit"]');
+                            if (submitBtn) {
+                                submitBtn.disabled = true;
+                                submitBtn.style.opacity = '0.85';
+                                submitBtn.style.pointerEvents = 'none';
+                                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+                            }
                             form.submit();
                         }
                     });
@@ -225,3 +232,4 @@
         document.body.style.overflow = 'hidden';
     @endif
 </script>
+
