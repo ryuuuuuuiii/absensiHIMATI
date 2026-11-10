@@ -21,6 +21,7 @@ class Attendance extends Model
         'scanned_at',
         'scan_method',
         'sp_ignored',
+        'exp_awarded',
         'created_at',
     ];
 
@@ -29,6 +30,7 @@ class Attendance extends Model
         return [
             'scanned_at' => 'datetime',
             'sp_ignored' => 'boolean',
+            'exp_awarded' => 'boolean',
         ];
     }
 

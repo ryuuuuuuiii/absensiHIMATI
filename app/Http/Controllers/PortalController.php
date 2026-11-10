@@ -8,6 +8,7 @@ use App\Models\Attendance;
 use App\Models\Feedback;
 use App\Models\Member;
 use App\Services\FileUploadService;
+use App\Services\GamificationService;
 use App\Services\QrCodeService;
 use App\Services\SpService;
 use Illuminate\Http\Request;
@@ -178,6 +179,10 @@ class PortalController extends Controller
             $data['bukti_foto'] = $filename;
         }
 
+        if ($attendance->exp_awarded && $validated['status'] !== 'hadir') {
+            app(GamificationService::class)->revokeAttendanceExp($attendance, $member);
+        }
+
         $attendance->update($data);
         cache()->forget("portal_stats_{$member->id}");
 
@@ -223,9 +228,11 @@ class PortalController extends Controller
         }
 
         $attendance->update($data);
+        $exp = app(GamificationService::class)->awardAttendanceExp($attendance, $member);
+        $expNotice = $exp ? " (+{$exp} EXP)" : '';
         cache()->forget("portal_stats_{$member->id}");
 
-        return back()->with('success', 'Presensi kehadiran berhasil dicatat.'.$member->sp_attendance_notice.' Terima kasih!');
+        return back()->with('success', 'Presensi kehadiran berhasil dicatat!'.$expNotice.$member->sp_attendance_notice.' Terima kasih!');
     }
 
     public function profile()
@@ -235,8 +242,9 @@ class PortalController extends Controller
             ->latest()
             ->take(10)
             ->get();
+        $badges = $member->badges()->with('event')->get();
 
-        return view('portal.profile', compact('member', 'feedbacks'));
+        return view('portal.profile', compact('member', 'feedbacks', 'badges'));
     }
 
     public function updateProfile(Request $request)

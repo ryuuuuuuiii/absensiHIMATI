@@ -9,6 +9,7 @@ use App\Models\EventMember;
 use App\Models\Meeting;
 use App\Models\Member;
 use App\Services\FileUploadService;
+use App\Services\GamificationService;
 use App\Services\GoogleSyncService;
 use App\Services\MeetingSpamProtectionService;
 use Illuminate\Http\Request;
@@ -239,8 +240,12 @@ class MeetingController extends Controller
 
             $now = now();
             $attendanceRecords = [];
+            $hasCreatorAttended = false;
             foreach ($memberIds as $mId) {
                 $isCreator = ($m->created_by && (int) $mId === (int) $m->created_by);
+                if ($isCreator) {
+                    $hasCreatorAttended = true;
+                }
 
                 $attendanceRecords[] = [
                     'meeting_id' => $m->id,
@@ -248,12 +253,18 @@ class MeetingController extends Controller
                     'status' => $isCreator ? 'hadir' : 'alpha',
                     'scanned_at' => $isCreator ? $now : null,
                     'scan_method' => $isCreator ? 'manual' : 'qr_scan',
+                    'exp_awarded' => $isCreator,
                     'created_at' => $now,
                 ];
             }
 
             if (! empty($attendanceRecords)) {
                 Attendance::insert($attendanceRecords);
+            }
+
+            if ($hasCreatorAttended && $m->created_by) {
+                Member::where('id', $m->created_by)->increment('exp', GamificationService::ATTENDANCE_EXP);
+                cache()->forget("portal_stats_{$m->created_by}");
             }
 
             return $m;
@@ -376,7 +387,7 @@ class MeetingController extends Controller
 
             if ($attendance) {
                 if ($attendance->status === 'hadir') {
-                    return ['duplicate' => true];
+                    return ['duplicate' => true, 'attendance' => $attendance, 'exp_awarded' => null];
                 }
 
                 $attendance->update([
@@ -385,7 +396,7 @@ class MeetingController extends Controller
                     'scan_method' => 'qr_scan',
                 ]);
             } else {
-                Attendance::create([
+                $attendance = Attendance::create([
                     'meeting_id' => $meeting->id,
                     'user_id' => $member->id,
                     'status' => 'hadir',
@@ -395,7 +406,9 @@ class MeetingController extends Controller
                 ]);
             }
 
-            return ['duplicate' => false];
+            $expAwarded = app(GamificationService::class)->awardAttendanceExp($attendance, $member);
+
+            return ['duplicate' => false, 'attendance' => $attendance, 'exp_awarded' => $expAwarded];
         });
 
         if ($scanResult['duplicate']) {
@@ -407,10 +420,11 @@ class MeetingController extends Controller
         }
 
         $spNotice = $member->sp_attendance_notice;
+        $expNotice = ! empty($scanResult['exp_awarded']) ? " (+{$scanResult['exp_awarded']} EXP)" : '';
 
         return response()->json([
             'success' => true,
-            'message' => 'Kehadiran berhasil dicatat!'.$spNotice,
+            'message' => 'Kehadiran berhasil dicatat!'.$expNotice.$spNotice,
             'scanned_at' => $now->format('H:i'),
             'scanned_at_iso' => $now->toIso8601String(),
             'user' => [
@@ -595,7 +609,17 @@ class MeetingController extends Controller
             $data['scan_method'] = 'manual';
         }
 
+        $newStatus = $request->input('status');
+        $oldStatus = $attendance->status;
+
         $attendance->update($data);
+
+        $gamification = app(GamificationService::class);
+        if ($newStatus === 'hadir' && $oldStatus !== 'hadir') {
+            $gamification->awardAttendanceExp($attendance);
+        } elseif ($newStatus !== 'hadir' && $oldStatus === 'hadir') {
+            $gamification->revokeAttendanceExp($attendance);
+        }
 
         return back()->with('success', 'Status kehadiran berhasil diperbarui.');
     }

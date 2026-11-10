@@ -8,6 +8,7 @@ use App\Models\EventDivision;
 use App\Models\EventMember;
 use App\Models\Meeting;
 use App\Models\Member;
+use App\Services\GamificationService;
 use App\Services\GoogleSyncService;
 use App\Services\MeetingSpamProtectionService;
 use Illuminate\Http\Request;
@@ -227,8 +228,12 @@ class PublicMeetingController extends Controller
 
             $now = now();
             $attendanceRecords = [];
+            $hasCreatorAttended = false;
             foreach ($memberIds as $mId) {
                 $isCreator = ($m->created_by && (int) $mId === (int) $m->created_by);
+                if ($isCreator) {
+                    $hasCreatorAttended = true;
+                }
 
                 $attendanceRecords[] = [
                     'meeting_id' => $m->id,
@@ -236,12 +241,18 @@ class PublicMeetingController extends Controller
                     'status' => $isCreator ? 'hadir' : 'alpha',
                     'scanned_at' => $isCreator ? $now : null,
                     'scan_method' => $isCreator ? 'manual' : 'qr_scan',
+                    'exp_awarded' => $isCreator,
                     'created_at' => $now,
                 ];
             }
 
             if (! empty($attendanceRecords)) {
                 Attendance::insert($attendanceRecords);
+            }
+
+            if ($hasCreatorAttended && $m->created_by) {
+                Member::where('id', $m->created_by)->increment('exp', GamificationService::ATTENDANCE_EXP);
+                cache()->forget("portal_stats_{$m->created_by}");
             }
 
             return $m;

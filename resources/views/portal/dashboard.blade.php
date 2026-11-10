@@ -27,6 +27,10 @@
                 Halo, <span class="hero-name">{{ $member->nama_lengkap }}</span>!&nbsp;<span class="wave-emoji">👋</span>
             </h2>
             <div class="portal-hero-meta">
+                @php $lvl = $member->level_data; @endphp
+                <span class="hero-pill-badge" style="background: rgba(48, 175, 255, 0.15); color: #0284C7; border: 1px solid rgba(48, 175, 255, 0.35); font-weight: 700;">
+                    <i class="fas fa-{{ $lvl['icon'] }}" style="color: {{ $lvl['badge_color'] }};"></i> Lv. {{ $lvl['level'] }} &bull; {{ $lvl['title'] }}
+                </span>
                 <span class="hero-pill-badge role-badge">
                     <i class="fas fa-id-badge"></i> {{ $member->jabatan }}
                 </span>
@@ -57,6 +61,15 @@
                         <i class="fas fa-user-times"></i> SP 3 (Diberhentikan)
                     </span>
                 @endif
+            </div>
+            <div style="margin-top: 8px; max-width: 320px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: 600; color: var(--text-muted); margin-bottom: 3px;">
+                    <span><i class="fas fa-bolt" style="color: #F59E0B;"></i> {{ number_format($lvl['exp']) }} EXP &bull; Lv. {{ $lvl['level'] }}</span>
+                    <span>{{ $lvl['progress'] }}/{{ $lvl['needed'] }} ({{ $lvl['percentage'] }}%)</span>
+                </div>
+                <div style="width: 100%; height: 6px; background: rgba(0, 0, 0, 0.08); border-radius: 9999px; overflow: hidden;">
+                    <div style="width: {{ $lvl['percentage'] }}%; height: 100%; background: linear-gradient(90deg, #30AFFF, #10B981); border-radius: 9999px;"></div>
+                </div>
             </div>
         </div>
     </div>

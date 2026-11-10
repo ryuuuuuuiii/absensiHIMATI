@@ -164,6 +164,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [EventController::class, 'store'])->name('store');
         Route::get('/{event}', [EventController::class, 'show'])->name('show');
         Route::put('/{event}', [EventController::class, 'update'])->name('update');
+        Route::post('/{event}/complete', [EventController::class, 'complete'])->name('complete');
+        Route::post('/{event}/reopen', [EventController::class, 'reopen'])->name('reopen');
         Route::post('/{event}/archive', [EventController::class, 'archive'])->name('archive');
         Route::post('/{event}/restore', [EventController::class, 'restore'])->name('restore');
         Route::delete('/{event}', [EventController::class, 'destroy'])->name('destroy');

@@ -29,6 +29,7 @@ class Member extends Authenticatable
         'qr_image',
         'profile_photo',
         'last_login_at',
+        'exp',
         'is_bph',
         'sp_level',
         'sp_base_level',
@@ -39,6 +40,7 @@ class Member extends Authenticatable
     ];
 
     protected $attributes = [
+        'exp' => 0,
         'sp_level' => 0,
         'sp_base_level' => 0,
         'is_active' => true,
@@ -52,6 +54,7 @@ class Member extends Authenticatable
     protected function casts(): array
     {
         return [
+            'exp' => 'integer',
             'is_bph' => 'boolean',
             'is_active' => 'boolean',
             'sp_level' => 'integer',
@@ -100,6 +103,79 @@ class Member extends Authenticatable
     public function announcementReads(): HasMany
     {
         return $this->hasMany(AnnouncementRead::class, 'user_id');
+    }
+
+    public function badges(): HasMany
+    {
+        return $this->hasMany(MemberBadge::class, 'user_id')->latest();
+    }
+
+    /**
+     * Data level, exp, progress bar, dan title pengurus
+     */
+    public function getLevelDataAttribute(): array
+    {
+        $exp = (int) ($this->exp ?? 0);
+        $level = 1;
+        $currentMin = 0;
+        $step = 100;
+
+        while (true) {
+            $nextMin = $currentMin + $step;
+            if ($exp < $nextMin) {
+                break;
+            }
+            $currentMin = $nextMin;
+            $level++;
+            $step += 50; // Tiap level berikutnya membutuhkan tambahan 50 EXP lebih banyak
+        }
+
+        $needed = $nextMin - $currentMin;
+        $progress = $exp - $currentMin;
+        $percentage = $needed > 0 ? min(100, max(0, round(($progress / $needed) * 100, 1))) : 100;
+
+        $titles = [
+            1 => ['title' => 'Pengurus Pemula', 'icon' => 'seedling', 'badge_color' => '#10B981'],
+            2 => ['title' => 'Pengurus Pemula', 'icon' => 'seedling', 'badge_color' => '#10B981'],
+            3 => ['title' => 'Pengurus Aktif', 'icon' => 'bolt', 'badge_color' => '#3B82F6'],
+            4 => ['title' => 'Pengurus Aktif', 'icon' => 'bolt', 'badge_color' => '#3B82F6'],
+            5 => ['title' => 'Pengurus Terampil', 'icon' => 'star', 'badge_color' => '#8B5CF6'],
+            6 => ['title' => 'Pengurus Terampil', 'icon' => 'star', 'badge_color' => '#8B5CF6'],
+            7 => ['title' => 'Pengurus Berdedikasi', 'icon' => 'shield-alt', 'badge_color' => '#EC4899'],
+            8 => ['title' => 'Pengurus Berdedikasi', 'icon' => 'shield-alt', 'badge_color' => '#EC4899'],
+            9 => ['title' => 'Teladan HIMA TI', 'icon' => 'medal', 'badge_color' => '#F59E0B'],
+            10 => ['title' => 'Teladan HIMA TI', 'icon' => 'medal', 'badge_color' => '#F59E0B'],
+            11 => ['title' => 'Tokoh Inspiratif', 'icon' => 'gem', 'badge_color' => '#06B6D4'],
+            12 => ['title' => 'Tokoh Inspiratif', 'icon' => 'gem', 'badge_color' => '#06B6D4'],
+            13 => ['title' => 'Tokoh Inspiratif', 'icon' => 'gem', 'badge_color' => '#06B6D4'],
+            14 => ['title' => 'Tokoh Inspiratif', 'icon' => 'gem', 'badge_color' => '#06B6D4'],
+            15 => ['title' => 'Legenda HIMA TI', 'icon' => 'crown', 'badge_color' => '#FBBF24'],
+        ];
+
+        $meta = $titles[min($level, 15)] ?? $titles[15];
+
+        return [
+            'level' => $level,
+            'title' => $meta['title'],
+            'icon' => $meta['icon'],
+            'badge_color' => $meta['badge_color'],
+            'exp' => $exp,
+            'current_min' => $currentMin,
+            'next_min' => $nextMin,
+            'progress' => $progress,
+            'needed' => $needed,
+            'percentage' => $percentage,
+        ];
+    }
+
+    public function getLevelAttribute(): int
+    {
+        return $this->level_data['level'];
+    }
+
+    public function getLevelTitleAttribute(): string
+    {
+        return $this->level_data['title'];
     }
 
     public function getInitialsAttribute(): string

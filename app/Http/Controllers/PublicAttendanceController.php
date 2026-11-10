@@ -6,6 +6,7 @@ use App\Models\Attendance;
 use App\Models\Meeting;
 use App\Models\Member;
 use App\Services\FileUploadService;
+use App\Services\GamificationService;
 use Illuminate\Http\Request;
 
 class PublicAttendanceController extends Controller
@@ -112,15 +113,26 @@ class PublicAttendanceController extends Controller
         }
 
         if ($attendance) {
+            if ($status !== 'hadir' && $attendance->exp_awarded) {
+                app(GamificationService::class)->revokeAttendanceExp($attendance, $member);
+            }
             $attendance->update($data);
         } else {
             $data['meeting_id'] = $meeting->id;
             $data['user_id'] = $userId;
             $data['created_at'] = now();
-            Attendance::create($data);
+            $attendance = Attendance::create($data);
         }
 
-        return back()->with('success', 'Presensi online berhasil dicatat atas nama '.$member->nama_lengkap.'! Terima kasih.'.$member->sp_attendance_notice);
+        $expNotice = '';
+        if ($status === 'hadir') {
+            $exp = app(GamificationService::class)->awardAttendanceExp($attendance, $member);
+            if ($exp) {
+                $expNotice = " (+{$exp} EXP)";
+            }
+        }
+
+        return back()->with('success', 'Presensi online berhasil dicatat atas nama '.$member->nama_lengkap.'!'.$expNotice.' Terima kasih.'.$member->sp_attendance_notice);
     }
 
     public function absentForm($absentLink)
@@ -191,6 +203,9 @@ class PublicAttendanceController extends Controller
         }
 
         if ($attendance) {
+            if ($status !== 'hadir' && $attendance->exp_awarded) {
+                app(GamificationService::class)->revokeAttendanceExp($attendance, $member);
+            }
             $attendance->update($data);
         } else {
             $data['meeting_id'] = $meeting->id;

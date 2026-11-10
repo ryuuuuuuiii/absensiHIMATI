@@ -7,23 +7,60 @@
 @endsection
 
 @section('content')
-<div class="card mb-6" style="border-left: 4px solid var(--primary);">
+<div class="card mb-6" style="border-left: 4px solid {{ $event->isCompleted() ? '#10B981' : 'var(--primary)' }};">
     <div class="d-flex align-center justify-between flex-wrap gap-4 mb-3">
         <div>
-            <h2 style="font-size: var(--font-xl); color: var(--primary); margin-bottom: 4px;">
-                {{ $event->nama_event }}
-            </h2>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
+                <h2 style="font-size: var(--font-xl); color: var(--primary); margin: 0;">
+                    {{ $event->nama_event }}
+                </h2>
+                @if($event->isCompleted())
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: var(--font-xs); padding: 4px 10px; border-radius: 9999px;">
+                        <i class="fas fa-check-circle"></i> Event Selesai
+                    </span>
+                @elseif($event->status === 'archived')
+                    <span class="badge badge-secondary" style="font-size: var(--font-xs); padding: 4px 10px; border-radius: 9999px;">
+                        <i class="fas fa-archive"></i> Diarsipkan
+                    </span>
+                @else
+                    <span class="badge badge-success" style="font-size: var(--font-xs); padding: 4px 10px; border-radius: 9999px;">
+                        <i class="fas fa-circle" style="font-size: 8px;"></i> Aktif
+                    </span>
+                @endif
+            </div>
             <p style="font-size: var(--font-sm); color: var(--text-muted); margin: 0;">
                 {{ $event->deskripsi ?: 'Tidak ada deskripsi.' }}
             </p>
+            @if($event->isCompleted())
+                <div style="margin-top: 6px; font-size: var(--font-xs); color: #10B981; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-medal"></i>
+                    <span>Diselesaikan pada <strong>{{ $event->completed_at ? $event->completed_at->format('d M Y, H:i') : '-' }} WITA</strong> &bull; Seluruh panitia telah menerima lencana kepanitiaan dan bonus EXP.</span>
+                </div>
+            @endif
         </div>
-        <div style="display: flex; gap: var(--space-3); align-items: center;">
+        <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
             <a href="{{ route('events.index') }}" class="btn btn-sm btn-secondary">
                 <i class="fas fa-arrow-left"></i> Kembali ke Event
             </a>
-            <button class="btn btn-sm btn-primary" onclick="openModal('addDivModal')">
-                <i class="fas fa-plus"></i> Tambah Divisi
-            </button>
+
+            @if($event->isCompleted())
+                <form action="{{ route('events.reopen', $event->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin membuka kembali event ini? Lencana kepanitiaan dan bonus EXP yang telah dibagikan ke panitia akan ditarik kembali.')" style="margin: 0;">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-outline-warning">
+                        <i class="fas fa-undo"></i> Buka Kembali Event
+                    </button>
+                </form>
+            @elseif($event->status === 'active')
+                <form action="{{ route('events.complete', $event->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menyelesaikan event ini?\n\nSeluruh anggota yang terdaftar dalam kepanitiaan event ini akan langsung mendapatkan:\n1. Lencana Kepanitiaan Resmi di profil masing-masing\n2. Bonus EXP besar (+500 EXP Ketua, +350 EXP Koordinator/BPH/Sekretaris/Bendahara, +250 EXP Anggota)')" style="margin: 0;">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-success" style="box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                        <i class="fas fa-award"></i> Selesaikan Event & Bagikan Lencana
+                    </button>
+                </form>
+                <button class="btn btn-sm btn-primary" onclick="openModal('addDivModal')">
+                    <i class="fas fa-plus"></i> Tambah Divisi
+                </button>
+            @endif
         </div>
     </div>
 </div>
@@ -97,6 +134,17 @@
                                     </td>
                                     <td>
                                         <span class="badge badge-info">{{ $em->jabatan_panitia }}</span>
+                                        @php
+                                            $memberExp = app(\App\Services\GamificationService::class)->calculateEventMemberExp($em->jabatan_panitia);
+                                        @endphp
+                                        <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #F59E0B; font-weight: 600; font-size: 11px; margin-left: 4px;" title="Bonus EXP penyelesaian event">
+                                            <i class="fas fa-bolt"></i> +{{ $memberExp }} EXP
+                                        </span>
+                                        @if($event->isCompleted())
+                                            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; font-size: 11px; margin-left: 4px;" title="Lencana telah disematkan ke profil panitia">
+                                                <i class="fas fa-medal"></i> Lencana Diterima
+                                            </span>
+                                        @endif
                                     </td>
                                     <td>
                                         <form action="{{ route('events.members.destroy', [$event->id, $em->id]) }}" method="POST" onsubmit="return confirm('Keluarkan anggota ini dari kepanitiaan?')" style="margin: 0;">
@@ -133,9 +181,18 @@
                 </div>
                 <div>
                     <span style="color: var(--text-muted); display: block;">Status:</span>
-                    <span class="badge {{ $event->status === 'active' ? 'badge-success' : 'badge-secondary' }}">
-                        {{ ucfirst($event->status) }}
-                    </span>
+                    @if($event->isCompleted())
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3);">
+                            <i class="fas fa-trophy"></i> Selesai
+                        </span>
+                        <div style="font-size: var(--font-xs); color: var(--text-muted); margin-top: 4px;">
+                            {{ $event->completed_at ? $event->completed_at->format('d M Y, H:i') : '-' }} WITA
+                        </div>
+                    @elseif($event->status === 'active')
+                        <span class="badge badge-success">Aktif</span>
+                    @else
+                        <span class="badge badge-secondary">Diarsipkan</span>
+                    @endif
                 </div>
             </div>
         </div>

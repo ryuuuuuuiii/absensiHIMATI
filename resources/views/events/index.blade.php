@@ -22,6 +22,9 @@
     <button class="tab-btn active" onclick="switchEventTab('active', this)">
         <i class="fas fa-calendar-check"></i> Event Aktif <span class="tab-badge">{{ $activeEvents->count() }}</span>
     </button>
+    <button class="tab-btn" onclick="switchEventTab('completed', this)">
+        <i class="fas fa-trophy"></i> Event Selesai <span class="tab-badge" style="background: #10B981; color: white;">{{ $completedEvents->count() }}</span>
+    </button>
     <button class="tab-btn" onclick="switchEventTab('archived', this)">
         <i class="fas fa-archive"></i> Arsip <span class="tab-badge">{{ $archivedEvents->count() }}</span>
     </button>
@@ -85,7 +88,76 @@
     @endif
 </div>
 
-<!-- Archived Events -->
+<!-- Completed Events -->
+<div id="tab-completed" class="event-tab-content" style="display: none;">
+    @if ($completedEvents->isEmpty())
+        <div class="card empty-state">
+            <i class="fas fa-trophy" style="color: #10B981;"></i>
+            <h3>Belum Ada Event yang Diselesaikan</h3>
+            <p>Selesaikan event yang telah rampung untuk membagikan lencana dan EXP kepanitiaan kepada seluruh panitia.</p>
+        </div>
+    @else
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-4);">
+            @foreach ($completedEvents as $evt)
+            <div class="card" style="border-top: 3px solid #10B981;">
+                <div class="d-flex justify-between align-center mb-3">
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3);">
+                        <i class="fas fa-trophy"></i> Selesai
+                    </span>
+                    <small style="color: var(--text-muted); font-size: 0.8rem;">
+                        <i class="fas fa-calendar-check" style="color: #10B981; font-size: 10px;"></i>
+                        {{ $evt->completed_at ? $evt->completed_at->locale('id')->translatedFormat('d M Y') : '' }}
+                    </small>
+                </div>
+                <h3 style="font-size: var(--font-lg); font-weight: 700; margin-bottom: var(--space-2); color: var(--text-primary);">
+                    {{ $evt->nama_event }}
+                </h3>
+                <p style="font-size: var(--font-sm); color: var(--text-secondary); min-height: 40px; margin-bottom: var(--space-3);">
+                    {{ $evt->deskripsi ?: 'Tidak ada deskripsi.' }}
+                </p>
+
+                <div style="padding: 6px 10px; background: rgba(16, 185, 129, 0.1); border-radius: var(--radius-sm); font-size: 11px; color: #10B981; margin-bottom: var(--space-3); display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-medal"></i>
+                    <span>Lencana & EXP telah dibagikan ke {{ $evt->members_count }} panitia</span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; gap: var(--space-2); margin-bottom: var(--space-4); padding: var(--space-3); background: var(--bg-surface-subtle); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                    <div>
+                        <div style="font-size: var(--font-lg); font-weight: 700; color: #10B981;">{{ $evt->divisions_count }}</div>
+                        <small style="color: var(--text-muted);">Divisi</small>
+                    </div>
+                    <div>
+                        <div style="font-size: var(--font-lg); font-weight: 700; color: #10B981;">{{ $evt->members_count }}</div>
+                        <small style="color: var(--text-muted);">Panitia</small>
+                    </div>
+                    <div>
+                        <div style="font-size: var(--font-lg); font-weight: 700; color: #10B981;">{{ $evt->meetings_count }}</div>
+                        <small style="color: var(--text-muted);">Rapat</small>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: var(--space-2); justify-content: space-between;">
+                    <a href="{{ route('events.show', $evt->id) }}" class="btn btn-sm btn-primary" style="flex: 1; text-align: center;">
+                        <i class="fas fa-eye"></i> Detail & Lencana
+                    </a>
+                    <form action="{{ route('events.reopen', $evt->id) }}" method="POST" onsubmit="return confirm('Buka kembali event ini? Lencana dan bonus EXP panitia akan ditarik kembali.')" style="margin: 0;">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Buka Kembali Event">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </form>
+                    <form action="{{ route('events.archive', $evt->id) }}" method="POST" style="margin: 0;">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-ghost" title="Arsipkan Event">
+                            <i class="fas fa-archive"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    @endif
+</div>
 <div id="tab-archived" class="event-tab-content" style="display: none;">
     @if ($archivedEvents->isEmpty())
         <div class="card empty-state">

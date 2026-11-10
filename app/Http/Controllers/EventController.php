@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\EventDivision;
 use App\Models\EventMember;
 use App\Models\Member;
+use App\Services\GamificationService;
 use Illuminate\Http\Request;
 
 class EventController extends Controller
@@ -17,12 +18,17 @@ class EventController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        $completedEvents = Event::withCount(['divisions', 'members', 'meetings'])
+            ->where('status', 'completed')
+            ->orderBy('completed_at', 'desc')
+            ->get();
+
         $archivedEvents = Event::withCount(['divisions', 'members', 'meetings'])
             ->where('status', 'archived')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('events.index', compact('activeEvents', 'archivedEvents'));
+        return view('events.index', compact('activeEvents', 'completedEvents', 'archivedEvents'));
     }
 
     public function store(Request $request)
@@ -190,5 +196,31 @@ class EventController extends Controller
         $em->delete();
 
         return back()->with('success', 'Panitia berhasil dikeluarkan dari divisi.');
+    }
+
+    public function complete($id, GamificationService $gamificationService)
+    {
+        $event = Event::findOrFail($id);
+
+        if ($event->status === 'completed') {
+            return back()->with('info', 'Event ini sudah dalam status selesai.');
+        }
+
+        $awardedCount = $gamificationService->completeEvent($event);
+
+        return back()->with('success', "Event '{$event->nama_event}' berhasil diselesaikan! Sebanyak {$awardedCount} panitia telah menerima lencana kepanitiaan dan bonus EXP.");
+    }
+
+    public function reopen($id, GamificationService $gamificationService)
+    {
+        $event = Event::findOrFail($id);
+
+        if ($event->status !== 'completed') {
+            return back()->with('info', 'Event ini tidak dalam status selesai.');
+        }
+
+        $revertedCount = $gamificationService->reopenEvent($event);
+
+        return back()->with('success', "Event '{$event->nama_event}' berhasil dibuka kembali. Lencana dan bonus EXP untuk {$revertedCount} panitia telah ditarik kembali.");
     }
 }

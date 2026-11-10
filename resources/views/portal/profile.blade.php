@@ -757,6 +757,90 @@
     border-left-color: #3B82F6;
     color: #E2E8F0;
 }
+
+/* Level Showcase Box */
+.profile-level-box {
+    margin: 12px auto 14px;
+    max-width: 420px;
+    background: #F8FAFC;
+    border: 2px solid #061A2E;
+    border-radius: 18px;
+    padding: 12px 16px;
+    box-shadow: 0 3px 0 #061A2E;
+    text-align: left;
+}
+
+.profile-level-box .lvl-title {
+    font-family: 'Gliker', 'Fredoka', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #061A2E;
+    line-height: 1.1;
+}
+
+.profile-level-box .lvl-sub {
+    font-size: 0.72rem;
+    color: #475569;
+    font-weight: 600;
+}
+
+.profile-level-box .lvl-bar-bg {
+    width: 100%;
+    height: 10px;
+    background: #E2E8F0;
+    border-radius: 9999px;
+    overflow: hidden;
+    border: 1.5px solid #061A2E;
+    position: relative;
+}
+
+[data-theme="dark"] .profile-level-box {
+    background: #0F172A !important;
+    border-color: #334155 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .profile-level-box .lvl-title {
+    color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .profile-level-box .lvl-sub {
+    color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .profile-level-box .lvl-bar-bg {
+    background: #1E293B !important;
+    border-color: #334155 !important;
+}
+
+/* Event Badges Cards */
+.badge-item-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--bg-surface-subtle);
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    position: relative;
+    overflow: hidden;
+    transition: all var(--transition-fast);
+}
+
+.badge-item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .badge-item-card {
+    background: #111827 !important;
+    border-color: #1F2937 !important;
+}
+
+[data-theme="dark"] .badge-item-card:hover {
+    border-color: #3B82F6 !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4) !important;
+}
 </style>
 
 <div class="profile-wrapper">
@@ -818,6 +902,36 @@
                     <i class="fas fa-user-times"></i> SP 3 (Diberhentikan)
                 </span>
             @endif
+        </div>
+
+        @php $lvl = $member->level_data; @endphp
+        <div class="profile-level-box">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: {{ $lvl['badge_color'] }}; color: #FFFFFF; font-size: 0.95rem; font-weight: 800; border: 1.5px solid #061A2E; box-shadow: 0 2px 0 #061A2E;">
+                        <i class="fas fa-{{ $lvl['icon'] }}"></i>
+                    </span>
+                    <div>
+                        <div class="lvl-title">
+                            Level {{ $lvl['level'] }} &bull; {{ $lvl['title'] }}
+                        </div>
+                        <div class="lvl-sub">
+                            Total <strong>{{ number_format($lvl['exp']) }} EXP</strong>
+                        </div>
+                    </div>
+                </div>
+                <span style="font-size: 0.76rem; font-weight: 800; color: #0284C7; background: #E0F2FE; border: 1px solid #BAE6FD; padding: 3px 8px; border-radius: 9999px;">
+                    {{ $lvl['percentage'] }}%
+                </span>
+            </div>
+            <!-- Progress Bar -->
+            <div class="lvl-bar-bg">
+                <div style="width: {{ $lvl['percentage'] }}%; height: 100%; background: linear-gradient(90deg, #30AFFF, #10B981); border-radius: 9999px; transition: width 0.4s ease;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.68rem; margin-top: 5px;" class="lvl-sub">
+                <span>{{ $lvl['progress'] }} / {{ $lvl['needed'] }} EXP menuju Lv. {{ $lvl['level'] + 1 }}</span>
+                <span><i class="fas fa-bolt" style="color: #F59E0B;"></i> +50 EXP per presensi</span>
+            </div>
         </div>
 
         <div class="profile-qr-badge">
@@ -969,7 +1083,64 @@
         </div>
     @endif
 
-    <!-- 4. Kartu Ringkasan Informasi Akun -->
+    <!-- 4. Koleksi Lencana Kepanitiaan Event -->
+    <div class="card mb-4" style="padding: 18px 20px;">
+        <div class="card-header" style="margin-bottom: 12px; padding-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <h3 class="card-title" style="font-size: 0.98rem; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-medal text-warning" style="font-size: 1.15rem;"></i>
+                <span>Lencana Kepanitiaan Event</span>
+            </h3>
+            <span class="badge badge-info" style="font-size: 0.72rem; padding: 3px 8px;">
+                {{ $badges->count() }} Lencana Diperoleh
+            </span>
+        </div>
+
+        <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 14px; line-height: 1.45;">
+            Lencana kehormatan resmi yang diperoleh setelah kepanitiaan event diselesaikan oleh Admin.
+        </p>
+
+        @if($badges->isEmpty())
+            <div style="text-align: center; padding: 22px 16px; background: var(--bg-surface-subtle); border-radius: var(--radius-lg); border: 1.5px dashed var(--border-color);">
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(245, 158, 11, 0.12); color: #F59E0B; display: inline-flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 8px;">
+                    <i class="fas fa-award"></i>
+                </div>
+                <div style="font-size: 0.88rem; font-weight: 700; color: var(--text-primary); margin-bottom: 3px;">Belum Memiliki Lencana</div>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; max-width: 320px; display: inline-block;">
+                    Ikuti kepanitiaan event HIMA TI. Ketika event diselesaikan oleh Admin, Anda otomatis menerima lencana profil dan bonus EXP besar!
+                </p>
+            </div>
+        @else
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
+                @foreach($badges as $badge)
+                    <div class="badge-item-card">
+                        <div style="width: 44px; height: 44px; border-radius: 14px; background: {{ $badge->badge_color }}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+                            <i class="fas {{ $badge->icon }}"></i>
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                                <span style="font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: {{ $badge->badge_color }};">
+                                    {{ $badge->role_title }}
+                                </span>
+                                <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #F59E0B; font-weight: 700; font-size: 0.68rem; padding: 2px 6px;">
+                                    +{{ $badge->exp_earned }} EXP
+                                </span>
+                            </div>
+                            <div style="font-size: 0.86rem; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 2px 0;" title="{{ $badge->event_name }}">
+                                {{ $badge->event_name }}
+                            </div>
+                            <div style="font-size: 0.72rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                                <span>{{ $badge->divisi ?: 'Panitia' }}</span>
+                                <span>&bull;</span>
+                                <span>{{ $badge->created_at ? $badge->created_at->format('d M Y') : '' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </div>
+
+    <!-- 5. Kartu Ringkasan Informasi Akun -->
     <div class="card mb-4" style="padding: 16px 18px;">
         <div class="card-header" style="margin-bottom: 10px; padding-bottom: 10px;">
             <h3 class="card-title" style="font-size: 0.95rem;">
