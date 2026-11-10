@@ -6,35 +6,22 @@
     $popupMessage = '';
     $popupErrors = [];
 
-    if (session('warning')) {
+    // Modal pop-up HANYA aktif jika diminta secara eksplisit via session('modal_alert') atau session('modal_warning').
+    // Notifikasi umum seperti flash sukses, info, warning, dan validasi form tetap tampil sebagai banner inline di halaman.
+    if (session('modal_warning')) {
         $hasPopup = true;
         $popupType = 'warning';
         $popupTitle = 'Peringatan';
-        $popupMessage = session('warning');
-    } elseif (session('danger') || session('error')) {
+        $popupMessage = session('modal_warning');
+    } elseif (session('modal_alert')) {
         $hasPopup = true;
-        $popupType = 'danger';
-        $popupTitle = 'Perhatian / Terjadi Kendala';
-        $popupMessage = session('danger') ?? session('error');
-    } elseif (isset($errors) && $errors->any()) {
-        $hasPopup = true;
-        $popupType = 'danger';
-        $popupTitle = 'Peringatan Validasi';
-        $popupErrors = $errors->all();
-    } elseif (session('success')) {
-        $hasPopup = true;
-        $popupType = 'success';
-        $popupTitle = 'Berhasil';
-        $popupMessage = session('success');
-    } elseif (session('info')) {
-        $hasPopup = true;
-        $popupType = 'info';
-        $popupTitle = 'Informasi';
-        $popupMessage = session('info');
+        $popupType = session('modal_type', 'info');
+        $popupTitle = session('modal_title', 'Pemberitahuan');
+        $popupMessage = session('modal_alert');
     }
 @endphp
 
-<!-- Global Alert Pop-up Modal -->
+<!-- Global Alert Pop-up Modal (Pengganti window.alert browser) -->
 <div class="popup-modal-overlay {{ $hasPopup ? 'active' : '' }}" id="globalAlertModal" onclick="closeGlobalAlertModal(event)" aria-modal="true" role="dialog">
     <div class="popup-modal-dialog" onclick="event.stopPropagation()">
         <div class="popup-modal-icon icon-{{ $popupType }}" id="globalAlertIcon">
@@ -68,7 +55,7 @@
     </div>
 </div>
 
-<!-- Global Confirmation Pop-up Modal -->
+<!-- Global Confirmation Pop-up Modal (Pengganti window.confirm / confirm() browser) -->
 <div class="popup-modal-overlay" id="globalConfirmModal" onclick="closeGlobalConfirmModal(event)" aria-modal="true" role="dialog">
     <div class="popup-modal-dialog" onclick="event.stopPropagation()">
         <div class="popup-modal-icon icon-warning" id="globalConfirmIcon">
@@ -159,13 +146,31 @@
             const titleEl = document.getElementById('globalConfirmTitle');
             const msgEl = document.getElementById('globalConfirmMessage');
             const submitBtn = document.getElementById('globalConfirmBtnSubmit');
+            const cancelBtn = modal ? modal.querySelector('.popup-modal-btn-cancel') : null;
+            const iconEl = document.getElementById('globalConfirmIcon');
 
             if (!modal) return;
 
-            if (titleEl) titleEl.textContent = opts.title || 'Konfirmasi Peringatan';
+            const fullText = ((opts.title || '') + ' ' + (opts.message || '')).toLowerCase();
+            const isDanger = opts.isDanger !== undefined 
+                ? opts.isDanger 
+                : /hapus|batal|cabut|nonaktif|reset|keluarkan|delete/.test(fullText);
+
+            if (iconEl) {
+                iconEl.className = 'popup-modal-icon ' + (isDanger ? 'icon-danger' : 'icon-warning');
+                iconEl.innerHTML = isDanger ? '<i class="fas fa-exclamation-circle"></i>' : '<i class="fas fa-exclamation-triangle"></i>';
+            }
+
+            if (titleEl) titleEl.textContent = opts.title || (isDanger ? 'Konfirmasi Peringatan' : 'Konfirmasi Tindakan');
             if (msgEl) msgEl.innerHTML = opts.message || 'Apakah Anda yakin ingin melanjutkan tindakan ini?';
+            
+            if (cancelBtn) {
+                cancelBtn.textContent = opts.cancelText || 'Batal';
+            }
+
             if (submitBtn) {
-                submitBtn.textContent = opts.confirmText || 'Ya, Lanjutkan';
+                submitBtn.className = 'btn popup-modal-btn-confirm ' + (isDanger ? 'btn-danger' : 'btn-primary');
+                submitBtn.textContent = opts.confirmText || (isDanger ? 'Ya, Lanjutkan' : 'Ya, Setuju');
                 submitBtn.onclick = function() {
                     modal.classList.remove('active');
                     document.body.style.overflow = '';
@@ -177,7 +182,21 @@
 
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
+            if (submitBtn) submitBtn.focus();
         };
+
+        // Override native window.alert to replace browser "absensihimati says:" popup
+        if (!window._nativeAlert) {
+            window._nativeAlert = window.alert;
+            window.alert = function(msg) {
+                if (typeof window.showPopupAlert === 'function') {
+                    const cleanMsg = typeof msg === 'string' ? msg.replace(/\n/g, '<br>') : String(msg);
+                    window.showPopupAlert('warning', 'Peringatan', cleanMsg);
+                } else if (typeof window._nativeAlert === 'function') {
+                    window._nativeAlert(msg);
+                }
+            };
+        }
 
         // Listen for ESC key to close popups
         document.addEventListener('keydown', function(e) {
@@ -187,15 +206,57 @@
             }
         });
 
-        // Intercept inline onsubmit="return confirm(...)" and convert to popup modal
+        // Intercept inline onclick="return confirm(...)" on buttons/links
+        document.addEventListener('click', function(e) {
+            const el = e.target.closest('[onclick*="confirm("]');
+            if (!el || el.getAttribute('data-confirm-bypassed') === 'true') {
+                return;
+            }
+
+            const onclickAttr = el.getAttribute('onclick') || '';
+            const match = onclickAttr.match(/confirm\(\s*(['"`])([\s\S]*?)\1\s*\)/);
+            if (match && match[2]) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+
+                const cleanMsg = match[2]
+                    .replace(/\\n/g, '<br>')
+                    .replace(/\\'/g, "'")
+                    .replace(/\\"/g, '"');
+
+                window.showConfirmPopup({
+                    message: cleanMsg,
+                    onConfirm: function() {
+                        el.setAttribute('data-confirm-bypassed', 'true');
+                        const form = el.closest('form');
+                        if (el.type === 'submit' && form) {
+                            form.setAttribute('data-confirm-handled', 'true');
+                            el.disabled = true;
+                            el.style.opacity = '0.85';
+                            el.style.pointerEvents = 'none';
+                            el.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+                            form.submit();
+                        } else if (el.tagName === 'A' && el.href) {
+                            window.location.href = el.href;
+                        } else {
+                            el.click();
+                        }
+                        setTimeout(() => el.removeAttribute('data-confirm-bypassed'), 1000);
+                    }
+                });
+                return false;
+            }
+        }, true);
+
+        // Intercept inline onsubmit="return confirm(...)" on forms
         document.addEventListener('submit', function(e) {
             const form = e.target;
             if (!form || form.getAttribute('data-confirm-handled') === 'true') {
                 return;
             }
 
-            const onsubmitAttr = form.getAttribute('onsubmit');
-            if (onsubmitAttr && onsubmitAttr.includes('confirm(')) {
+            const onsubmitAttr = form.getAttribute('onsubmit') || '';
+            if (onsubmitAttr.includes('confirm(')) {
                 const match = onsubmitAttr.match(/confirm\(\s*(['"`])([\s\S]*?)\1\s*\)/);
                 if (match && match[2]) {
                     e.preventDefault();
@@ -206,10 +267,7 @@
                         .replace(/\\"/g, '"');
 
                     window.showConfirmPopup({
-                        title: 'Konfirmasi Peringatan',
                         message: cleanMsg,
-                        confirmText: 'Ya, Lanjutkan',
-                        cancelText: 'Batal',
                         onConfirm: function() {
                             form.setAttribute('data-confirm-handled', 'true');
                             const submitBtn = form.querySelector('button[type="submit"]');
@@ -232,4 +290,3 @@
         document.body.style.overflow = 'hidden';
     @endif
 </script>
-

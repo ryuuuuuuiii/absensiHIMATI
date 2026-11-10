@@ -51,7 +51,7 @@
                     </button>
                 </form>
             @elseif($event->status === 'active')
-                <form action="{{ route('events.complete', $event->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menyelesaikan event ini?\n\nSeluruh anggota yang terdaftar dalam kepanitiaan event ini akan langsung mendapatkan:\n1. Lencana Kepanitiaan Resmi di profil masing-masing\n2. Bonus EXP besar (+500 EXP Ketua, +350 EXP Koordinator/BPH/Sekretaris/Bendahara, +250 EXP Anggota)')" style="margin: 0;">
+                <form action="{{ route('events.complete', $event->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menyelesaikan event ini?\n\nSeluruh anggota yang terdaftar dalam kepanitiaan event ini akan langsung mendapatkan:\n1. Lencana Kepanitiaan Resmi di profil masing-masing\n2. Bonus EXP besar (+1.500 EXP Ketua/Wakil/PJ, +1.000 EXP Koordinator/BPH/Sekretaris/Bendahara, +600 EXP Anggota)')" style="margin: 0;">
                     @csrf
                     <button type="submit" class="btn btn-sm btn-success" style="box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
                         <i class="fas fa-award"></i> Selesaikan Event & Bagikan Lencana

@@ -39,13 +39,9 @@ document.addEventListener('click', (e) => {
 });
 
 // ============================================
-// TOAST NOTIFICATIONS & WARNING POPUP
+// TOAST NOTIFICATIONS
 // ============================================
 function showToast(type, title, message, duration = 4000) {
-    if (type === 'warning' && typeof window.showPopupAlert === 'function') {
-        window.showPopupAlert('warning', title, message);
-    }
-
     const container = document.getElementById('toastContainer');
     if (!container) return;
 
@@ -141,6 +137,18 @@ function copyToClipboard(text, button) {
 // CONFIRM DELETE
 // ============================================
 function confirmDelete(message, url) {
+    if (typeof window.showConfirmPopup === 'function') {
+        window.showConfirmPopup({
+            title: 'Konfirmasi Hapus Data',
+            message: message || 'Apakah Anda yakin ingin menghapus data ini?',
+            confirmText: 'Ya, Hapus',
+            cancelText: 'Batal',
+            onConfirm: function() {
+                window.location.href = url;
+            }
+        });
+        return;
+    }
     if (confirm(message || 'Apakah Anda yakin ingin menghapus?')) {
         window.location.href = url;
     }
