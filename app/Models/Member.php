@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Services\FileUploadService;
 use App\Services\SpService;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\File;
 
 class Member extends Authenticatable
 {
@@ -58,6 +60,21 @@ class Member extends Authenticatable
             'password' => 'hashed',
             'last_login_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Member $member) {
+            if ($member->profile_photo) {
+                app(FileUploadService::class)->delete('profiles', $member->profile_photo);
+            }
+            if ($member->qr_image) {
+                $filepath = public_path('assets/img/qrcodes/'.$member->qr_image);
+                if (File::exists($filepath)) {
+                    @File::delete($filepath);
+                }
+            }
+        });
     }
 
     public function attendances(): HasMany

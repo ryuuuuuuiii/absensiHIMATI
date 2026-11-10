@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
+use App\Services\FileUploadService;
 use App\Services\QrCodeService;
 use App\Services\SpService;
 use Illuminate\Http\Request;
@@ -232,15 +233,12 @@ class MemberController extends Controller
         if ($member->qr_image) {
             $filepath = public_path('assets/img/qrcodes/'.$member->qr_image);
             if (File::exists($filepath)) {
-                File::delete($filepath);
+                @File::delete($filepath);
             }
         }
 
         if ($member->profile_photo) {
-            $filepath = public_path('uploads/profiles/'.$member->profile_photo);
-            if (File::exists($filepath)) {
-                File::delete($filepath);
-            }
+            app(FileUploadService::class)->delete('profiles', $member->profile_photo);
         }
 
         $member->delete();
