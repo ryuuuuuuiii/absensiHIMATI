@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\Meeting;
 use App\Models\Member;
-use App\Models\Setting;
 use App\Services\FileUploadService;
 use Illuminate\Http\Request;
 
@@ -29,13 +28,7 @@ class PublicAttendanceController extends Controller
             ->where('unique_link', $uniqueLink)
             ->firstOrFail();
 
-        // Check expiry: link absensi online tetap aktif selama rapat berstatus 'scanning' (belum diselesaikan pembuat rapat).
-        // Link hanya dianggap expired jika rapat sudah berstatus 'completed'/'cancelled',
-        // atau jika rapat bukan 'scanning' dan waktu batas telah terlampaui.
-        $start = $meeting->tanggal->copy()->setTimeFromTimeString($meeting->waktu_mulai);
-        $expiryHours = (int) Setting::get('online_link_expiry_hours', '3');
-        $isExpired = in_array($meeting->status, ['completed', 'cancelled'], true)
-            || ($meeting->status !== 'scanning' && now()->greaterThan($start->addHours($expiryHours)));
+        $isExpired = $meeting->isOnlineExpired();
 
         $eligibilityError = $meeting->checkMemberEligibility($member);
 
@@ -60,9 +53,7 @@ class PublicAttendanceController extends Controller
             return back()->with('error', 'Presensi ditolak. Rapat ini telah diselesaikan atau dibatalkan dan absensi online sudah ditutup.');
         }
 
-        $start = $meeting->tanggal->copy()->setTimeFromTimeString($meeting->waktu_mulai);
-        $expiryHours = (int) Setting::get('online_link_expiry_hours', '3');
-        if ($meeting->status !== 'scanning' && now()->greaterThan($start->addHours($expiryHours))) {
+        if ($meeting->isOnlineExpired()) {
             return back()->with('error', 'Presensi ditolak. Batas waktu absensi untuk rapat ini telah berakhir.');
         }
 

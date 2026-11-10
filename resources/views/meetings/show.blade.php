@@ -137,6 +137,16 @@
             <i class="fas fa-share-alt"></i> {{ $meeting->mode_rapat === 'online' ? 'Link Presensi Online (Bagikan ke Peserta)' : 'Link Izin / Sakit (Bagikan ke yang Berhalangan)' }}
         </label>
         @if ($meeting->mode_rapat === 'online')
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px;">
+                <span style="font-size: 0.8rem; color: var(--info); font-weight: 600;">
+                    <i class="fas fa-clock"></i> Batas Waktu Absensi: {{ substr($meeting->getOnlineExpiryTime()->format('H:i'), 0, 5) }} WITA
+                </span>
+                @if($meeting->status === 'scanning')
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">
+                        Ditentukan oleh pembuat rapat
+                    </span>
+                @endif
+            </div>
             <div class="share-link-box">
                 <input type="text" value="{{ route('public.online', $meeting->unique_link) }}" readonly>
                 <button onclick="copyToClipboard('{{ route('public.online', $meeting->unique_link) }}', this)" title="Salin Link Presensi Online">

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\SpService;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -154,5 +155,47 @@ class Meeting extends Model
         }
 
         return null;
+    }
+
+    /**
+     * Mendapatkan waktu batas akhir absensi online (Carbon instance).
+     * Jika pembuat rapat menentukan waktu_selesai, gunakan waktu_selesai tersebut.
+     * Jika tidak ditentukan, gunakan standar admin setting (online_link_expiry_hours).
+     */
+    public function getOnlineExpiryTime(): Carbon
+    {
+        $start = $this->tanggal->copy()->setTimeFromTimeString($this->waktu_mulai);
+
+        if ($this->waktu_selesai) {
+            $end = $this->tanggal->copy()->setTimeFromTimeString($this->waktu_selesai);
+            if ($end->lessThanOrEqualTo($start)) {
+                $end->addDay();
+            }
+
+            return $end;
+        }
+
+        $expiryHours = (int) Setting::get('online_link_expiry_hours', '3');
+
+        return $start->copy()->addHours($expiryHours);
+    }
+
+    /**
+     * Memeriksa apakah link absensi online sudah kedaluwarsa.
+     */
+    public function isOnlineExpired(): bool
+    {
+        if (in_array($this->status, ['completed', 'cancelled'], true)) {
+            return true;
+        }
+
+        if ($this->waktu_selesai) {
+            return now()->greaterThan($this->getOnlineExpiryTime());
+        }
+
+        $expiryHours = (int) Setting::get('online_link_expiry_hours', '3');
+        $start = $this->tanggal->copy()->setTimeFromTimeString($this->waktu_mulai);
+
+        return $this->status !== 'scanning' && now()->greaterThan($start->addHours($expiryHours));
     }
 }

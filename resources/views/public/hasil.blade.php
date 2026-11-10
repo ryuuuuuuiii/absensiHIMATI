@@ -423,11 +423,23 @@
     @if ($meeting->mode_rapat === 'online')
         <!-- Rapat Online: 1 Link Rapat Tunggal -->
         <div>
-            <label class="form-label" style="font-size: var(--font-xs); color: var(--info); font-weight: 600;">
-                <i class="fas fa-globe"></i> Link Presensi Rapat Online (Bagikan ke Seluruh Peserta)
-            </label>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin: -4px 0 var(--space-2);">
-                Peserta dapat langsung mengisi absensi (Hadir, Izin, atau Sakit beserta bukti) melalui link tunggal ini.
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px;">
+                <label class="form-label" style="font-size: var(--font-xs); color: var(--info); font-weight: 600; margin: 0;">
+                    <i class="fas fa-globe"></i> Link Presensi Rapat Online (Bagikan ke Seluruh Peserta)
+                </label>
+                @if($meeting->status === 'scanning')
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="badge badge-info" id="expiryInfoBadge" style="font-size: 0.75rem;">
+                            <i class="fas fa-clock"></i> Batas Absen: <span id="textExpiryTime">{{ substr($meeting->getOnlineExpiryTime()->format('H:i'), 0, 5) }} WITA</span>
+                        </span>
+                        <button type="button" class="btn btn-sm btn-outline-info" onclick="openExpiryModal()" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 6px;">
+                            <i class="fas fa-edit"></i> Ubah Jam Berakhir
+                        </button>
+                    </div>
+                @endif
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0 0 var(--space-2);">
+                Peserta dapat langsung mengisi absensi (Hadir, Izin, atau Sakit beserta bukti) melalui link tunggal ini sebelum batas waktu berakhir.
             </p>
             <div class="share-link-box">
                 <input type="text" value="{{ $onlineUrl }}" readonly id="onlineLinkInput">
@@ -770,6 +782,43 @@
         </div>
     </div>
 </div>
+
+@if ($meeting->mode_rapat === 'online')
+<!-- Modal Ubah Jam Berakhir Online -->
+<div class="modal-overlay" id="expiryModal" onclick="closeExpiryModal(event)">
+    <div class="modal-dialog" style="max-width: 440px;">
+        <div class="modal-header">
+            <h3 class="modal-title" style="font-size: 1rem; margin: 0;">
+                <i class="fas fa-clock text-info"></i> Ubah Jam Berakhir Absensi Online
+            </h3>
+            <button type="button" class="btn-close" onclick="closeExpiryModalDirect()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+        </div>
+        <form id="formUpdateExpiry" onsubmit="submitExpiryUpdate(event)">
+            @csrf
+            <div class="modal-body" style="padding: var(--space-4); text-align: left;">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0;">
+                    Tentukan batas jam kapan link absensi online otomatis ditutup untuk seluruh peserta.
+                </p>
+                <div class="form-group">
+                    <label class="form-label" for="modalWaktuSelesai">Batas Jam Berakhir Baru <span class="required">*</span></label>
+                    <input type="time" name="waktu_selesai" id="modalWaktuSelesai" class="form-control" value="{{ $meeting->getOnlineExpiryTime()->format('H:i') }}" required>
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addExpiryOffsetModal(30)">+30 Menit</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addExpiryOffsetModal(60)">+1 Jam</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addExpiryOffsetModal(120)">+2 Jam</button>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: var(--space-3) var(--space-4); display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="closeExpiryModalDirect()">Batal</button>
+                <button type="submit" class="btn btn-sm btn-primary" id="btnSaveExpiry">
+                    <i class="fas fa-save"></i> Simpan Jam Berakhir
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
 @endsection
 
 @push('scripts')
@@ -1106,6 +1155,79 @@ function closeBuktiModalDirect() {
 function closeBuktiModal(event) {
     if (event.target.id === 'buktiModal') {
         closeBuktiModalDirect();
+    }
+}
+
+function openExpiryModal() {
+    const modal = document.getElementById('expiryModal');
+    if (modal) modal.classList.add('active');
+}
+
+function closeExpiryModalDirect() {
+    const modal = document.getElementById('expiryModal');
+    if (modal) modal.classList.remove('active');
+}
+
+function closeExpiryModal(event) {
+    if (event.target && event.target.id === 'expiryModal') {
+        closeExpiryModalDirect();
+    }
+}
+
+function addExpiryOffsetModal(minutes) {
+    const input = document.getElementById('modalWaktuSelesai');
+    if (!input || !input.value) return;
+    const [h, m] = input.value.split(':').map(Number);
+    let totalM = (h * 60 + m + minutes) % (24 * 60);
+    const newH = String(Math.floor(totalM / 60)).padStart(2, '0');
+    const newM = String(totalM % 60).padStart(2, '0');
+    input.value = `${newH}:${newM}`;
+}
+
+async function submitExpiryUpdate(event) {
+    event.preventDefault();
+    const btn = document.getElementById('btnSaveExpiry');
+    const input = document.getElementById('modalWaktuSelesai');
+    if (!input || !input.value) return;
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+    }
+
+    try {
+        const res = await fetch('{{ route('public.meeting.update_expiry', $meeting->unique_link) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                waktu_selesai: input.value
+            })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            const textBadge = document.getElementById('textExpiryTime');
+            if (textBadge) textBadge.textContent = data.waktu_selesai;
+            closeExpiryModalDirect();
+            if (typeof showToast === 'function') {
+                showToast('success', 'Batas Waktu Diperbarui', data.message);
+            } else {
+                alert(data.message);
+            }
+        } else {
+            alert(data.message || 'Gagal memperbarui batas waktu absensi.');
+        }
+    } catch (err) {
+        alert('Terjadi kesalahan jaringan saat menyimpan batas waktu.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Simpan Jam Berakhir';
+        }
     }
 }
 </script>

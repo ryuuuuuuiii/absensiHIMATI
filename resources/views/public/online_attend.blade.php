@@ -84,12 +84,23 @@
         @else
             <i class="fas fa-hourglass-end" style="font-size: 2.5rem; color: var(--danger); margin-bottom: var(--space-4);"></i>
             <h3>Batas Waktu Absensi Telah Berakhir</h3>
-            <p style="color: var(--text-muted);">Link presensi untuk rapat ini sudah ditutup karena telah melewati batas waktu absensi. Silakan hubungi admin atau pembuat rapat jika ada kendala.</p>
+            <p style="color: var(--text-muted);">Link presensi untuk rapat ini sudah ditutup karena telah melewati batas jam berakhir absensi (pukul {{ substr($meeting->getOnlineExpiryTime()->format('H:i'), 0, 5) }} WITA). Silakan hubungi pembuat rapat jika ada kendala.</p>
         @endif
     </div>
 @else
     <div class="card mb-6">
         <h3 class="card-title mb-4"><i class="fas fa-user-check"></i> Form Presensi Kehadiran Online</h3>
+
+        <!-- Expiry Deadline Banner -->
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: var(--space-5); padding: 10px 14px; background: rgba(59, 130, 246, 0.08); border-radius: var(--radius-md); border-left: 3px solid var(--info);">
+            <div style="font-size: 0.88rem; color: var(--text-primary); font-weight: 600;">
+                <i class="fas fa-stopwatch text-info" style="margin-right: 5px;"></i> Batas Waktu Presensi:
+                <span style="color: var(--info); font-weight: 700;">Sampai pukul {{ substr($meeting->getOnlineExpiryTime()->format('H:i'), 0, 5) }} WITA</span>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">
+                Ditentukan oleh pembuat rapat
+            </div>
+        </div>
 
         <!-- Verified Member Account Card -->
         <div class="online-member-card">

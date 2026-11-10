@@ -744,4 +744,89 @@ class InternalMeetingAttendanceTest extends TestCase
             $resSubmit->assertSessionHas('error');
         }
     }
+
+    public function test_meeting_creator_can_set_custom_online_meeting_end_time_and_it_expires_at_that_time(): void
+    {
+        $creator = Member::where('departemen', 'PSDM')->first();
+        $this->assertNotNull($creator);
+
+        // Buat rapat online dengan jam berakhir yang sudah terlewat (misal 1 jam lalu)
+        $pastStartTime = now()->subHours(2)->format('H:i:s');
+        $pastEndTime = now()->subHour()->format('H:i:s');
+
+        $meeting = Meeting::create([
+            'created_by' => $creator->id,
+            'jenis_rapat' => 'internal_dept',
+            'mode_rapat' => 'online',
+            'departemen' => 'PSDM',
+            'fokus_bahasan' => 'Uji Custom Jam Berakhir Online',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => $pastStartTime,
+            'waktu_selesai' => $pastEndTime,
+            'status' => 'scanning',
+            'unique_link' => Str::lower(Str::random(12)),
+            'absent_link' => Str::lower(Str::random(12)),
+        ]);
+
+        $attendee = Member::where('departemen', 'PSDM')->first();
+
+        // 1. Model mendeteksi sudah expired sesuai waktu_selesai buatan pembuat rapat
+        $this->assertTrue($meeting->isOnlineExpired());
+
+        // 2. Akses halaman online attend menampilkan batas waktu telah berakhir
+        $response = $this->actingAs($attendee, 'member')->get('/rapat/'.$meeting->unique_link.'/online');
+        $response->assertStatus(200);
+        $response->assertSee('Batas Waktu Absensi Telah Berakhir');
+        $response->assertDontSee('Kirim Presensi Kehadiran');
+
+        // 3. Submit absensi ditolak karena melewati batas waktu
+        $resSubmit = $this->actingAs($attendee, 'member')->post('/rapat/'.$meeting->unique_link.'/online', [
+            'status' => 'hadir',
+            'bukti_foto' => UploadedFile::fake()->image('bukti.jpg'),
+        ]);
+        $resSubmit->assertSessionHas('error');
+    }
+
+    public function test_meeting_creator_can_extend_online_meeting_end_time(): void
+    {
+        $creator = Member::where('departemen', 'PSDM')->first();
+        $this->assertNotNull($creator);
+
+        // Awalnya expired (1 jam lalu)
+        $pastStartTime = now()->subHours(2)->format('H:i:s');
+        $pastEndTime = now()->subHour()->format('H:i:s');
+
+        $meeting = Meeting::create([
+            'created_by' => $creator->id,
+            'jenis_rapat' => 'internal_dept',
+            'mode_rapat' => 'online',
+            'departemen' => 'PSDM',
+            'fokus_bahasan' => 'Uji Perpanjang Jam Berakhir Online',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => $pastStartTime,
+            'waktu_selesai' => $pastEndTime,
+            'status' => 'scanning',
+            'unique_link' => Str::lower(Str::random(12)),
+            'absent_link' => Str::lower(Str::random(12)),
+        ]);
+
+        $this->assertTrue($meeting->isOnlineExpired());
+
+        // Pembuat rapat memperpanjang waktu hingga 2 jam ke depan
+        $newEndTime = now()->addHours(2)->format('H:i');
+        $resUpdate = $this->post('/rapat/'.$meeting->unique_link.'/update-expiry', [
+            'waktu_selesai' => $newEndTime,
+        ]);
+        $resUpdate->assertSessionHas('success');
+
+        $meeting->refresh();
+        $this->assertEquals(date('H:i:s', strtotime($newEndTime)), $meeting->waktu_selesai);
+        $this->assertFalse($meeting->isOnlineExpired());
+
+        // Peserta sekarang bisa membuka form dan submit kehadiran
+        $attendee = Member::where('departemen', 'PSDM')->first();
+        $response = $this->actingAs($attendee, 'member')->get('/rapat/'.$meeting->unique_link.'/online');
+        $response->assertStatus(200);
+        $response->assertSee('Form Presensi Kehadiran Online');
+    }
 }

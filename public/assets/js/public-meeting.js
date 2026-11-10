@@ -198,7 +198,63 @@ function selectMode(mode, card) {
     selectedMode = mode;
     const modeInput = document.getElementById('modeRapat');
     if (modeInput) modeInput.value = mode;
+
+    const expiryCard = document.getElementById('onlineExpiryCard');
+    const inputEnd = document.getElementById('jamBerakhirOnline');
+    if (mode === 'online') {
+        if (expiryCard) expiryCard.style.display = 'block';
+        if (inputEnd && !inputEnd.value) {
+            setExpiryOffset(3);
+        } else {
+            updateExpiryBadge();
+        }
+    } else {
+        if (expiryCard) expiryCard.style.display = 'none';
+    }
+
     saveMeetingDraft();
+}
+
+function setExpiryOffset(hours) {
+    const startTimeInput = document.querySelector('[name="waktu_mulai"]');
+    const endTimeInput = document.getElementById('jamBerakhirOnline');
+    if (!startTimeInput || !endTimeInput) return;
+
+    const startVal = startTimeInput.value || '09:00';
+    const [h, m] = startVal.split(':').map(Number);
+    const endH = (h + hours) % 24;
+    const endHStr = String(endH).padStart(2, '0');
+    const endMStr = String(m || 0).padStart(2, '0');
+    endTimeInput.value = `${endHStr}:${endMStr}`;
+    updateExpiryBadge();
+}
+
+function updateExpiryBadge() {
+    const startTimeInput = document.querySelector('[name="waktu_mulai"]');
+    const endTimeInput = document.getElementById('jamBerakhirOnline');
+    const badge = document.getElementById('expiryDurationBadge');
+    if (!startTimeInput || !endTimeInput || !badge) return;
+
+    const startVal = startTimeInput.value;
+    const endVal = endTimeInput.value;
+    if (!startVal || !endVal) {
+        badge.innerHTML = '<i class="fas fa-stopwatch"></i> Durasi: Fleksibel';
+        return;
+    }
+
+    const [sh, sm] = startVal.split(':').map(Number);
+    const [eh, em] = endVal.split(':').map(Number);
+    let diffMinutes = (eh * 60 + em) - (sh * 60 + sm);
+    if (diffMinutes <= 0) {
+        diffMinutes += 24 * 60; // melintasi tengah malam
+    }
+
+    const hours = Math.floor(diffMinutes / 60);
+    const mins = diffMinutes % 60;
+    let durText = '';
+    if (hours > 0) durText += `${hours} Jam `;
+    if (mins > 0) durText += `${mins} Menit`;
+    badge.innerHTML = `<i class="fas fa-stopwatch"></i> Durasi: ${durText.trim()}`;
 }
 
 function toggleDivisiField() {
@@ -406,7 +462,11 @@ function populateConfirmation() {
             formattedDate = !isNaN(d.getTime()) ? `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}` : tanggal;
         }
     }
-    const formattedTime = waktu ? `${escapeHtml(waktu)} WITA` : '-';
+    const waktuSelesai = document.getElementById('jamBerakhirOnline')?.value || '';
+    let formattedTime = waktu ? `${escapeHtml(waktu)} WITA` : '-';
+    if (selectedMode === 'online' && waktu && waktuSelesai) {
+        formattedTime = `${escapeHtml(waktu)} - ${escapeHtml(waktuSelesai)} WITA (Batas Absen)`;
+    }
 
     // 4. Spesifik per jenis rapat
     let heroTitle = '';

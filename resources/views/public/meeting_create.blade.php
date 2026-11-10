@@ -298,6 +298,28 @@
                     <div class="mode-desc">Presensi mandiri jarak jauh via tautan absensi khusus anggota</div>
                 </div>
             </div>
+
+            <!-- Online Meeting Expiry Setting (Fleksibel Sesuai Pembuat Rapat) -->
+            <div id="onlineExpiryCard" style="display: none; margin-top: var(--space-5); padding: var(--space-4); border: 1.5px solid rgba(59, 130, 246, 0.35); background: rgba(59, 130, 246, 0.05); border-radius: var(--radius-lg);">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="jamBerakhirOnline" style="font-weight: 700; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                        <span><i class="fas fa-clock text-info"></i> Jam Berakhir Absensi Online <span class="required">*</span></span>
+                        <span class="badge badge-info" id="expiryDurationBadge" style="font-size: 0.75rem;"><i class="fas fa-stopwatch"></i> Durasi: Fleksibel</span>
+                    </label>
+                    <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; margin-top: var(--space-2);">
+                        <input type="time" name="waktu_selesai" id="jamBerakhirOnline" class="form-control" style="max-width: 180px;" onchange="updateExpiryBadge()">
+                        <div class="btn-group" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="setExpiryOffset(1)">+1 Jam</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="setExpiryOffset(2)">+2 Jam</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="setExpiryOffset(3)">+3 Jam (Standar)</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="setExpiryOffset(5)">+5 Jam</button>
+                        </div>
+                    </div>
+                    <small style="color: var(--text-muted); display: block; margin-top: 6px;">
+                        Link absensi online akan aktif sejak waktu mulai dan otomatis ditutup pada jam berakhir ini. Anda bebas menentukan durasi sesuai kebutuhan rapat.
+                    </small>
+                </div>
+            </div>
             
             <div class="step-nav-actions">
                 <button type="button" class="btn btn-secondary" onclick="prevStep(3)">

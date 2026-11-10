@@ -47,6 +47,7 @@ Route::middleware('auth:web,member')->group(function () {
 Route::get('/rapat/{unique_link}/hasil', [PublicMeetingController::class, 'hasil'])->name('public.hasil');
 Route::post('/rapat/{unique_link}/finish', [PublicMeetingController::class, 'finish'])->name('public.meeting.finish');
 Route::post('/rapat/{unique_link}/cancel', [PublicMeetingController::class, 'cancel'])->name('public.meeting.cancel');
+Route::post('/rapat/{unique_link}/update-expiry', [PublicMeetingController::class, 'updateExpiry'])->name('public.meeting.update_expiry');
 Route::get('/rapat/{unique_link}/scanner', [PublicMeetingController::class, 'scanner'])->name('public.scanner');
 
 Route::get('/rapat/{unique_link}/online', [PublicAttendanceController::class, 'onlineAttend'])->name('public.online');
@@ -127,6 +128,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/{meeting}/photo', [MeetingController::class, 'savePhoto'])->name('save_photo');
         Route::post('/{meeting}/sync-sheets', [MeetingController::class, 'syncSheets'])->name('sync_sheets');
         Route::post('/{meeting}/attendances/{attendance}', [MeetingController::class, 'updateAttendanceStatus'])->name('update_attendance');
+        Route::post('/{meeting}/update-expiry', [MeetingController::class, 'updateExpiry'])->name('update_expiry');
         Route::delete('/{meeting}', [MeetingController::class, 'destroy'])->name('destroy');
     });
 

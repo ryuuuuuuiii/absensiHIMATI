@@ -82,6 +82,7 @@ class MeetingController extends Controller
             'mode_rapat' => ['required', 'in:offline,online'],
             'tanggal' => ['required', 'date'],
             'waktu_mulai' => ['required'],
+            'waktu_selesai' => ['nullable', 'string'],
         ]);
 
         $createdBy = (int) $request->input('created_by');
@@ -177,6 +178,7 @@ class MeetingController extends Controller
                 'departemen_collab' => $departemenCollab,
                 'tanggal' => $request->input('tanggal'),
                 'waktu_mulai' => $request->input('waktu_mulai'),
+                'waktu_selesai' => $request->filled('waktu_selesai') ? date('H:i:s', strtotime($request->input('waktu_selesai'))) : null,
                 'status' => 'scanning',
                 'unique_link' => $uniqueLink,
                 'absent_link' => $absentLink,
@@ -492,6 +494,34 @@ class MeetingController extends Controller
 
         return redirect()->route('meetings.show', $meeting->id)
             ->with('warning', 'Sesi rapat telah dibatalkan. Anggota tidak akan dicatat Alpha untuk sesi ini.');
+    }
+
+    public function updateExpiry(Request $request, $id)
+    {
+        $meeting = Meeting::findOrFail($id);
+
+        if (in_array($meeting->status, ['completed', 'cancelled'], true)) {
+            return back()->with('danger', 'Rapat sudah selesai atau dibatalkan. Batas waktu tidak dapat diubah.');
+        }
+
+        $validated = $request->validate([
+            'waktu_selesai' => ['required', 'string'],
+        ]);
+
+        $time = date('H:i:s', strtotime($validated['waktu_selesai']));
+        $meeting->update([
+            'waktu_selesai' => $time,
+        ]);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Batas waktu absensi online berhasil diperbarui menjadi '.substr($time, 0, 5).' WITA.',
+                'waktu_selesai' => substr($time, 0, 5).' WITA',
+            ]);
+        }
+
+        return back()->with('success', 'Batas waktu absensi online berhasil diperbarui menjadi '.substr($time, 0, 5).' WITA.');
     }
 
     public function savePhoto(Request $request, $id)
