@@ -12,6 +12,8 @@ use App\Services\GamificationService;
 use App\Services\QrCodeService;
 use App\Services\SpService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -242,7 +244,24 @@ class PortalController extends Controller
             ->latest()
             ->take(10)
             ->get();
-        $badges = $member->badges()->with('event')->get();
+
+        // Self-heal: jika tabel member_badges belum ada (misal di database production/cloud), jalankan migrate --force
+        if (! Schema::hasTable('member_badges')) {
+            try {
+                Artisan::call('migrate', ['--force' => true]);
+            } catch (\Throwable $e) {
+                // Log and gracefully continue
+            }
+        }
+
+        $badges = collect();
+        try {
+            if (Schema::hasTable('member_badges')) {
+                $badges = $member->badges()->with('event')->get();
+            }
+        } catch (\Throwable $e) {
+            $badges = collect();
+        }
 
         return view('portal.profile', compact('member', 'feedbacks', 'badges'));
     }

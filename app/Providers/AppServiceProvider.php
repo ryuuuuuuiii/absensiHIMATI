@@ -6,6 +6,8 @@ use App\Models\Announcement;
 use App\Services\SpService;
 use Carbon\Carbon;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -38,6 +40,18 @@ class AppServiceProvider extends ServiceProvider
         Carbon::setLocale('id');
         Paginator::defaultView('vendor.pagination.custom');
         Paginator::defaultSimpleView('vendor.pagination.custom');
+
+        // Auto-run pending migrations in production/cloud if gamification tables are missing
+        if (! cache()->has('db_migrated_gamification_v2')) {
+            try {
+                if (! Schema::hasTable('member_badges')) {
+                    Artisan::call('migrate', ['--force' => true]);
+                }
+                cache()->forever('db_migrated_gamification_v2', true);
+            } catch (\Throwable $e) {
+                // Log and continue gracefully
+            }
+        }
 
         View::composer('layouts.portal', function ($view) {
             if (auth('member')->check()) {

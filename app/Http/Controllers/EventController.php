@@ -9,6 +9,7 @@ use App\Models\Member;
 use App\Models\MemberBadge;
 use App\Services\GamificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class EventController extends Controller
 {
@@ -217,7 +218,7 @@ class EventController extends Controller
         ]);
 
         // Jika event sudah pernah diselesaikan, perbarui juga lencana dan selisih EXP-nya
-        if ($event->isCompleted()) {
+        if ($event->isCompleted() && Schema::hasTable('member_badges')) {
             $badge = MemberBadge::where('event_id', $event->id)
                 ->where('user_id', $em->user_id)
                 ->first();

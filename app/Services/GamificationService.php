@@ -6,7 +6,9 @@ use App\Models\Attendance;
 use App\Models\Event;
 use App\Models\Member;
 use App\Models\MemberBadge;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class GamificationService
 {
@@ -311,6 +313,14 @@ class GamificationService
      */
     public function completeEvent(Event $event): int
     {
+        if (! Schema::hasTable('member_badges')) {
+            try {
+                Artisan::call('migrate', ['--force' => true]);
+            } catch (\Throwable $e) {
+                // Continue gracefully
+            }
+        }
+
         return DB::transaction(function () use ($event) {
             $event->update([
                 'status' => 'completed',
@@ -373,6 +383,10 @@ class GamificationService
      */
     public function reopenEvent(Event $event): int
     {
+        if (! Schema::hasTable('member_badges')) {
+            return 0;
+        }
+
         return DB::transaction(function () use ($event) {
             $event->update([
                 'status' => 'active',

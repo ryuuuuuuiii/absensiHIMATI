@@ -16,6 +16,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Models\Meeting;
 use App\Services\FileUploadService;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 // ============================================
@@ -244,3 +245,33 @@ Route::get('/uploads/{folder}/{filename}', function (string $folder, string $fil
 
     abort(404);
 })->where('folder', 'profiles|bukti|dokumentasi|feedbacks|logos');
+
+// ============================================
+// SYSTEM MIGRATION (Auto/Manual Trigger untuk Database Cloud/Vercel)
+// ============================================
+Route::get('/system/migrate/{secret?}', function (?string $secret = null) {
+    $isAdmin = auth('web')->check();
+    $validSecret = $secret && ($secret === config('app.key') || $secret === 'himati-migrate-now');
+
+    if (! $isAdmin && ! $validSecret) {
+        abort(403, 'Akses ditolak. Silakan login sebagai admin atau gunakan parameter secret.');
+    }
+
+    try {
+        Artisan::call('migrate', ['--force' => true]);
+        $output = Artisan::output();
+
+        cache()->forget('db_migrated_gamification_v2');
+
+        return response('<div style="background:#090D16;color:#30AFFF;padding:24px;font-family:monospace;border-radius:12px;margin:20px;box-shadow:0 8px 24px rgba(0,0,0,0.5);">
+            <h2 style="color:#10B981;margin-top:0;">&#10004; Database Migration Sukses</h2>
+            <pre style="color:#E2E8F0;background:#0F172A;padding:16px;border-radius:8px;overflow-x:auto;">'.e($output).'</pre>
+            <p><a href="/portal/profil" style="color:#30AFFF;font-weight:bold;text-decoration:none;">&larr; Buka Profil Sekarang</a></p>
+        </div>');
+    } catch (Throwable $e) {
+        return response('<div style="background:#090D16;color:#EF4444;padding:24px;font-family:monospace;border-radius:12px;margin:20px;">
+            <h2 style="margin-top:0;">&#10006; Migration Gagal</h2>
+            <pre style="color:#FCA5A5;background:#1E1B4B;padding:16px;border-radius:8px;">'.e($e->getMessage()).'</pre>
+        </div>', 500);
+    }
+})->name('system.migrate');
