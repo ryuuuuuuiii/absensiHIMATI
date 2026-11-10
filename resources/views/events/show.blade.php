@@ -148,13 +148,18 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <form action="{{ route('events.members.destroy', [$event->id, $em->id]) }}" method="POST" onsubmit="return confirm('Keluarkan anggota ini dari kepanitiaan?')" style="margin: 0;">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-ghost text-danger" title="Keluarkan">
-                                                <i class="fas fa-times"></i>
+                                        <div style="display: flex; gap: 4px; align-items: center;">
+                                            <button type="button" class="btn btn-sm btn-ghost text-primary" onclick="openEditRoleModal({{ $em->id }}, '{{ addslashes($em->member ? $em->member->nama_lengkap : 'Unknown') }}', '{{ addslashes($em->jabatan_panitia) }}')" title="Ubah Jabatan Panitia">
+                                                <i class="fas fa-edit"></i>
                                             </button>
-                                        </form>
+                                            <form action="{{ route('events.members.destroy', [$event->id, $em->id]) }}" method="POST" onsubmit="return confirm('Keluarkan anggota ini dari kepanitiaan?')" style="margin: 0;">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-ghost text-danger" title="Keluarkan">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -174,13 +179,18 @@
                                     <strong class="panitia-mobile-name">{{ $em->member ? $em->member->nama_lengkap : 'Unknown' }}</strong>
                                     <div class="panitia-mobile-email">{{ $em->member ? $em->member->email : '-' }}</div>
                                 </div>
-                                <form action="{{ route('events.members.destroy', [$event->id, $em->id]) }}" method="POST" onsubmit="return confirm('Keluarkan anggota ini dari kepanitiaan?')" style="margin: 0; flex-shrink: 0;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="panitia-mobile-del-btn" title="Keluarkan dari Divisi">
-                                        <i class="fas fa-times"></i>
+                                <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                                    <button type="button" class="panitia-mobile-edit-btn" onclick="openEditRoleModal({{ $em->id }}, '{{ addslashes($em->member ? $em->member->nama_lengkap : 'Unknown') }}', '{{ addslashes($em->jabatan_panitia) }}')" title="Ubah Jabatan">
+                                        <i class="fas fa-edit"></i>
                                     </button>
-                                </form>
+                                    <form action="{{ route('events.members.destroy', [$event->id, $em->id]) }}" method="POST" onsubmit="return confirm('Keluarkan anggota ini dari kepanitiaan?')" style="margin: 0; flex-shrink: 0;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="panitia-mobile-del-btn" title="Keluarkan dari Divisi">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                             <div class="panitia-mobile-badges">
                                 <span class="badge badge-dept" style="font-size: 0.72rem;">{{ $em->member ? $em->member->departemen : '-' }}</span>
@@ -340,9 +350,36 @@
                             @endforelse
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="jabatan_panitia">Jabatan dalam Divisi</label>
-                        <input type="text" id="jabatan_panitia" name="jabatan_panitia" class="form-control" placeholder="Contoh: Koordinator / Anggota" value="Anggota">
+                    <div class="form-group mb-3">
+                        <label class="form-label" for="add_jabatan_preset">Jabatan dalam Kepanitiaan <span class="required">*</span></label>
+                        <select id="add_jabatan_preset" class="form-control" onchange="onRolePresetChange('add')">
+                            <option value="Anggota Divisi" data-exp="250" selected>Anggota Divisi (+250 EXP)</option>
+                            <option value="Koordinator Divisi" data-exp="350">Koordinator Divisi (Koor) (+350 EXP)</option>
+                            <option value="Ketua Pelaksana" data-exp="500">Ketua Pelaksana / Project Officer (+500 EXP)</option>
+                            <option value="Wakil Ketua Pelaksana" data-exp="500">Wakil Ketua Pelaksana (+500 EXP)</option>
+                            <option value="Penanggung Jawab" data-exp="500">Penanggung Jawab (PJ) (+500 EXP)</option>
+                            <option value="Sekretaris" data-exp="350">Sekretaris Event (+350 EXP)</option>
+                            <option value="Bendahara" data-exp="350">Bendahara Event (+350 EXP)</option>
+                            <option value="custom">Jabatan Lainnya (Ketik Manual)...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-3" id="add_jabatan_custom_wrap" style="display: none;">
+                        <label class="form-label" for="add_jabatan_custom">Nama Jabatan Kustom</label>
+                        <input type="text" id="add_jabatan_custom" class="form-control" placeholder="Contoh: Koor Humas / Bendahara 2" oninput="syncCustomRole('add')">
+                    </div>
+
+                    <input type="hidden" name="jabatan_panitia" id="add_jabatan_final" value="Anggota Divisi">
+
+                    <div class="role-exp-preview mb-2" id="add_exp_preview" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(59, 130, 246, 0.08); border: 1.5px solid var(--border-color); border-radius: var(--radius-md);">
+                        <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary);">Bonus EXP untuk Jabatan ini:</span>
+                        <span class="badge" id="add_exp_badge" style="background: rgba(245, 158, 11, 0.2); color: #F59E0B; font-weight: 800; font-size: 0.82rem; padding: 3px 8px;">
+                            <i class="fas fa-bolt"></i> +250 EXP
+                        </span>
+                    </div>
+
+                    <div style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.45; margin-top: 6px;">
+                        <i class="fas fa-info-circle text-primary"></i> <strong>Tingkatan EXP:</strong> Penanggung Jawab, Ketua & Wakil (+500 EXP) &bull; Koordinator Divisi/Koor, Sekretaris, Bendahara (+350 EXP) &bull; Anggota (+250 EXP).
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -350,6 +387,63 @@
                     <button type="submit" class="btn btn-primary" id="btnSubmitMember" @if($availableMembers->isEmpty()) disabled @endif>
                         <i class="fas fa-check"></i> Tambahkan
                     </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edit Role Panitia -->
+<div class="modal" id="editRoleModal" style="display: none;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-id-badge text-primary"></i> Ubah Jabatan Panitia</h3>
+                <button class="modal-close" onclick="closeModal('editRoleModal')">&times;</button>
+            </div>
+            <form id="formEditRole" method="POST" action="">
+                @csrf
+                @method('PUT')
+                <div class="modal-body">
+                    <p style="font-size: var(--font-sm); color: var(--text-muted); margin-bottom: 12px;">
+                        Ubah jabatan kepanitiaan untuk <strong id="editRoleMemberName" style="color: var(--text-primary);">-</strong>. Besaran bonus EXP dan lencana akan langsung disesuaikan secara otomatis.
+                    </p>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label" for="edit_jabatan_preset">Pilih Jabatan Kepanitiaan <span class="required">*</span></label>
+                        <select id="edit_jabatan_preset" class="form-control" onchange="onRolePresetChange('edit')">
+                            <option value="Penanggung Jawab" data-exp="500">Penanggung Jawab (PJ) (+500 EXP)</option>
+                            <option value="Ketua Pelaksana" data-exp="500">Ketua Pelaksana / Project Officer (+500 EXP)</option>
+                            <option value="Wakil Ketua Pelaksana" data-exp="500">Wakil Ketua Pelaksana (+500 EXP)</option>
+                            <option value="Koordinator Divisi" data-exp="350">Koordinator Divisi / Koor (+350 EXP)</option>
+                            <option value="Sekretaris" data-exp="350">Sekretaris Event (+350 EXP)</option>
+                            <option value="Bendahara" data-exp="350">Bendahara Event (+350 EXP)</option>
+                            <option value="Anggota Divisi" data-exp="250">Anggota Divisi (+250 EXP)</option>
+                            <option value="custom">Jabatan Lainnya (Ketik Manual)...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-3" id="edit_jabatan_custom_wrap" style="display: none;">
+                        <label class="form-label" for="edit_jabatan_custom">Nama Jabatan Kustom</label>
+                        <input type="text" id="edit_jabatan_custom" class="form-control" placeholder="Contoh: Koor Humas / Bendahara 2" oninput="syncCustomRole('edit')">
+                    </div>
+
+                    <input type="hidden" name="jabatan_panitia" id="edit_jabatan_final" value="">
+
+                    <div class="role-exp-preview mb-2" id="edit_exp_preview" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(245, 158, 11, 0.1); border: 1.5px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-md);">
+                        <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-primary);">Estimasi Perolehan Bonus:</span>
+                        <span class="badge" id="edit_exp_badge" style="background: rgba(245, 158, 11, 0.2); color: #F59E0B; font-weight: 800; font-size: 0.85rem; padding: 4px 10px;">
+                            <i class="fas fa-bolt"></i> +350 EXP
+                        </span>
+                    </div>
+
+                    <div style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.45; margin-top: 6px;">
+                        <i class="fas fa-info-circle text-primary"></i> Perubahan jabatan akan otomatis memperbarui badge profil panitia dan EXP yang didapatkan saat event selesai.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editRoleModal')">Batal</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Simpan Perubahan</button>
                 </div>
             </form>
         </div>
@@ -512,6 +606,26 @@
         color: #FFFFFF;
     }
 
+    .panitia-mobile-edit-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: rgba(48, 175, 255, 0.12);
+        border: 1px solid rgba(48, 175, 255, 0.3);
+        color: var(--blue-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .panitia-mobile-edit-btn:hover {
+        background: var(--blue-primary);
+        color: #FFFFFF;
+    }
+
     .panitia-mobile-badges {
         display: flex;
         align-items: center;
@@ -572,6 +686,126 @@ function filterMemberCheckboxes() {
             row.style.display = 'none';
         }
     });
+}
+
+function estimateExpFromRole(roleName) {
+    const role = (roleName || '').toLowerCase().trim();
+    if (
+        role.includes('ketua') ||
+        role.includes('project officer') ||
+        role.includes('leader') ||
+        role.includes('penanggung jawab') ||
+        role.includes('penanggungjawab') ||
+        role === 'pj' ||
+        role.startsWith('pj ') ||
+        role.includes('wakil') ||
+        role.includes('vice')
+    ) {
+        return 500;
+    }
+    if (
+        role.includes('koor') ||
+        role.includes('sekretaris') ||
+        role.includes('sekre') ||
+        role.includes('bendahara') ||
+        role.includes('bendum') ||
+        role.includes('bph')
+    ) {
+        return 350;
+    }
+    return 250;
+}
+
+function updateRoleExpPreview(mode, exp) {
+    const badge = document.getElementById(mode + '_exp_badge');
+    if (!badge) return;
+    badge.innerHTML = '<i class="fas fa-bolt"></i> +' + exp + ' EXP';
+}
+
+function onRolePresetChange(mode) {
+    const preset = document.getElementById(mode + '_jabatan_preset');
+    const customWrap = document.getElementById(mode + '_jabatan_custom_wrap');
+    const customInput = document.getElementById(mode + '_jabatan_custom');
+    const finalInput = document.getElementById(mode + '_jabatan_final');
+
+    if (preset.value === 'custom') {
+        customWrap.style.display = 'block';
+        customInput.focus();
+        syncCustomRole(mode);
+    } else {
+        customWrap.style.display = 'none';
+        finalInput.value = preset.value;
+        const opt = preset.options[preset.selectedIndex];
+        const exp = opt.getAttribute('data-exp') || 250;
+        updateRoleExpPreview(mode, exp);
+    }
+}
+
+function syncCustomRole(mode) {
+    const customInput = document.getElementById(mode + '_jabatan_custom');
+    const finalInput = document.getElementById(mode + '_jabatan_final');
+    const val = customInput.value.trim();
+    finalInput.value = val || 'Anggota';
+    const exp = estimateExpFromRole(val);
+    updateRoleExpPreview(mode, exp);
+}
+
+function openEditRoleModal(memberId, memberName, currentRole) {
+    const form = document.getElementById('formEditRole');
+    form.action = "{{ route('events.members.update_role', [$event->id, ':id']) }}".replace(':id', memberId);
+    document.getElementById('editRoleMemberName').textContent = memberName;
+
+    const preset = document.getElementById('edit_jabatan_preset');
+    const customWrap = document.getElementById('edit_jabatan_custom_wrap');
+    const customInput = document.getElementById('edit_jabatan_custom');
+    const finalInput = document.getElementById('edit_jabatan_final');
+
+    let matchedOption = false;
+    for (let i = 0; i < preset.options.length; i++) {
+        const opt = preset.options[i];
+        if (opt.value !== 'custom' && opt.value.toLowerCase() === (currentRole || '').trim().toLowerCase()) {
+            preset.selectedIndex = i;
+            matchedOption = true;
+            break;
+        }
+    }
+
+    if (!matchedOption) {
+        const normalized = (currentRole || '').trim().toLowerCase();
+        if (normalized === 'anggota' || normalized === 'staff') {
+            preset.value = 'Anggota Divisi';
+            matchedOption = true;
+        } else if (normalized === 'koor' || normalized.startsWith('koor ') || normalized.startsWith('koordinator ')) {
+            preset.value = 'Koordinator Divisi';
+            matchedOption = true;
+        } else if (normalized === 'pj' || normalized === 'penanggungjawab') {
+            preset.value = 'Penanggung Jawab';
+            matchedOption = true;
+        } else if (normalized === 'ketua' || normalized === 'po' || normalized === 'project officer') {
+            preset.value = 'Ketua Pelaksana';
+            matchedOption = true;
+        } else if (normalized === 'wakil' || normalized === 'vice po') {
+            preset.value = 'Wakil Ketua Pelaksana';
+            matchedOption = true;
+        }
+    }
+
+    if (matchedOption) {
+        customWrap.style.display = 'none';
+        customInput.value = '';
+        finalInput.value = preset.value;
+        const exp = preset.options[preset.selectedIndex].getAttribute('data-exp') || 250;
+        updateRoleExpPreview('edit', exp);
+    } else {
+        preset.value = 'custom';
+        customWrap.style.display = 'block';
+        customInput.value = currentRole || '';
+        finalInput.value = currentRole || '';
+        const exp = estimateExpFromRole(currentRole);
+        updateRoleExpPreview('edit', exp);
+    }
+
+    openModal('editRoleModal');
 }
 </script>
 @endpush

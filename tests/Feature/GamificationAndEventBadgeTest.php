@@ -291,4 +291,86 @@ class GamificationAndEventBadgeTest extends TestCase
         $this->assertEquals(0, $member->fresh()->exp);
         $this->assertCount(0, MemberBadge::where('event_id', $event->id)->get());
     }
+
+    public function test_gamification_service_recognizes_pj_wakil_koor_and_bph_roles(): void
+    {
+        $service = app(GamificationService::class);
+
+        // Leader tier (+500 EXP)
+        $this->assertEquals(500, $service->calculateEventMemberExp('Penanggung Jawab'));
+        $this->assertEquals(500, $service->calculateEventMemberExp('PJ'));
+        $this->assertEquals(500, $service->calculateEventMemberExp('pj acara'));
+        $this->assertEquals(500, $service->calculateEventMemberExp('Ketua Pelaksana'));
+        $this->assertEquals(500, $service->calculateEventMemberExp('Project Officer'));
+        $this->assertEquals(500, $service->calculateEventMemberExp('Wakil Ketua Pelaksana'));
+        $this->assertEquals(500, $service->calculateEventMemberExp('Vice PO'));
+
+        // Coordinator & Core tier (+350 EXP)
+        $this->assertEquals(350, $service->calculateEventMemberExp('koor'));
+        $this->assertEquals(350, $service->calculateEventMemberExp('Koor Divisi'));
+        $this->assertEquals(350, $service->calculateEventMemberExp('Koordinator Acara'));
+        $this->assertEquals(350, $service->calculateEventMemberExp('Sekretaris'));
+        $this->assertEquals(350, $service->calculateEventMemberExp('Sekre'));
+        $this->assertEquals(350, $service->calculateEventMemberExp('Bendahara'));
+        $this->assertEquals(350, $service->calculateEventMemberExp('BPH'));
+
+        // Staff / Anggota tier (+250 EXP)
+        $this->assertEquals(250, $service->calculateEventMemberExp('Anggota Panitia'));
+        $this->assertEquals(250, $service->calculateEventMemberExp('Staff'));
+        $this->assertEquals(250, $service->calculateEventMemberExp(''));
+        $this->assertEquals(250, $service->calculateEventMemberExp(null));
+    }
+
+    public function test_admin_can_update_member_role_before_and_after_event_completion(): void
+    {
+        $admin = $this->createAdmin();
+        $member = $this->createMember(['exp' => 0]);
+
+        $event = Event::create([
+            'nama_event' => 'HIMA Fest 2026',
+            'status' => 'active',
+        ]);
+
+        $division = EventDivision::create([
+            'event_id' => $event->id,
+            'nama_divisi' => 'Divisi Perlengkapan',
+        ]);
+
+        $eventMember = EventMember::create([
+            'event_id' => $event->id,
+            'division_id' => $division->id,
+            'user_id' => $member->id,
+            'jabatan_panitia' => 'koor',
+        ]);
+
+        $this->actingAs($admin);
+
+        // Update role while event is still active
+        $response = $this->put(route('events.members.update_role', [$event->id, $eventMember->id]), [
+            'jabatan_panitia' => 'Penanggung Jawab',
+        ]);
+        $response->assertSessionHas('success');
+        $this->assertEquals('Penanggung Jawab', $eventMember->fresh()->jabatan_panitia);
+
+        // Complete event -> should award 500 EXP
+        $this->post(route('events.complete', $event->id));
+        $this->assertEquals(500, $member->fresh()->exp);
+
+        $badge = MemberBadge::where('event_id', $event->id)->where('user_id', $member->id)->first();
+        $this->assertNotNull($badge);
+        $this->assertEquals('Penanggung Jawab', $badge->jabatan);
+        $this->assertEquals(500, $badge->exp_earned);
+
+        // Update role after event is already completed to 'Koordinator Divisi' -> adjustments occur
+        $updateCompletedResponse = $this->put(route('events.members.update_role', [$event->id, $eventMember->id]), [
+            'jabatan_panitia' => 'Koordinator Divisi',
+        ]);
+        $updateCompletedResponse->assertSessionHas('success');
+
+        $this->assertEquals('Koordinator Divisi', $eventMember->fresh()->jabatan_panitia);
+        $this->assertEquals('Koordinator Divisi', $badge->fresh()->jabatan);
+        $this->assertEquals(350, $badge->fresh()->exp_earned);
+        // 500 - (500 - 350) = 350 EXP
+        $this->assertEquals(350, $member->fresh()->exp);
+    }
 }

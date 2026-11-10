@@ -38,11 +38,30 @@ class MemberBadge extends Model
 
     public function getIconAttribute(): string
     {
-        $jabatan = strtolower($this->jabatan ?? '');
-        if (str_contains($jabatan, 'ketua') || str_contains($jabatan, 'leader') || str_contains($jabatan, 'project officer')) {
+        $role = strtolower(trim($this->jabatan ?? ''));
+
+        if (
+            str_contains($role, 'ketua') ||
+            str_contains($role, 'project officer') ||
+            str_contains($role, 'leader') ||
+            str_contains($role, 'penanggung jawab') ||
+            str_contains($role, 'penanggungjawab') ||
+            $role === 'pj' ||
+            str_contains($role, 'pj ') ||
+            str_contains($role, 'wakil') ||
+            str_contains($role, 'vice')
+        ) {
             return 'fa-trophy';
         }
-        if (str_contains($jabatan, 'koordinator') || str_contains($jabatan, 'sekretaris') || str_contains($jabatan, 'bendahara') || str_contains($jabatan, 'bph')) {
+
+        if (
+            str_contains($role, 'koor') ||
+            str_contains($role, 'sekretaris') ||
+            str_contains($role, 'sekre') ||
+            str_contains($role, 'bendahara') ||
+            str_contains($role, 'bendum') ||
+            str_contains($role, 'bph')
+        ) {
             return 'fa-medal';
         }
 
@@ -51,8 +70,19 @@ class MemberBadge extends Model
 
     public function getColorThemeAttribute(): array
     {
-        $jabatan = strtolower($this->jabatan ?? '');
-        if (str_contains($jabatan, 'ketua') || str_contains($jabatan, 'leader') || str_contains($jabatan, 'project officer')) {
+        $role = strtolower(trim($this->jabatan ?? ''));
+
+        if (
+            str_contains($role, 'ketua') ||
+            str_contains($role, 'project officer') ||
+            str_contains($role, 'leader') ||
+            str_contains($role, 'penanggung jawab') ||
+            str_contains($role, 'penanggungjawab') ||
+            $role === 'pj' ||
+            str_contains($role, 'pj ') ||
+            str_contains($role, 'wakil') ||
+            str_contains($role, 'vice')
+        ) {
             return [
                 'name' => 'gold',
                 'color' => '#F59E0B',
@@ -61,7 +91,15 @@ class MemberBadge extends Model
                 'badge_class' => 'badge-gold',
             ];
         }
-        if (str_contains($jabatan, 'koordinator') || str_contains($jabatan, 'sekretaris') || str_contains($jabatan, 'bendahara') || str_contains($jabatan, 'bph')) {
+
+        if (
+            str_contains($role, 'koor') ||
+            str_contains($role, 'sekretaris') ||
+            str_contains($role, 'sekre') ||
+            str_contains($role, 'bendahara') ||
+            str_contains($role, 'bendum') ||
+            str_contains($role, 'bph')
+        ) {
             return [
                 'name' => 'purple',
                 'color' => '#8B5CF6',
@@ -92,12 +130,36 @@ class MemberBadge extends Model
 
     public function getRoleTitleAttribute(): string
     {
-        $jabatan = strtolower($this->jabatan ?? '');
-        if (str_contains($jabatan, 'ketua') || str_contains($jabatan, 'leader') || str_contains($jabatan, 'project officer')) {
+        $role = strtolower(trim($this->jabatan ?? ''));
+
+        if (
+            str_contains($role, 'penanggung jawab') ||
+            str_contains($role, 'penanggungjawab') ||
+            $role === 'pj' ||
+            str_contains($role, 'pj ')
+        ) {
+            return 'Penanggung Jawab';
+        }
+
+        if (
+            str_contains($role, 'ketua') ||
+            str_contains($role, 'project officer') ||
+            str_contains($role, 'leader') ||
+            str_contains($role, 'wakil') ||
+            str_contains($role, 'vice')
+        ) {
             return 'Pimpinan / Ketua';
         }
-        if (str_contains($jabatan, 'koordinator') || str_contains($jabatan, 'sekretaris') || str_contains($jabatan, 'bendahara') || str_contains($jabatan, 'bph')) {
-            return 'Koordinator / BPH';
+
+        if (
+            str_contains($role, 'koor') ||
+            str_contains($role, 'sekretaris') ||
+            str_contains($role, 'sekre') ||
+            str_contains($role, 'bendahara') ||
+            str_contains($role, 'bendum') ||
+            str_contains($role, 'bph')
+        ) {
+            return 'Koordinator & BPH';
         }
 
         return 'Panitia Pelaksana';

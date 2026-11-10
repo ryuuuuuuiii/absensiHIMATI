@@ -177,6 +177,7 @@ Route::middleware('auth')->group(function () {
 
         // Panitia
         Route::post('/{event}/members', [EventController::class, 'addMembers'])->name('members.store');
+        Route::put('/{event}/members/{member}', [EventController::class, 'updateMemberRole'])->name('members.update_role');
         Route::delete('/{event}/members/{member}', [EventController::class, 'removeMember'])->name('members.destroy');
     });
 

@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\EventDivision;
 use App\Models\EventMember;
 use App\Models\Member;
+use App\Models\MemberBadge;
 use App\Services\GamificationService;
 use Illuminate\Http\Request;
 
@@ -196,6 +197,51 @@ class EventController extends Controller
         $em->delete();
 
         return back()->with('success', 'Panitia berhasil dikeluarkan dari divisi.');
+    }
+
+    public function updateMemberRole(Request $request, $id, $memberId, GamificationService $gamificationService)
+    {
+        $request->validate([
+            'jabatan_panitia' => ['required', 'string', 'max:100'],
+        ]);
+
+        $event = Event::findOrFail($id);
+        $em = EventMember::where('event_id', $event->id)->findOrFail($memberId);
+        $newJabatan = trim($request->input('jabatan_panitia'));
+
+        $em->update([
+            'jabatan_panitia' => $newJabatan,
+        ]);
+
+        // Jika event sudah pernah diselesaikan, perbarui juga lencana dan selisih EXP-nya
+        if ($event->isCompleted()) {
+            $badge = MemberBadge::where('event_id', $event->id)
+                ->where('user_id', $em->user_id)
+                ->first();
+
+            if ($badge) {
+                $oldExp = (int) $badge->exp_earned;
+                $newExp = $gamificationService->calculateEventMemberExp($newJabatan);
+                $diff = $newExp - $oldExp;
+
+                $badge->update([
+                    'jabatan' => $newJabatan,
+                    'exp_earned' => $newExp,
+                ]);
+
+                if ($diff !== 0) {
+                    $user = Member::find($em->user_id);
+                    if ($user) {
+                        $user->update([
+                            'exp' => max(0, ((int) $user->exp) + $diff),
+                        ]);
+                        cache()->forget("portal_stats_{$user->id}");
+                    }
+                }
+            }
+        }
+
+        return back()->with('success', "Jabatan panitia berhasil diperbarui menjadi '{$newJabatan}'.");
     }
 
     public function complete($id, GamificationService $gamificationService)

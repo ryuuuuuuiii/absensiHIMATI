@@ -82,14 +82,34 @@ class GamificationService
     {
         $role = strtolower(trim($jabatan ?? ''));
 
-        if (str_contains($role, 'ketua') || str_contains($role, 'project officer') || str_contains($role, 'leader')) {
+        // Tingkat 1: Penanggung Jawab, Ketua Pelaksana, Wakil Pelaksana (+500 EXP)
+        if (
+            str_contains($role, 'ketua') ||
+            str_contains($role, 'project officer') ||
+            str_contains($role, 'leader') ||
+            str_contains($role, 'penanggung jawab') ||
+            str_contains($role, 'penanggungjawab') ||
+            $role === 'pj' ||
+            str_contains($role, 'pj ') ||
+            str_contains($role, 'wakil') ||
+            str_contains($role, 'vice')
+        ) {
             return self::EVENT_LEADER_EXP;
         }
 
-        if (str_contains($role, 'koordinator') || str_contains($role, 'sekretaris') || str_contains($role, 'bendahara') || str_contains($role, 'bph')) {
+        // Tingkat 2: Koordinator Divisi (Koor), Sekretaris, Bendahara, BPH (+350 EXP)
+        if (
+            str_contains($role, 'koor') ||
+            str_contains($role, 'sekretaris') ||
+            str_contains($role, 'sekre') ||
+            str_contains($role, 'bendahara') ||
+            str_contains($role, 'bendum') ||
+            str_contains($role, 'bph')
+        ) {
             return self::EVENT_COORDINATOR_EXP;
         }
 
+        // Tingkat 3: Anggota Panitia (+250 EXP)
         return self::EVENT_STAFF_EXP;
     }
 
