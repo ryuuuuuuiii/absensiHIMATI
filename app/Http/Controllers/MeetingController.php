@@ -159,6 +159,22 @@ class MeetingController extends Controller
                 break;
         }
 
+        $creator = Member::find($createdBy);
+        if ($creator) {
+            $authError = $this->spamService->checkCreationAuthorization(
+                $creator,
+                $jenisRapat,
+                $departemen,
+                $eventId ? (int) $eventId : null,
+                $tipeDivisi,
+                $request->filled('divisi_id') ? (int) $request->input('divisi_id') : null,
+                $departemenCollab ?? []
+            );
+            if ($authError) {
+                return back()->withInput()->with('danger', $authError);
+            }
+        }
+
         $uniqueLink = Str::lower(Str::random(12));
         $absentLink = Str::lower(Str::random(12));
 
@@ -644,6 +660,28 @@ class MeetingController extends Controller
 
         $totalMembers = EventMember::where('event_id', $event->id)->distinct('user_id')->count('user_id');
 
+        $loggedMember = auth('member')->user();
+        $userDivisionId = null;
+        $isEventInti = auth('web')->check();
+        if ($loggedMember) {
+            $eventMember = EventMember::where('event_id', $event->id)->where('user_id', $loggedMember->id)->first();
+            if ($eventMember) {
+                $userDivisionId = $eventMember->division_id;
+                $role = strtolower(trim((string) ($eventMember->jabatan_panitia ?? '')));
+                $isEventInti = $isEventInti ||
+                    str_contains($role, 'ketua') ||
+                    str_contains($role, 'project officer') ||
+                    str_contains($role, 'leader') ||
+                    str_contains($role, 'penanggung jawab') ||
+                    str_contains($role, 'penanggungjawab') ||
+                    $role === 'pj' ||
+                    str_contains($role, 'pj ') ||
+                    str_contains($role, 'wakil') ||
+                    str_contains($role, 'vice') ||
+                    empty($eventMember->division_id);
+            }
+        }
+
         $divisions = $event->divisions->map(function ($d) {
             return [
                 'id' => $d->id,
@@ -659,6 +697,8 @@ class MeetingController extends Controller
                     'id' => $event->id,
                     'nama_event' => $event->nama_event,
                     'total_members' => $totalMembers,
+                    'user_division_id' => $userDivisionId,
+                    'is_event_inti' => $isEventInti,
                 ],
                 'divisions' => $divisions,
             ],

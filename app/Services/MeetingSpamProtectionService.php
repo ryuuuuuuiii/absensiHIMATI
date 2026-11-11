@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Event;
+use App\Models\EventMember;
 use App\Models\Meeting;
+use App\Models\Member;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -213,5 +216,95 @@ class MeetingSpamProtectionService
         $isValid = ($diffSeconds >= self::MIN_VALID_MEETING_DURATION_SECONDS || $otherAttendeesCount > 0);
 
         return $this->meetingValidityCache[$meeting->id] = $isValid;
+    }
+
+    /**
+     * Memvalidasi otorisasi pembuat rapat berdasarkan divisi, departemen, dan kepanitiaan.
+     * Sesuai ketentuan:
+     * 1. Rapat internal departemen: Hanya anggota departemen tersebut atau Pengurus Inti.
+     * 2. Rapat BPH: Hanya pengurus BPH atau Pengurus Inti.
+     * 3. Rapat lintas departemen: Pengurus Inti atau melibatkan departemen pembuat.
+     * 4. Rapat kepanitiaan / event:
+     *    - Pembuat WAJIB terdaftar sebagai panitia (EventMember) dalam event terkait.
+     *    - Jika rapat tipe per divisi, hanya Inti Panitia yang bebas membuat untuk divisi lain,
+     *      sedangkan anggota/koor divisi hanya dapat membuat rapat untuk divisinya sendiri.
+     */
+    public function checkCreationAuthorization(
+        Member $creator,
+        string $jenisRapat,
+        ?string $departemen = null,
+        ?int $eventId = null,
+        ?string $tipeDivisi = null,
+        ?int $divisiId = null,
+        array $departemenCollab = []
+    ): ?string {
+        $isHimatiInti = $creator->isBphInti();
+
+        switch ($jenisRapat) {
+            case 'internal_dept':
+                if (! $isHimatiInti && strtolower(trim((string) $creator->departemen)) !== strtolower(trim((string) $departemen))) {
+                    return "Anda hanya dapat membuat rapat internal untuk Departemen {$creator->departemen}. Anda tidak memiliki izin untuk membuat rapat internal Departemen {$departemen}.";
+                }
+                break;
+
+            case 'bph':
+                if (! $isHimatiInti && ! $creator->is_bph) {
+                    return 'Hanya Pengurus BPH atau Pengurus Inti yang berhak membuat sesi rapat BPH.';
+                }
+                break;
+
+            case 'lintas_dept':
+                if (! $isHimatiInti) {
+                    $creatorDeptLower = strtolower(trim((string) $creator->departemen));
+                    $collabDeptsLower = array_map(fn ($d) => strtolower(trim((string) $d)), $departemenCollab);
+                    if (! in_array($creatorDeptLower, $collabDeptsLower, true)) {
+                        return "Anda hanya dapat membuat rapat lintas departemen yang melibatkan departemen Anda ({$creator->departemen}).";
+                    }
+                }
+                break;
+
+            case 'kepanitiaan':
+                if (! $eventId) {
+                    return 'Pilih event terlebih dahulu untuk membuat rapat kepanitiaan.';
+                }
+
+                $event = Event::find($eventId);
+                if (! $event) {
+                    return 'Event yang dipilih tidak ditemukan.';
+                }
+
+                $eventMember = EventMember::with('division')
+                    ->where('event_id', $eventId)
+                    ->where('user_id', $creator->id)
+                    ->first();
+
+                if (! $eventMember) {
+                    return "Anda tidak terdaftar sebagai panitia dalam event '{$event->nama_event}', sehingga tidak dapat membuat rapat untuk event tersebut.";
+                }
+
+                // Cek apakah pembuat merupakan Inti Panitia Event
+                $role = strtolower(trim((string) ($eventMember->jabatan_panitia ?? '')));
+                $isEventInti = str_contains($role, 'ketua') ||
+                    str_contains($role, 'project officer') ||
+                    str_contains($role, 'leader') ||
+                    str_contains($role, 'penanggung jawab') ||
+                    str_contains($role, 'penanggungjawab') ||
+                    $role === 'pj' ||
+                    str_contains($role, 'pj ') ||
+                    str_contains($role, 'wakil') ||
+                    str_contains($role, 'vice') ||
+                    empty($eventMember->division_id);
+
+                if ($tipeDivisi === 'perdivisi' && $divisiId) {
+                    if (! $isEventInti && (int) $divisiId !== (int) $eventMember->division_id) {
+                        $myDivisiName = $eventMember->division?->nama_divisi ?? 'divisi Anda';
+
+                        return "Anda hanya dapat membuat rapat untuk divisi Anda sendiri ({$myDivisiName}). Anda tidak memiliki izin membuat rapat untuk divisi lain pada event ini.";
+                    }
+                }
+                break;
+        }
+
+        return null;
     }
 }

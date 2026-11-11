@@ -311,9 +311,18 @@ function fetchEventDivisions(eventId, preselectDivisiId = null) {
         if (!data.divisions || data.divisions.length === 0) {
             selectDivisi.innerHTML += '<option value="" disabled>Belum ada divisi pada event ini</option>';
         } else {
+            const userDivId = data.event?.user_division_id;
+            const isInti = Boolean(data.event?.is_event_inti);
             data.divisions.forEach(div => {
-                selectDivisi.innerHTML += `<option value="${div.id}" data-count="${div.total_member}">${escapeHtml(div.nama_divisi)} (${div.total_member} panitia)</option>`;
+                const isMyDiv = userDivId && String(div.id) === String(userDivId);
+                const disabled = (!isInti && userDivId && !isMyDiv) ? 'disabled' : '';
+                const myTag = isMyDiv ? ' [Divisi Anda]' : '';
+                selectDivisi.innerHTML += `<option value="${div.id}" data-count="${div.total_member}" ${disabled}>${escapeHtml(div.nama_divisi)}${myTag} (${div.total_member} panitia)</option>`;
             });
+
+            if (!isInti && userDivId && !preselectDivisiId) {
+                selectDivisi.value = String(userDivId);
+            }
         }
 
         const tipeDivisi = document.querySelector('[name="tipe_divisi"]:checked');

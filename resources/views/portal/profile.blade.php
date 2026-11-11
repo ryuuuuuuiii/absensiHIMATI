@@ -908,12 +908,12 @@
         <div class="profile-level-box">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: {{ $lvl['badge_color'] }}; color: #FFFFFF; font-size: 0.95rem; font-weight: 800; border: 1.5px solid #061A2E; box-shadow: 0 2px 0 #061A2E;">
-                        <i class="fas fa-{{ $lvl['icon'] }}"></i>
+                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: {{ $lvl['badge_bg'] }}; border: 1.5px solid #061A2E; box-shadow: 0 2px 0 #061A2E;">
+                        <img src="{{ $lvl['tier_icon_url'] }}" alt="{{ $lvl['title'] }}" style="image-rendering: pixelated; width: 22px; height: 22px;">
                     </span>
                     <div>
                         <div class="lvl-title">
-                            Level {{ $lvl['level'] }} &bull; {{ $lvl['title'] }}
+                            Lv. {{ $lvl['level'] }} &bull; {{ $lvl['title'] }}
                         </div>
                         <div class="lvl-sub">
                             Total <strong>{{ number_format($lvl['exp']) }} EXP</strong>
@@ -930,7 +930,7 @@
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 0.68rem; margin-top: 5px;" class="lvl-sub">
                 <span>{{ $lvl['progress'] }} / {{ $lvl['needed'] }} EXP menuju Lv. {{ $lvl['level'] + 1 }}</span>
-                <span><i class="fas fa-bolt" style="color: #F59E0B;"></i> +50 EXP per presensi</span>
+                <span><i class="fas fa-bolt" style="color: #F59E0B;"></i> +100 EXP per presensi</span>
             </div>
         </div>
 

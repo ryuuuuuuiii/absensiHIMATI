@@ -3,6 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Attendance;
+use App\Models\Event;
+use App\Models\EventDivision;
+use App\Models\EventMember;
 use App\Models\Meeting;
 use App\Models\Member;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -910,5 +913,121 @@ class InternalMeetingAttendanceTest extends TestCase
 
         $attB = Attendance::where('meeting_id', $meeting->id)->where('user_id', $memberB->id)->first();
         $this->assertEquals('alpha', $attB->status); // Member B tetap alpha, tidak terpengaruh
+    }
+
+    public function test_meeting_creation_authorization_enforces_event_committee_and_department_rules(): void
+    {
+        $memberMedinfo = Member::create([
+            'nama_lengkap' => 'Anggota Medinfo',
+            'email' => 'medinfo_'.Str::random(5).'@himati.id',
+            'departemen' => 'Medinfo',
+            'jabatan' => 'Staff Medinfo',
+            'qr_code' => 'TEST-'.Str::upper(Str::random(6)),
+            'is_bph' => false,
+            'is_active' => true,
+        ]);
+
+        $bphInti = Member::create([
+            'nama_lengkap' => 'Ketua Umum Inti',
+            'email' => 'ketum_'.Str::random(5).'@himati.id',
+            'departemen' => 'Inti',
+            'jabatan' => 'Ketua Umum',
+            'qr_code' => 'TEST-'.Str::upper(Str::random(6)),
+            'is_bph' => true,
+            'is_active' => true,
+        ]);
+
+        // 1. Anggota Medinfo mencoba membuat rapat internal PSDM -> Ditolak
+        $responseFail = $this->actingAs($memberMedinfo, 'member')->post(route('public.meeting.store'), [
+            'jenis_rapat' => 'internal_dept',
+            'mode_rapat' => 'offline',
+            'departemen' => 'PSDM',
+            'fokus_bahasan_internal' => 'Pembahasan Rahasia PSDM',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '10:00',
+        ]);
+        $responseFail->assertSessionHas('danger');
+
+        // 2. Pengurus Inti membuat rapat internal PSDM -> Berhasil diizinkan
+        $responseSuccessInti = $this->actingAs($bphInti, 'member')->post(route('public.meeting.store'), [
+            'jenis_rapat' => 'internal_dept',
+            'mode_rapat' => 'offline',
+            'departemen' => 'PSDM',
+            'fokus_bahasan_internal' => 'Evaluasi Internal PSDM oleh BPH Inti',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '11:00',
+        ]);
+        $responseSuccessInti->assertRedirect();
+        $this->assertDatabaseHas('meetings', [
+            'created_by' => $bphInti->id,
+            'departemen' => 'PSDM',
+            'jenis_rapat' => 'internal_dept',
+        ]);
+
+        // 3. Rapat Event: Non-panitia tidak bisa membuat rapat event
+        $event = Event::create([
+            'nama_event' => 'Dies Natalis HIMATI 2026',
+            'status' => 'active',
+        ]);
+        $divAcara = EventDivision::create([
+            'event_id' => $event->id,
+            'nama_divisi' => 'Divisi Acara',
+        ]);
+        $divHumas = EventDivision::create([
+            'event_id' => $event->id,
+            'nama_divisi' => 'Divisi Humas',
+        ]);
+
+        // Member Medinfo bukan panitia Dies Natalis -> Ditolak
+        $responseEventFail = $this->actingAs($memberMedinfo, 'member')->post(route('public.meeting.store'), [
+            'jenis_rapat' => 'kepanitiaan',
+            'mode_rapat' => 'offline',
+            'event_id' => $event->id,
+            'tipe_divisi' => 'semua',
+            'fokus_bahasan_kepanitiaan' => 'Rapat Perdana Panitia',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '13:00',
+        ]);
+        $responseEventFail->assertSessionHas('danger');
+
+        // Daftarkan Member Medinfo ke Divisi Acara
+        $eventMember = EventMember::create([
+            'event_id' => $event->id,
+            'division_id' => $divAcara->id,
+            'user_id' => $memberMedinfo->id,
+            'jabatan_panitia' => 'Anggota Divisi Acara',
+        ]);
+
+        // Member Acara mencoba membuat rapat untuk Divisi Humas -> Ditolak
+        $responseOtherDivFail = $this->actingAs($memberMedinfo, 'member')->post(route('public.meeting.store'), [
+            'jenis_rapat' => 'kepanitiaan',
+            'mode_rapat' => 'offline',
+            'event_id' => $event->id,
+            'tipe_divisi' => 'perdivisi',
+            'divisi_id' => $divHumas->id,
+            'fokus_bahasan_kepanitiaan' => 'Rapat Humas',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '14:00',
+        ]);
+        $responseOtherDivFail->assertSessionHas('danger');
+
+        // Member Acara membuat rapat untuk divisinya sendiri -> Berhasil
+        $responseMyDivSuccess = $this->actingAs($memberMedinfo, 'member')->post(route('public.meeting.store'), [
+            'jenis_rapat' => 'kepanitiaan',
+            'mode_rapat' => 'offline',
+            'event_id' => $event->id,
+            'tipe_divisi' => 'perdivisi',
+            'divisi_id' => $divAcara->id,
+            'fokus_bahasan_kepanitiaan' => 'Rapat Koordinasi Acara',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '15:00',
+        ]);
+        $responseMyDivSuccess->assertRedirect();
+        $this->assertDatabaseHas('meetings', [
+            'created_by' => $memberMedinfo->id,
+            'event_id' => $event->id,
+            'tipe_divisi' => 'perdivisi',
+            'divisi_rapat' => 'Divisi Acara',
+        ]);
     }
 }

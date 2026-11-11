@@ -27,10 +27,6 @@
                 Halo, <span class="hero-name">{{ $member->nama_lengkap }}</span>!&nbsp;<span class="wave-emoji">👋</span>
             </h2>
             <div class="portal-hero-meta">
-                @php $lvl = $member->level_data; @endphp
-                <span class="hero-pill-badge" style="background: rgba(48, 175, 255, 0.15); color: #0284C7; border: 1px solid rgba(48, 175, 255, 0.35); font-weight: 700;">
-                    <i class="fas fa-{{ $lvl['icon'] }}" style="color: {{ $lvl['badge_color'] }};"></i> Lv. {{ $lvl['level'] }} &bull; {{ $lvl['title'] }}
-                </span>
                 <span class="hero-pill-badge role-badge">
                     <i class="fas fa-id-badge"></i> {{ $member->jabatan }}
                 </span>
@@ -62,21 +58,53 @@
                     </span>
                 @endif
             </div>
-            <div style="margin-top: 8px; max-width: 320px;">
-                <div style="display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: 600; color: var(--text-muted); margin-bottom: 3px;">
-                    <span><i class="fas fa-bolt" style="color: #F59E0B;"></i> {{ number_format($lvl['exp']) }} EXP &bull; Lv. {{ $lvl['level'] }}</span>
-                    <span>{{ $lvl['progress'] }}/{{ $lvl['needed'] }} ({{ $lvl['percentage'] }}%)</span>
-                </div>
-                <div style="width: 100%; height: 6px; background: rgba(0, 0, 0, 0.08); border-radius: 9999px; overflow: hidden;">
-                    <div style="width: {{ $lvl['percentage'] }}%; height: 100%; background: linear-gradient(90deg, #30AFFF, #10B981); border-radius: 9999px;"></div>
-                </div>
-            </div>
         </div>
     </div>
     <div class="portal-hero-actions header-desktop-btn">
         <a href="{{ route('portal.qr') }}" class="btn btn-secondary btn-sm">
             <i class="fas fa-qrcode"></i> Buka QR Saya
         </a>
+    </div>
+</div>
+
+<!-- Level & Gamifikasi Card (Terpisah di Bawah Hero Card) -->
+@php $lvl = $member->level_data; @endphp
+<div class="portal-level-card">
+    <div class="level-card-header">
+        <div class="level-card-left">
+            <span class="level-icon-badge" style="background: {{ $lvl['badge_bg'] }};">
+                <img src="{{ $lvl['tier_icon_url'] }}" alt="{{ $lvl['title'] }}" class="tier-minecraft-icon">
+            </span>
+            <div>
+                <div class="level-card-title">
+                    <span class="level-number">Lv. {{ $lvl['level'] }}</span> &bull; <span class="level-tier-name">{{ $lvl['title'] }}</span>
+                </div>
+                <div class="level-card-sub">
+                    <span class="exp-total-pill"><i class="fas fa-bolt"></i> {{ number_format($lvl['exp']) }} EXP</span>
+                </div>
+            </div>
+        </div>
+        <div class="level-card-right">
+            <a href="{{ route('portal.profile') }}" class="level-card-link">
+                <span>Lihat Lencana</span>
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Progress Track & Info -->
+    <div class="level-progress-wrapper">
+        <div class="level-progress-labels">
+            <span class="progress-label-left">Progress Menuju Lv. {{ $lvl['level'] + 1 }}</span>
+            <span class="progress-label-right">{{ $lvl['progress'] }} / {{ $lvl['needed'] }} EXP ({{ $lvl['percentage'] }}%)</span>
+        </div>
+        <div class="level-bar-track">
+            <div class="level-bar-fill" style="width: {{ $lvl['percentage'] }}%;"></div>
+        </div>
+        <div class="level-progress-footer">
+            <span><i class="fas fa-bolt" style="color: #F59E0B;"></i> +100 EXP setiap hadir rapat</span>
+            <span>~{{ max(1, (int) ceil(($lvl['needed'] - $lvl['progress']) / 100)) }}x presensi lagi</span>
+        </div>
     </div>
 </div>
 

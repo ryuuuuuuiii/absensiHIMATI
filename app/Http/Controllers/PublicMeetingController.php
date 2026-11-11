@@ -37,15 +37,25 @@ class PublicMeetingController extends Controller
         });
         $usersByDept = $allMembers->groupBy('departemen');
         $departments = config('himati.departments', []);
-        $events = cache()->remember('active_events_for_meeting', 300, function () {
-            return Event::select(['id', 'nama_event', 'status'])
-                ->where('status', 'active')
-                ->orderBy('nama_event')
-                ->get();
-        });
-
         $loggedMember = auth('member')->user();
         $loggedAdmin = auth('web')->user();
+
+        // Jika pengurus biasa (bukan admin), hanya tampilkan event di mana pengurus terdaftar sebagai panitia
+        if ($loggedMember && ! $loggedAdmin) {
+            $myEventIds = EventMember::where('user_id', $loggedMember->id)->pluck('event_id')->unique()->all();
+            $events = Event::select(['id', 'nama_event', 'status'])
+                ->where('status', 'active')
+                ->whereIn('id', $myEventIds)
+                ->orderBy('nama_event')
+                ->get();
+        } else {
+            $events = cache()->remember('active_events_for_meeting', 300, function () {
+                return Event::select(['id', 'nama_event', 'status'])
+                    ->where('status', 'active')
+                    ->orderBy('nama_event')
+                    ->get();
+            });
+        }
 
         return view('public.meeting_create', compact(
             'allMembers',
@@ -145,6 +155,22 @@ class PublicMeetingController extends Controller
                     return back()->withInput()->with('danger', 'Agenda bahasan wajib diisi.');
                 }
                 break;
+        }
+
+        $creator = Member::find($createdBy);
+        if ($creator) {
+            $authError = $this->spamService->checkCreationAuthorization(
+                $creator,
+                $jenisRapat,
+                $departemen,
+                $eventId ? (int) $eventId : null,
+                $tipeDivisi,
+                $request->filled('divisi_id') ? (int) $request->input('divisi_id') : null,
+                $departemenCollab ?? []
+            );
+            if ($authError) {
+                return back()->withInput()->with('danger', $authError);
+            }
         }
 
         $uniqueLink = Str::lower(Str::random(12));

@@ -174,11 +174,21 @@
                     <select name="departemen" class="form-control" id="selectDepartemen">
                         <option value="">— Pilih Departemen —</option>
                         @foreach ($departments as $key => $label)
-                            <option value="{{ $key }}" {{ ($loggedMember && strtolower($loggedMember->departemen) === strtolower($key)) ? 'selected' : '' }}>
-                                {{ $label }}
-                            </option>
+                            @php
+                                $canChooseDept = $loggedAdmin || ($loggedMember && $loggedMember->isBphInti()) || ($loggedMember && strtolower($loggedMember->departemen) === strtolower($key));
+                            @endphp
+                            @if ($canChooseDept)
+                                <option value="{{ $key }}" {{ ($loggedMember && strtolower($loggedMember->departemen) === strtolower($key)) ? 'selected' : '' }}>
+                                    {{ $label }} {{ ($loggedMember && strtolower($loggedMember->departemen) === strtolower($key) && !$loggedMember->isBphInti()) ? '(Departemen Anda)' : '' }}
+                                </option>
+                            @endif
                         @endforeach
                     </select>
+                    @if ($loggedMember && !$loggedMember->isBphInti() && !$loggedAdmin)
+                        <small style="color: var(--text-muted); display: block; margin-top: 4px;">
+                            <i class="fas fa-lock"></i> Sesuai hak akses, Anda hanya dapat membuat rapat untuk departemen Anda ({{ $loggedMember->departemen }}).
+                        </small>
+                    @endif
                 </div>
                 <div class="form-group">
                     <label class="form-label">Fokus Pembahasan <span class="required">*</span></label>
@@ -200,12 +210,18 @@
                     <label class="form-label">Pilih Event <span class="required">*</span></label>
                     <select name="event_id" id="selectEvent" class="form-control" onchange="fetchEventDivisions(this.value)">
                         <option value="">— Pilih Event Aktif —</option>
-                        @foreach ($events as $evt)
+                        @forelse ($events as $evt)
                             <option value="{{ $evt->id }}">{{ $evt->nama_event }}</option>
-                        @endforeach
+                        @empty
+                            <option value="" disabled>Anda tidak terdaftar sebagai panitia pada event aktif manapun</option>
+                        @endforelse
                     </select>
                     <small style="color: var(--text-muted); display: block; margin-top: 4px;" id="eventMemberCount">
-                        Pilih event untuk melihat divisi dan panitia.
+                        @if ($events->isEmpty() && $loggedMember && !$loggedAdmin)
+                            <span style="color: var(--danger);"><i class="fas fa-exclamation-circle"></i> Anda belum menjadi panitia event aktif. Hanya panitia yang dapat membuat rapat event.</span>
+                        @else
+                            Pilih event untuk melihat divisi dan panitia.
+                        @endif
                     </small>
                 </div>
                 <div class="form-group">

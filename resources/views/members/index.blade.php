@@ -124,8 +124,8 @@
                             <div>{{ $m->jabatan }}</div>
                             <div style="margin-top: 3px;">
                                 @php $lvl = $m->level_data; @endphp
-                                <span class="badge" style="background: rgba(59, 130, 246, 0.12); color: var(--blue-primary); font-size: 10.5px; padding: 2px 6px;" title="{{ $lvl['title'] }} &bull; {{ number_format($lvl['exp']) }} EXP">
-                                    <i class="fas fa-{{ $lvl['icon'] }}" style="color: {{ $lvl['badge_color'] }};"></i> Lv. {{ $lvl['level'] }} &bull; {{ number_format($lvl['exp']) }} EXP
+                                <span class="badge" style="background: rgba(59, 130, 246, 0.12); color: var(--blue-primary); font-size: 10.5px; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px;" title="{{ $lvl['title'] }} &bull; {{ number_format($lvl['exp']) }} EXP">
+                                    <img src="{{ $lvl['tier_icon_url'] }}" alt="{{ $lvl['title'] }}" style="image-rendering: pixelated; width: 14px; height: 14px;"> Lv. {{ $lvl['level'] }} &bull; {{ $lvl['title'] }}
                                 </span>
                             </div>
                         </td>

@@ -149,14 +149,14 @@ class Member extends Authenticatable
         // Rank tiering Minecraft per 5 level:
         // Kayu (1-5) -> Batu (6-10) -> Besi (11-15) -> Gold (16-20) -> Amethyst (21-25) -> Diamond (26-30) -> Emerald (31-35) -> Netherite (36+)
         $minecraftTiers = [
-            0 => ['name' => 'Kayu', 'color' => '#B45309', 'badge_bg' => 'rgba(180, 83, 9, 0.15)', 'icon' => 'cube', 'eng' => 'Wood'],
-            1 => ['name' => 'Batu', 'color' => '#78716C', 'badge_bg' => 'rgba(120, 113, 108, 0.15)', 'icon' => 'cubes', 'eng' => 'Stone'],
-            2 => ['name' => 'Besi', 'color' => '#94A3B8', 'badge_bg' => 'rgba(148, 163, 184, 0.15)', 'icon' => 'shield-alt', 'eng' => 'Iron'],
-            3 => ['name' => 'Gold', 'color' => '#F59E0B', 'badge_bg' => 'rgba(245, 158, 11, 0.15)', 'icon' => 'coins', 'eng' => 'Gold'],
-            4 => ['name' => 'Amethyst', 'color' => '#A855F7', 'badge_bg' => 'rgba(168, 85, 247, 0.15)', 'icon' => 'gem', 'eng' => 'Amethyst'],
-            5 => ['name' => 'Diamond', 'color' => '#00F0FF', 'badge_bg' => 'rgba(0, 240, 255, 0.15)', 'icon' => 'gem', 'eng' => 'Diamond'],
-            6 => ['name' => 'Emerald', 'color' => '#10B981', 'badge_bg' => 'rgba(16, 185, 129, 0.15)', 'icon' => 'gem', 'eng' => 'Emerald'],
-            7 => ['name' => 'Netherite', 'color' => '#C084FC', 'badge_bg' => 'rgba(192, 132, 252, 0.2)', 'icon' => 'dragon', 'eng' => 'Netherite'],
+            0 => ['name' => 'Kayu', 'color' => '#B45309', 'badge_bg' => 'rgba(180, 83, 9, 0.15)', 'icon' => 'cube', 'eng' => 'Wood', 'icon_file' => 'wood.png'],
+            1 => ['name' => 'Batu', 'color' => '#78716C', 'badge_bg' => 'rgba(120, 113, 108, 0.15)', 'icon' => 'cubes', 'eng' => 'Stone', 'icon_file' => 'stone.png'],
+            2 => ['name' => 'Besi', 'color' => '#94A3B8', 'badge_bg' => 'rgba(148, 163, 184, 0.15)', 'icon' => 'shield-alt', 'eng' => 'Iron', 'icon_file' => 'iron.png'],
+            3 => ['name' => 'Gold', 'color' => '#F59E0B', 'badge_bg' => 'rgba(245, 158, 11, 0.15)', 'icon' => 'coins', 'eng' => 'Gold', 'icon_file' => 'gold.png'],
+            4 => ['name' => 'Amethyst', 'color' => '#A855F7', 'badge_bg' => 'rgba(168, 85, 247, 0.15)', 'icon' => 'gem', 'eng' => 'Amethyst', 'icon_file' => 'amethyst.png'],
+            5 => ['name' => 'Diamond', 'color' => '#00F0FF', 'badge_bg' => 'rgba(0, 240, 255, 0.15)', 'icon' => 'gem', 'eng' => 'Diamond', 'icon_file' => 'diamond.png'],
+            6 => ['name' => 'Emerald', 'color' => '#10B981', 'badge_bg' => 'rgba(16, 185, 129, 0.15)', 'icon' => 'gem', 'eng' => 'Emerald', 'icon_file' => 'emerald.png'],
+            7 => ['name' => 'Netherite', 'color' => '#C084FC', 'badge_bg' => 'rgba(192, 132, 252, 0.2)', 'icon' => 'dragon', 'eng' => 'Netherite', 'icon_file' => 'netherite.png'],
         ];
 
         $tierIndex = min((int) floor(($level - 1) / 5), 7);
@@ -165,7 +165,8 @@ class Member extends Authenticatable
         $subRankRoman = ($level > 40 && $tierIndex === 7) ? 'V+' : ($romans[$subRankNum] ?? 'V');
 
         $tier = $minecraftTiers[$tierIndex];
-        $title = "Tier {$tier['name']} {$subRankRoman}";
+        // Plain tier name: Kayu, Batu, Besi, Gold, Amethyst, Diamond, Emerald, Netherite
+        $title = $tier['name'];
 
         return [
             'level' => $level,
@@ -174,6 +175,8 @@ class Member extends Authenticatable
             'sub_rank' => $subRankRoman,
             'tier_item' => $tier['eng'],
             'icon' => $tier['icon'],
+            'icon_file' => $tier['icon_file'],
+            'tier_icon_url' => asset('assets/img/tiers/'.$tier['icon_file']),
             'badge_color' => $tier['color'],
             'badge_bg' => $tier['badge_bg'],
             'exp' => $exp,
