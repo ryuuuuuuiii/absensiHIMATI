@@ -137,18 +137,27 @@ class PublicAttendanceController extends Controller
 
     public function absentForm($absentLink)
     {
+        $member = auth('member')->user();
+        if (! $member && auth('web')->check()) {
+            $member = Member::where('email', auth('web')->user()->email)->first();
+        }
+
+        if (! $member) {
+            return redirect()->guest(route('login'))
+                ->with('info', 'Silakan login terlebih dahulu dengan akun kepengurusan Anda untuk mengajukan izin/sakit.');
+        }
+
         $meeting = Meeting::with('creator')
             ->where('absent_link', $absentLink)
             ->firstOrFail();
 
-        $participants = $meeting->attendances()
-            ->with('member')
-            ->get()
-            ->sortBy(function ($a) {
-                return $a->member ? $a->member->nama_lengkap : '';
-            });
+        $eligibilityError = $meeting->checkMemberEligibility($member);
 
-        return view('public.absent_form', compact('meeting', 'participants'));
+        $existingAttendance = Attendance::where('meeting_id', $meeting->id)
+            ->where('user_id', $member->id)
+            ->first();
+
+        return view('public.absent_form', compact('meeting', 'member', 'eligibilityError', 'existingAttendance'));
     }
 
     public function submitAbsentForm(Request $request, $absentLink)
@@ -159,18 +168,14 @@ class PublicAttendanceController extends Controller
             return back()->with('error', 'Form izin ditolak. Rapat ini telah diselesaikan atau dibatalkan dan absensi sudah ditutup.');
         }
 
-        $request->validate([
-            'user_id' => ['required', 'exists:users,id'],
-            'status' => ['required', 'in:izin,sakit'],
-            'keterangan' => ['required', 'string', 'max:255'],
-            'bukti_foto' => ['nullable', 'image', 'max:5120'], // 5MB
-        ]);
-
-        $userId = $request->input('user_id');
-        $member = Member::find($userId);
+        $member = auth('member')->user();
+        if (! $member && auth('web')->check()) {
+            $member = Member::where('email', auth('web')->user()->email)->first();
+        }
 
         if (! $member) {
-            return back()->with('error', 'Data anggota tidak ditemukan.');
+            return redirect()->guest(route('login'))
+                ->with('info', 'Silakan login terlebih dahulu dengan akun kepengurusan Anda untuk mengajukan izin/sakit.');
         }
 
         $eligibilityError = $meeting->checkMemberEligibility($member);
@@ -178,13 +183,21 @@ class PublicAttendanceController extends Controller
             return back()->with('error', $eligibilityError);
         }
 
+        $request->validate([
+            'status' => ['required', 'in:izin,sakit'],
+            'keterangan' => ['required', 'string', 'max:255'],
+            'bukti_foto' => ['nullable', 'image', 'max:5120'], // 5MB
+        ], [
+            'status.required' => 'Status ketidakhadiran (Izin / Sakit) wajib dipilih.',
+            'keterangan.required' => 'Keterangan atau alasan tidak hadir wajib diisi.',
+            'bukti_foto.image' => 'File bukti/surat harus berupa gambar (JPG, JPEG, PNG).',
+            'bukti_foto.max' => 'Ukuran file bukti maksimal 5MB.',
+        ]);
+
+        $userId = $member->id;
         $attendance = Attendance::where('meeting_id', $meeting->id)
             ->where('user_id', $userId)
             ->first();
-
-        if (! $attendance) {
-            return back()->with('error', 'Anda tidak terdaftar sebagai peserta yang wajib hadir pada rapat ini.');
-        }
 
         $status = $request->input('status');
         $keterangan = $request->input('keterangan');
@@ -214,6 +227,6 @@ class PublicAttendanceController extends Controller
             Attendance::create($data);
         }
 
-        return back()->with('success', 'Form keterangan ketidakhadiran berhasil dikirim.'.$member->sp_attendance_notice);
+        return back()->with('success', 'Form keterangan ketidakhadiran berhasil dikirim atas nama '.$member->nama_lengkap.'.'.$member->sp_attendance_notice);
     }
 }

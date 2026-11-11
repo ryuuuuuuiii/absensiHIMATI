@@ -829,4 +829,86 @@ class InternalMeetingAttendanceTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Form Presensi Kehadiran Online');
     }
+
+    public function test_unauthenticated_user_cannot_access_or_submit_absent_form(): void
+    {
+        $creator = Member::where('departemen', 'Inti')->first();
+        $meeting = Meeting::create([
+            'created_by' => $creator->id,
+            'jenis_rapat' => 'perdana',
+            'mode_rapat' => 'offline',
+            'fokus_bahasan' => 'Uji Izin Wajib Login',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '14:00:00',
+            'status' => 'scanning',
+            'unique_link' => Str::lower(Str::random(12)),
+            'absent_link' => Str::lower(Str::random(12)),
+        ]);
+
+        // Akses tanpa login harus diarahkan ke login
+        $response = $this->get('/rapat/'.$meeting->absent_link.'/absent');
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHas('info');
+
+        // Submit tanpa login harus diarahkan ke login
+        $submit = $this->post('/rapat/'.$meeting->absent_link.'/absent', [
+            'status' => 'izin',
+            'keterangan' => 'Mencoba submit tanpa login',
+        ]);
+        $submit->assertRedirect(route('login'));
+    }
+
+    public function test_authenticated_member_submits_absent_form_automatically_tied_to_own_account(): void
+    {
+        $creator = Member::where('departemen', 'Inti')->first();
+        $members = Member::where('departemen', '!=', 'Inti')->take(2)->get();
+        $memberA = $members[0];
+        $memberB = $members[1];
+
+        $meeting = Meeting::create([
+            'created_by' => $creator->id,
+            'jenis_rapat' => 'perdana',
+            'mode_rapat' => 'offline',
+            'fokus_bahasan' => 'Uji Izin Akun Terkunci',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '14:00:00',
+            'status' => 'scanning',
+            'unique_link' => Str::lower(Str::random(12)),
+            'absent_link' => Str::lower(Str::random(12)),
+        ]);
+
+        Attendance::create([
+            'meeting_id' => $meeting->id,
+            'user_id' => $memberA->id,
+            'status' => 'alpha',
+        ]);
+
+        Attendance::create([
+            'meeting_id' => $meeting->id,
+            'user_id' => $memberB->id,
+            'status' => 'alpha',
+        ]);
+
+        // Login sebagai Member A
+        $response = $this->actingAs($memberA, 'member')->get('/rapat/'.$meeting->absent_link.'/absent');
+        $response->assertStatus(200);
+        $response->assertSee($memberA->nama_lengkap);
+        $response->assertDontSee('<select name="user_id"', false);
+
+        // Member A mencoba mengirim user_id = Member B (mencoba curang)
+        $submit = $this->actingAs($memberA, 'member')->post('/rapat/'.$meeting->absent_link.'/absent', [
+            'user_id' => $memberB->id,
+            'status' => 'izin',
+            'keterangan' => 'Ada acara keluarga mendadak',
+        ]);
+        $submit->assertSessionHas('success');
+
+        // Yang tercatat izin HARUS Member A (akun yang sedang login), BUKAN Member B
+        $attA = Attendance::where('meeting_id', $meeting->id)->where('user_id', $memberA->id)->first();
+        $this->assertEquals('izin', $attA->status);
+        $this->assertEquals('Ada acara keluarga mendadak', $attA->keterangan);
+
+        $attB = Attendance::where('meeting_id', $meeting->id)->where('user_id', $memberB->id)->first();
+        $this->assertEquals('alpha', $attB->status); // Member B tetap alpha, tidak terpengaruh
+    }
 }

@@ -79,38 +79,126 @@
     <div class="card text-center" style="padding: var(--space-8);">
         <i class="fas fa-check-circle" style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: var(--space-4);"></i>
         <h3>Rapat Telah {{ $meeting->status === 'completed' ? 'Selesai' : 'Dibatalkan' }}</h3>
-        <p style="color: var(--text-muted);">Sesi absensi untuk rapat ini sudah ditutup. Pengajuan surat keterangan atau izin sudah tidak dapat dilakukan.</p>
+        <p style="color: var(--text-muted); margin-bottom: var(--space-5);">Sesi absensi untuk rapat ini sudah ditutup. Pengajuan surat keterangan atau izin sudah tidak dapat dilakukan.</p>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <a href="{{ route('home') }}" class="btn btn-primary">
+                <i class="fas fa-home"></i> Kembali ke Halaman Utama
+            </a>
+            <a href="{{ route('public.hasil', $meeting->unique_link) }}" class="btn btn-secondary">
+                <i class="fas fa-chart-pie"></i> Lihat Rekap Kehadiran
+            </a>
+        </div>
     </div>
 @else
 <div class="card mb-6">
     <h3 class="card-title mb-4"><i class="fas fa-file-medical"></i> Kirim Surat Keterangan / Izin</h3>
-    
+
+    <!-- Verified Member Account Card (Identitas Terverifikasi) -->
+    <div class="online-member-card">
+        <div class="online-member-avatar">
+            @if($member->profile_photo_url)
+                <img src="{{ $member->profile_photo_url }}" alt="{{ $member->nama_lengkap }}">
+            @else
+                <span>{{ $member->initials }}</span>
+            @endif
+        </div>
+        <div class="online-member-details">
+            <div class="online-member-name-row">
+                <span class="online-member-name">{{ $member->nama_lengkap }}</span>
+                <span class="badge badge-success" style="font-size: 0.72rem; padding: 2px 7px;">
+                    <i class="fas fa-check-circle"></i> Terverifikasi
+                </span>
+                @if($member->sp_level > 0)
+                    <span class="badge badge-warning" style="font-size: 0.72rem; padding: 2px 7px;">
+                        {{ $member->sp_label }}
+                    </span>
+                @endif
+            </div>
+            <div class="online-member-badges">
+                <span class="online-member-badge">
+                    <i class="fas fa-id-card"></i> {{ $member->nim ?? '-' }}
+                </span>
+                <span class="online-member-badge">
+                    <i class="fas fa-building"></i> Dept. {{ $member->departemen }}
+                </span>
+                <span class="online-member-badge">
+                    <i class="fas fa-briefcase"></i> {{ $member->jabatan }}
+                </span>
+                @if($member->isBphInti())
+                    <span class="online-member-badge" style="background: #92EEFF; color: #061A2E;">
+                        <i class="fas fa-crown"></i> Pengurus Inti
+                    </span>
+                @elseif($member->is_bph)
+                    <span class="online-member-badge" style="background: #92EEFF; color: #061A2E;">
+                        <i class="fas fa-shield-alt"></i> BPH
+                    </span>
+                @endif
+            </div>
+            <div class="online-member-switch">
+                <span>Pengajuan izin/sakit otomatis dicatat untuk akun ini. Bukan Anda? </span>
+                <a href="#" onclick="event.preventDefault(); document.getElementById('switchAccountForm').submit();">
+                    Ganti Akun
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <form id="switchAccountForm" action="{{ auth('member')->check() ? route('portal.logout') : route('logout') }}" method="POST" style="display: none;">
+        @csrf
+    </form>
+
+    @if($existingAttendance)
+        @if($existingAttendance->status === 'hadir')
+            <div class="alert alert-info mb-4" style="border-radius: 12px;">
+                <i class="fas fa-check-circle"></i>
+                <div>
+                    <strong>Anda sudah tercatat HADIR pada rapat ini.</strong>
+                    <div style="font-size: 0.85rem; margin-top: 2px;">
+                        Presensi Anda telah dicatat pada pukul {{ $existingAttendance->scanned_at ? $existingAttendance->scanned_at->locale('id')->translatedFormat('H:i') . ' WITA' : '-' }}.
+                    </div>
+                </div>
+            </div>
+        @else
+            <div class="alert alert-success mb-4" style="border-radius: 12px;">
+                <i class="fas fa-info-circle"></i>
+                <div>
+                    <strong>Anda telah mengajukan status {{ strtoupper($existingAttendance->status) }}.</strong>
+                    <div style="font-size: 0.85rem; margin-top: 2px;">
+                        Alasan: "{{ $existingAttendance->keterangan }}"
+                        @if($existingAttendance->bukti_foto)
+                            &bull; <a href="{{ asset('uploads/bukti/' . $existingAttendance->bukti_foto) }}" target="_blank" style="color: inherit; text-decoration: underline; font-weight: 700;">Lihat Bukti Foto</a>
+                        @endif
+                    </div>
+                    <div style="font-size: 0.78rem; opacity: 0.9; margin-top: 2px;">
+                        Anda dapat memperbarui alasan atau file bukti di bawah jika diperlukan.
+                    </div>
+                </div>
+            </div>
+        @endif
+    @endif
+
+    @if($eligibilityError)
+        <div class="alert alert-danger mb-4" style="border-radius: 12px;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+                <strong>Pemberitahuan Partisipasi:</strong>
+                <div style="font-size: 0.88rem; margin-top: 2px;">{{ $eligibilityError }}</div>
+            </div>
+        </div>
+    @endif
+
     <form action="{{ route('public.absent.submit', $meeting->absent_link) }}" method="POST" enctype="multipart/form-data">
         @csrf
-
-        <div class="form-group">
-            <label class="form-label" for="user_id">Nama Pengurus <span class="required">*</span></label>
-            <select name="user_id" id="user_id" class="form-control" required>
-                <option value="">— Cari & Pilih Nama Anda —</option>
-                @foreach($participants as $p)
-                    <option value="{{ $p->user_id }}" {{ old('user_id') == $p->user_id ? 'selected' : '' }}>
-                        {{ $p->member ? $p->member->nama_lengkap : 'Unknown' }} ({{ $p->member ? $p->member->departemen : '' }})
-                        @if($p->member && $p->member->sp_level > 0) [{{ $p->member->sp_label }}] @endif
-                        @if($p->status !== 'alpha') [Status: {{ strtoupper($p->status) }}] @endif
-                    </option>
-                @endforeach
-            </select>
-        </div>
 
         <div class="form-group">
             <label class="form-label">Alasan Ketidakhadiran <span class="required">*</span></label>
             <div style="display: flex; gap: var(--space-4);">
                 <label class="form-check">
-                    <input type="radio" name="status" value="izin" checked>
+                    <input type="radio" name="status" value="izin" {{ (old('status', $existingAttendance?->status) === 'sakit') ? '' : 'checked' }}>
                     <span class="form-check-label"><i class="fas fa-info-circle text-info"></i> Izin (Ada Keperluan)</span>
                 </label>
                 <label class="form-check">
-                    <input type="radio" name="status" value="sakit">
+                    <input type="radio" name="status" value="sakit" {{ (old('status', $existingAttendance?->status) === 'sakit') ? 'checked' : '' }}>
                     <span class="form-check-label"><i class="fas fa-medkit text-warning"></i> Sakit</span>
                 </label>
             </div>
@@ -118,7 +206,7 @@
 
         <div class="form-group">
             <label class="form-label" for="keterangan">Keterangan / Alasan Lengkap <span class="required">*</span></label>
-            <textarea name="keterangan" id="keterangan" class="form-control" placeholder="Tuliskan alasan berhalangan hadir secara jelas..." rows="3" required>{{ old('keterangan') }}</textarea>
+            <textarea name="keterangan" id="keterangan" class="form-control" placeholder="Tuliskan alasan berhalangan hadir secara jelas..." rows="3" required>{{ old('keterangan', $existingAttendance?->keterangan) }}</textarea>
         </div>
 
         <div class="form-group">
@@ -126,11 +214,14 @@
             <input type="file" name="bukti_foto" id="bukti_foto" class="form-control" accept="image/*">
             <small style="color: var(--text-muted); display: block; margin-top: 4px;">
                 Foto surat sakit dari dokter, surat izin, atau bukti pendukung lainnya (maksimal 5MB).
+                @if($existingAttendance?->bukti_foto)
+                    <br><strong style="color: var(--success);"><i class="fas fa-check"></i> Sudah ada bukti tersimpan:</strong> <a href="{{ asset('uploads/bukti/' . $existingAttendance->bukti_foto) }}" target="_blank" style="text-decoration: underline;">Lihat Bukti Sebelumnya</a>
+                @endif
             </small>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: var(--space-6);">
-            <i class="fas fa-paper-plane"></i> Kirim Keterangan
+        <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: var(--space-6);" {{ $eligibilityError ? 'disabled' : '' }}>
+            <i class="fas fa-paper-plane"></i> {{ $existingAttendance ? 'Perbarui Keterangan Izin / Sakit' : 'Kirim Keterangan Izin / Sakit' }}
         </button>
     </form>
 </div>
