@@ -13,6 +13,7 @@ use App\Services\QrCodeService;
 use App\Services\SpService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -129,7 +130,18 @@ class PortalController extends Controller
         }
 
         $filepath = public_path('assets/img/qrcodes/'.$filename);
-        $downloadName = 'QR_'.Str::slug($member->nama_lengkap).'_'.$member->qr_code.'.png';
+        if (! File::exists($filepath)) {
+            $filename = $this->qrService->ensureMemberQr($member, true);
+            $filepath = public_path('assets/img/qrcodes/'.$filename);
+        }
+
+        if (! $filename || ! File::exists($filepath)) {
+            return back()->with('danger', 'File QR Code tidak ditemukan di server.');
+        }
+
+        $safeName = Str::slug($member->nama_lengkap, '_') ?: 'member_'.$member->id;
+        $safeQr = preg_replace('/[^a-zA-Z0-9_-]/', '-', (string) $member->qr_code) ?: 'ID'.$member->id;
+        $downloadName = 'QR_'.$safeName.'_'.$safeQr.'.png';
 
         return response()->download($filepath, $downloadName);
     }

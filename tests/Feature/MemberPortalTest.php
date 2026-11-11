@@ -347,6 +347,58 @@ class MemberPortalTest extends TestCase
         File::delete(public_path('assets/img/qrcodes/'.$filename));
     }
 
+    public function test_member_with_slashes_in_qr_code_can_download_qr_code(): void
+    {
+        Http::fake([
+            '*' => Http::response(str_repeat('x', 256), 200),
+        ]);
+
+        $randomCode = 'HMTI/02-26/'.Str::upper(Str::random(6));
+        $member = $this->createMember([
+            'qr_code' => $randomCode,
+        ]);
+        $this->actingAs($member, 'member');
+
+        $expectedSafeCode = preg_replace('/[^a-zA-Z0-9_-]/', '-', $randomCode);
+        $expectedDownloadName = 'QR_'.Str::slug($member->nama_lengkap, '_').'_'.$expectedSafeCode.'.png';
+
+        $response = $this->get('/portal/qr/download');
+        $response->assertOk();
+        $response->assertDownload($expectedDownloadName);
+
+        $filename = $member->fresh()->qr_image;
+        if ($filename) {
+            File::delete(public_path('assets/img/qrcodes/'.$filename));
+        }
+    }
+
+    public function test_admin_can_download_single_qr_with_slashes_in_code(): void
+    {
+        Http::fake([
+            '*' => Http::response(str_repeat('x', 256), 200),
+        ]);
+
+        $admin = Admin::where('email', 'admin@himati.id')->firstOrFail();
+        $randomCode = 'HMTI/02-26/'.Str::upper(Str::random(6));
+        $member = $this->createMember([
+            'qr_code' => $randomCode,
+        ]);
+
+        $this->actingAs($admin);
+
+        $expectedSafeCode = preg_replace('/[^a-zA-Z0-9_-]/', '-', $randomCode);
+        $expectedDownloadName = 'QR_'.Str::slug($member->nama_lengkap, '_').'_'.$expectedSafeCode.'.png';
+
+        $response = $this->get(route('members.download_qr_single', $member->id));
+        $response->assertOk();
+        $response->assertDownload($expectedDownloadName);
+
+        $filename = $member->fresh()->qr_image;
+        if ($filename) {
+            File::delete(public_path('assets/img/qrcodes/'.$filename));
+        }
+    }
+
     public function test_admin_can_generate_and_reset_member_accounts(): void
     {
         $admin = Admin::where('email', 'admin@himati.id')->firstOrFail();

@@ -93,9 +93,10 @@ class QrCodeService
         foreach ($members as $member) {
             $filename = $this->ensureMemberQr($member);
             if ($filename && File::exists($this->qrDirectory.$filename)) {
-                $deptFolder = preg_replace('/[^a-zA-Z0-9_-]/', '_', $member->departemen);
-                $cleanName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $member->nama_lengkap);
-                $entryName = $deptFolder.'/'.$cleanName.'_'.$member->qr_code.'.png';
+                $deptFolder = preg_replace('/[^a-zA-Z0-9_-]/', '_', (string) $member->departemen) ?: 'Umum';
+                $cleanName = preg_replace('/[^a-zA-Z0-9_-]/', '_', (string) $member->nama_lengkap) ?: 'Member_'.$member->id;
+                $safeQr = preg_replace('/[^a-zA-Z0-9_-]/', '-', (string) $member->qr_code) ?: 'ID'.$member->id;
+                $entryName = $deptFolder.'/'.$cleanName.'_'.$safeQr.'.png';
                 $zip->addFile($this->qrDirectory.$filename, $entryName);
             }
         }
