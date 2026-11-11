@@ -76,15 +76,34 @@
         @if($meeting->status === 'completed')
             <i class="fas fa-check-circle" style="font-size: 2.5rem; color: var(--blue-primary, #3b82f6); margin-bottom: var(--space-4);"></i>
             <h3>Rapat Telah Selesai (Absensi Ditutup)</h3>
-            <p style="color: var(--text-muted);">Batas Waktu Absensi Telah Berakhir. Sesi absensi untuk rapat ini telah diselesaikan dan ditutup oleh pembuat rapat.</p>
+            <p style="color: var(--text-muted); margin-bottom: var(--space-5);">Batas Waktu Absensi Telah Berakhir. Sesi absensi untuk rapat ini telah diselesaikan dan ditutup oleh pembuat rapat.</p>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <a href="{{ route('home') }}" class="btn btn-primary">
+                    <i class="fas fa-home"></i> Kembali ke Halaman Utama
+                </a>
+                <a href="{{ route('public.hasil', $meeting->unique_link) }}" class="btn btn-secondary">
+                    <i class="fas fa-chart-pie"></i> Lihat Rekap Kehadiran
+                </a>
+            </div>
         @elseif($meeting->status === 'cancelled')
             <i class="fas fa-times-circle" style="font-size: 2.5rem; color: var(--danger); margin-bottom: var(--space-4);"></i>
             <h3>Rapat Dibatalkan</h3>
-            <p style="color: var(--text-muted);">Sesi absensi untuk rapat ini telah dibatalkan.</p>
+            <p style="color: var(--text-muted); margin-bottom: var(--space-5);">Sesi absensi untuk rapat ini telah dibatalkan.</p>
+            <a href="{{ route('home') }}" class="btn btn-primary">
+                <i class="fas fa-home"></i> Kembali ke Halaman Utama
+            </a>
         @else
             <i class="fas fa-hourglass-end" style="font-size: 2.5rem; color: var(--danger); margin-bottom: var(--space-4);"></i>
             <h3>Batas Waktu Absensi Telah Berakhir</h3>
-            <p style="color: var(--text-muted);">Link presensi untuk rapat ini sudah ditutup karena telah melewati batas jam berakhir absensi (pukul {{ substr($meeting->getOnlineExpiryTime()->format('H:i'), 0, 5) }} WITA). Silakan hubungi pembuat rapat jika ada kendala.</p>
+            <p style="color: var(--text-muted); margin-bottom: var(--space-5);">Link presensi untuk rapat ini sudah ditutup karena telah melewati batas jam berakhir absensi (pukul {{ substr($meeting->getOnlineExpiryTime()->format('H:i'), 0, 5) }} WITA). Silakan hubungi pembuat rapat jika ada kendala.</p>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <a href="{{ route('home') }}" class="btn btn-primary">
+                    <i class="fas fa-home"></i> Kembali ke Halaman Utama
+                </a>
+                <a href="{{ route('public.hasil', $meeting->unique_link) }}" class="btn btn-secondary">
+                    <i class="fas fa-chart-pie"></i> Lihat Rekap Kehadiran
+                </a>
+            </div>
         @endif
     </div>
 @else

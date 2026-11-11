@@ -477,10 +477,14 @@ class MeetingController extends Controller
         $this->syncService->syncMeetingAsync($meeting);
 
         if ($isAjaxOrJson) {
+            $redirectUrl = auth()->check()
+                ? route('meetings.show', $meeting->id)
+                : route('public.hasil', $meeting->unique_link);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Absensi selesai dan berhasil disimpan.',
-                'redirect_url' => route('public.hasil', $meeting->unique_link),
+                'redirect_url' => $redirectUrl,
             ]);
         }
 

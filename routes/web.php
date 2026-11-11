@@ -32,7 +32,7 @@ Route::get('/', function () {
     }
 
     return redirect()->route('login');
-});
+})->name('home');
 
 // ============================================
 // MEETING CREATION (Wajib Akun: Admin / Pengurus)

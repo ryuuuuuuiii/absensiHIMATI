@@ -408,10 +408,25 @@
             <div style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: var(--radius-lg); background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); color: var(--danger); font-weight: 700; font-size: 0.95rem;">
                 <i class="fas fa-ban"></i> Sesi Absensi Telah Dibatalkan (Aman & Tidak Mempengaruhi SP)
             </div>
+            <a href="{{ route('home') }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px;">
+                <i class="fas fa-home"></i> Kembali ke Halaman Utama
+            </a>
         @else
             <div style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: var(--radius-lg); background: #ECFDF5; border: 1px solid #A7F3D0; color: #059669; font-weight: 700; font-size: 0.95rem;">
                 <i class="fas fa-lock"></i> Absensi Rapat Sudah Ditutup (Final)
             </div>
+            <a href="{{ route('home') }}" class="btn btn-primary btn-lg" style="display: inline-flex; align-items: center; gap: 10px; padding: 14px 28px; font-size: var(--font-base);">
+                <i class="fas fa-home"></i> Kembali ke Halaman Utama
+            </a>
+            @if (auth('web')->check())
+                <a href="{{ route('meetings.show', $meeting->id) }}" class="btn btn-secondary btn-lg" style="display: inline-flex; align-items: center; gap: 8px; padding: 14px 20px; font-size: var(--font-base);">
+                    <i class="fas fa-clipboard-list"></i> Kelola di Admin
+                </a>
+            @elseif (auth('member')->check())
+                <a href="{{ route('portal.dashboard') }}" class="btn btn-secondary btn-lg" style="display: inline-flex; align-items: center; gap: 8px; padding: 14px 20px; font-size: var(--font-base);">
+                    <i class="fas fa-th-large"></i> Portal Pengurus
+                </a>
+            @endif
         @endif
     </div>
 </div>
@@ -755,10 +770,22 @@
 @endif
 
 <!-- Bottom Navigation Actions -->
-<div class="text-center">
+<div class="text-center" style="display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap; margin-top: var(--space-4);">
+    <a href="{{ route('home') }}" class="btn btn-primary">
+        <i class="fas fa-home"></i> Kembali ke Halaman Utama
+    </a>
     <a href="{{ route('public.meeting.create') }}" class="btn btn-secondary">
         <i class="fas fa-calendar-plus"></i> Buat Agenda Rapat Lain
     </a>
+    @if (auth('web')->check())
+        <a href="{{ route('meetings.show', $meeting->id) }}" class="btn btn-secondary">
+            <i class="fas fa-clipboard-list"></i> Detail di Admin
+        </a>
+    @elseif (auth('member')->check())
+        <a href="{{ route('portal.dashboard') }}" class="btn btn-secondary">
+            <i class="fas fa-th-large"></i> Portal Pengurus
+        </a>
+    @endif
 </div>
 
 <!-- Modal Bukti Foto Preview -->

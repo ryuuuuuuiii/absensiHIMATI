@@ -142,16 +142,19 @@
                 <p>&copy; {{ date('Y') }} HIMA TI Politeknik Hasnur • All Rights Reserved</p>
                 <div class="footer-links">
                     @if (auth('web')->check())
+                        <a href="{{ route('home') }}"><i class="fas fa-home"></i> Halaman Utama</a>
                         <a href="{{ route('dashboard') }}"><i class="fas fa-th-large"></i> Dashboard Admin</a>
                         <button type="button" onclick="openPublicLogoutModal('admin')" style="background: none; border: none; color: inherit; cursor: pointer; font-size: inherit; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; padding: 0;">
                             <i class="fas fa-sign-out-alt"></i> Logout
                         </button>
                     @elseif (auth('member')->check())
+                        <a href="{{ route('home') }}"><i class="fas fa-home"></i> Halaman Utama</a>
                         <a href="{{ route('portal.dashboard') }}"><i class="fas fa-th-large"></i> Portal Pengurus</a>
                         <button type="button" onclick="openPublicLogoutModal('member')" style="background: none; border: none; color: inherit; cursor: pointer; font-size: inherit; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; padding: 0;">
                             <i class="fas fa-sign-out-alt"></i> Logout
                         </button>
                     @else
+                        <a href="{{ route('home') }}"><i class="fas fa-home"></i> Halaman Utama</a>
                         @if (! request()->routeIs('public.meeting.create'))
                             <a href="{{ route('public.meeting.create') }}"><i class="fas fa-calendar-plus"></i> Buat Rapat</a>
                         @endif
