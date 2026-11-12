@@ -938,6 +938,30 @@
             <i class="fas fa-qrcode"></i> ID Anggota: <code>{{ $member->qr_code }}</code>
         </div>
 
+        <!-- Pilihan Mode Tampilan (Theme Switcher) -->
+        <div class="profile-theme-box">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-palette text-primary"></i> Mode Tampilan
+                </div>
+                <small style="color: var(--text-muted); font-size: 0.72rem;">Pilih tema portal</small>
+            </div>
+            <div class="theme-segmented-group">
+                <button type="button" class="theme-option-btn" data-theme-option="light" onclick="setAppTheme('light')">
+                    <i class="fas fa-sun" style="color: #F59E0B;"></i>
+                    <span>Terang</span>
+                </button>
+                <button type="button" class="theme-option-btn" data-theme-option="dark" onclick="setAppTheme('dark')">
+                    <i class="fas fa-moon" style="color: #30AFFF;"></i>
+                    <span>Gelap</span>
+                </button>
+                <button type="button" class="theme-option-btn" data-theme-option="auto" onclick="setAppTheme('auto')">
+                    <i class="fas fa-mobile-alt"></i>
+                    <span>Sistem HP</span>
+                </button>
+            </div>
+        </div>
+
         <!-- Tombol Aksi: Klik untuk Membuka Form Edit / Password -->
         <div class="profile-action-buttons">
             <button type="button" class="profile-btn-action btn-edit" id="btnToggleEdit" onclick="toggleEditSection('edit')">

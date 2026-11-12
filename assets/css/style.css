@@ -10116,6 +10116,151 @@ textarea.form-control {
     font-weight: 500;
 }
 
+/* ====================================================
+   THEME TOGGLE BUTTON & CONTROLS (Light / Dark Mode)
+   ==================================================== */
+.portal-theme-toggle-btn {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    border-radius: 50% !important;
+    background: #FFFFFF !important;
+    color: #061A2E !important;
+    border: 2px solid #061A2E !important;
+    box-shadow: 0 3px 0 #061A2E !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    font-size: 1.05rem !important;
+    padding: 0 !important;
+    transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease !important;
+    position: relative;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.portal-theme-toggle-btn:hover {
+    background: #D8FFC5 !important;
+    color: #061A2E !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 5px 0 #061A2E !important;
+}
+
+.portal-theme-toggle-btn:active {
+    transform: translateY(1px) !important;
+    box-shadow: 0 1px 0 #061A2E !important;
+}
+
+.portal-theme-toggle-btn .theme-icon-light {
+    color: #F59E0B !important; /* Sun amber */
+}
+
+.portal-theme-toggle-btn .theme-icon-dark {
+    color: #0284C7 !important; /* Moon deep blue */
+}
+
+/* Instant Pure CSS Visibility Switch based on data-theme */
+[data-theme="dark"] .portal-theme-toggle-btn .theme-icon-light {
+    display: inline-block !important;
+}
+[data-theme="dark"] .portal-theme-toggle-btn .theme-icon-dark {
+    display: none !important;
+}
+:root:not([data-theme="dark"]) .portal-theme-toggle-btn .theme-icon-light {
+    display: none !important;
+}
+:root:not([data-theme="dark"]) .portal-theme-toggle-btn .theme-icon-dark {
+    display: inline-block !important;
+}
+
+[data-theme="dark"] .portal-theme-toggle-btn {
+    background: #0E2238 !important;
+    border-color: #30AFFF !important;
+    color: #92EEFF !important;
+    box-shadow: 0 3px 0 #000000, 0 3px 0 1px rgba(48, 175, 255, 0.45) !important;
+}
+
+[data-theme="dark"] .portal-theme-toggle-btn:hover {
+    background: #153250 !important;
+    border-color: #92EEFF !important;
+    box-shadow: 0 4px 0 #000000, 0 4px 0 1px rgba(146, 238, 255, 0.6) !important;
+}
+
+[data-theme="dark"] .portal-theme-toggle-btn .theme-icon-light {
+    color: #FBBF24 !important; /* Glowing warm sun */
+}
+
+/* Profile Theme Box & Segmented Control */
+.profile-theme-box {
+    background: var(--bg-surface);
+    border: 2px solid var(--border-color);
+    border-radius: 14px;
+    box-shadow: 0 4px 0 var(--border-color);
+    padding: 14px 16px;
+    margin-top: 16px;
+    margin-bottom: 16px;
+    transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .profile-theme-box {
+    background: #0E2238 !important;
+    border-color: #30AFFF !important;
+    box-shadow: 0 4px 0 #000000, 0 4px 0 1px rgba(48, 175, 255, 0.45) !important;
+}
+
+.profile-theme-box .theme-segmented-group {
+    display: flex;
+    background: rgba(6, 26, 46, 0.06);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+}
+
+[data-theme="dark"] .profile-theme-box .theme-segmented-group {
+    background: rgba(0, 0, 0, 0.35);
+    border-color: #193654;
+}
+
+.profile-theme-box .theme-option-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1.5px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.profile-theme-box .theme-option-btn:hover {
+    color: var(--text-primary);
+}
+
+.profile-theme-box .theme-option-btn.active {
+    background: var(--bg-surface) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: 0 2px 0 var(--border-color) !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="dark"] .profile-theme-box .theme-option-btn.active {
+    background: #0E2238 !important;
+    border-color: #30AFFF !important;
+    color: #F0F8FF !important;
+    box-shadow: 0 2px 0 #000000 !important;
+}
+
 
 
 

@@ -20,27 +20,39 @@
     
     <script>
         (function() {
-            try { localStorage.removeItem('himati_theme'); } catch(e) {}
-            function applyDeviceTheme(e) {
-                var isDark = (e && typeof e.matches === 'boolean') 
-                    ? e.matches 
-                    : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-            }
-            applyDeviceTheme();
+            var theme = 'auto';
             try {
-                var mq = window.matchMedia('(prefers-color-scheme: dark)');
-                if (mq.addEventListener) {
-                    mq.addEventListener('change', applyDeviceTheme);
-                } else if (mq.addListener) {
-                    mq.addListener(applyDeviceTheme);
-                }
+                theme = localStorage.getItem('himati_theme') || 'auto';
             } catch(e) {}
+
+            var isDark = false;
+            if (theme === 'dark') {
+                isDark = true;
+            } else if (theme === 'light') {
+                isDark = false;
+            } else {
+                isDark = Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            }
+
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+
+            window.toggleAppTheme = window.toggleAppTheme || function() {
+                var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                try { localStorage.setItem('himati_theme', cur); } catch(e) {}
+                document.documentElement.setAttribute('data-theme', cur);
+            };
         })();
     </script>
 </head>
 <body>
     <div class="bg-animated"></div>
+
+    <div style="position: fixed; top: 16px; right: 16px; z-index: 100;">
+        <button type="button" class="portal-theme-toggle-btn" onclick="toggleAppTheme()" aria-label="Ganti Mode Tampilan (Terang / Gelap)" title="Ganti Mode Tampilan">
+            <i class="fas fa-sun theme-icon-light"></i>
+            <i class="fas fa-moon theme-icon-dark"></i>
+        </button>
+    </div>
 
     <div class="login-page">
         <div class="login-container">
