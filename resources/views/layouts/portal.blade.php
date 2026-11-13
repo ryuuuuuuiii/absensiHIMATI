@@ -126,6 +126,12 @@
                             <span class="portal-sidebar-badge">{{ $portalUnreadNotifCount > 9 ? '9+' : $portalUnreadNotifCount }}</span>
                         @endif
                     </a>
+                    @if (isset($portalMember) && $portalMember?->canViewMembersMonitoring())
+                        <a href="{{ route('portal.members.index') }}" class="nav-item {{ request()->routeIs('portal.members*') ? 'active' : '' }}">
+                            <i class="fas fa-users-cog"></i>
+                            <span>{{ $portalMember->isBphInti() ? 'Data Pengurus' : 'Anggota Dept' }}</span>
+                        </a>
+                    @endif
                     <a href="{{ route('portal.profile') }}" class="nav-item {{ request()->routeIs('portal.profile*') ? 'active' : '' }}">
                         <i class="fas fa-user-circle"></i>
                         <span>Profil Saya</span>

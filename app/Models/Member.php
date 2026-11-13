@@ -419,6 +419,25 @@ class Member extends Authenticatable
             ]);
     }
 
+    public function isKepalaDepartemen(): bool
+    {
+        if ($this->isBphInti()) {
+            return false;
+        }
+
+        $jab = strtolower(trim((string) $this->jabatan));
+
+        return str_contains($jab, 'koordinator')
+            || str_contains($jab, 'kepala')
+            || str_contains($jab, 'kadep')
+            || ($this->is_bph && strcasecmp((string) $this->departemen, 'Inti') !== 0);
+    }
+
+    public function canViewMembersMonitoring(): bool
+    {
+        return $this->isBphInti() || $this->isKepalaDepartemen();
+    }
+
     public function getDepartemenLabelAttribute(): string
     {
         if ($this->isBphInti()) {

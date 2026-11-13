@@ -255,6 +255,33 @@
     </div>
 </div>
 
+@if ($member->canViewMembersMonitoring())
+    <!-- Kartu Monitoring Anggota / Pengurus (Khusus Kadep & Pengurus Inti - Read Only) -->
+    <div class="card mb-6" style="background: var(--bg-surface); border: 2px solid var(--blue-primary); padding: 16px; position: relative; overflow: hidden;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 14px; flex: 1; min-width: 240px;">
+                <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(48, 175, 255, 0.12); color: var(--blue-primary); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; border: 1.5px solid rgba(48, 175, 255, 0.3);">
+                    <i class="fas {{ $member->isBphInti() ? 'fa-users-cog' : 'fa-user-friends' }}"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0 0 4px; font-size: 1.02rem; font-weight: 800; color: var(--text-primary);">
+                        {{ $member->isBphInti() ? 'Monitoring Seluruh Pengurus' : 'Monitoring Anggota Dept. ' . $member->departemen }}
+                    </h3>
+                    <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
+                        {{ $member->isBphInti() ? 'Pantau profil, track record rapat, bukti kehadiran, dan kedisiplinan 41 pengurus HIMA TI (Read-Only).' : 'Pantau track record kegiatan, bukti kehadiran, dan kedisiplinan anggota departemen Anda (Read-Only).' }}
+                    </p>
+                </div>
+            </div>
+            <div style="flex-shrink: 0;">
+                <a href="{{ route('portal.members.index') }}" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 700; padding: 8px 16px;">
+                    <span>{{ $member->isBphInti() ? 'Buka Data Pengurus' : 'Buka Data Anggota' }}</span>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+@endif
+
 <!-- Menu Aksi Utama Pengurus (Khusus Layar Desktop, di HP sudah ada Bottom Nav) -->
 <div class="portal-actions-strip header-desktop-btn">
     <a href="{{ route('portal.qr') }}" class="portal-action-btn portal-action-qr" title="Buka QR Saya untuk Absen">

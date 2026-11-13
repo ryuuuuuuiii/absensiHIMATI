@@ -100,6 +100,10 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::put('/profil/password', [PortalController::class, 'updatePassword'])->name('profile.password');
         Route::post('/feedback', [PortalController::class, 'storeFeedback'])->name('feedback.store');
 
+        // Monitoring Track Record Anggota (Khusus Kepala Departemen & Pengurus Inti - Read Only)
+        Route::get('/anggota', [PortalController::class, 'membersIndex'])->name('members.index');
+        Route::get('/anggota/{member}', [PortalController::class, 'membersShow'])->name('members.show');
+
         // Notifikasi & Pengumuman Admin
         Route::prefix('notifikasi')->name('announcements.')->group(function () {
             Route::get('/', [PortalController::class, 'announcements'])->name('index');

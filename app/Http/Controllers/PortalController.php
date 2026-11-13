@@ -364,6 +364,106 @@ class PortalController extends Controller
         return back()->with('feedback_success', 'Terima kasih! Feedback Anda telah berhasil dikirimkan ke Admin HIMA TI.');
     }
 
+    public function membersIndex(Request $request)
+    {
+        $current = $this->currentMember();
+        abort_unless($current->canViewMembersMonitoring(), 403, 'Akses terbatas untuk Pengurus Inti dan Koordinator Departemen.');
+
+        $isBphInti = $current->isBphInti();
+
+        $query = Member::query()->orderBy('nama_lengkap', 'asc');
+
+        if (! $isBphInti) {
+            $query->where('departemen', $current->departemen);
+        } else {
+            if ($dept = $request->query('departemen')) {
+                if ($dept !== 'all') {
+                    $query->where('departemen', $dept);
+                }
+            }
+        }
+
+        if ($search = trim((string) $request->query('q'))) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_lengkap', 'like', "%{$search}%")
+                    ->orWhere('nim', 'like', "%{$search}%")
+                    ->orWhere('jabatan', 'like', "%{$search}%");
+            });
+        }
+
+        if ($sp = $request->query('sp')) {
+            if ($sp === 'has_sp') {
+                $query->where('sp_level', '>', 0);
+            } elseif (in_array((int) $sp, [1, 2, 3], true)) {
+                $query->where('sp_level', (int) $sp);
+            }
+        }
+
+        $members = $query->paginate(15)->withQueryString();
+
+        $departments = $isBphInti
+            ? Member::whereNotNull('departemen')->where('departemen', '!=', '')->distinct()->pluck('departemen')->sort()->values()
+            : collect([$current->departemen]);
+
+        return view('portal.members.index', compact('current', 'isBphInti', 'members', 'departments'));
+    }
+
+    public function membersShow(Member $member)
+    {
+        $current = $this->currentMember();
+        abort_unless($current->canViewMembersMonitoring(), 403, 'Akses terbatas untuk Pengurus Inti dan Koordinator Departemen.');
+
+        if (! $current->isBphInti()) {
+            abort_if(
+                strcasecmp((string) $member->departemen, (string) $current->departemen) !== 0,
+                403,
+                'Anda hanya diizinkan memantau data anggota di departemen Anda.'
+            );
+        }
+
+        $stats = $this->attendanceStats($member);
+
+        $attendances = $member->attendances()
+            ->with(['meeting' => function ($q) {
+                $q->with('creator');
+            }])
+            ->join('meetings', 'meetings.id', '=', 'attendances.meeting_id')
+            ->orderByDesc('meetings.tanggal')
+            ->orderByDesc('meetings.waktu_mulai')
+            ->select('attendances.*')
+            ->get();
+
+        $eventMemberships = $member->eventMembers()
+            ->with(['event', 'division'])
+            ->get()
+            ->sortByDesc(fn ($membership) => $membership->event?->tanggal_mulai ?? $membership->created_at);
+
+        $badges = collect();
+        if (Schema::hasTable('member_badges')) {
+            try {
+                $badges = $member->badges()->with('event')->get();
+            } catch (\Throwable $e) {
+                $badges = collect();
+            }
+        }
+
+        $meetingsCreated = $member->meetingsCreated()
+            ->orderByDesc('tanggal')
+            ->orderByDesc('waktu_mulai')
+            ->take(10)
+            ->get();
+
+        return view('portal.members.show', compact(
+            'current',
+            'member',
+            'stats',
+            'attendances',
+            'eventMemberships',
+            'badges',
+            'meetingsCreated'
+        ));
+    }
+
     private function currentMember(): Member
     {
         return auth('member')->user();
