@@ -7,12 +7,15 @@ use App\Models\AnnouncementRead;
 use App\Models\Attendance;
 use App\Models\Feedback;
 use App\Models\Member;
+use App\Models\MemberBadge;
 use App\Services\FileUploadService;
 use App\Services\GamificationService;
 use App\Services\QrCodeService;
 use App\Services\SpService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -95,10 +98,22 @@ class PortalController extends Controller
             ->with('meeting')
             ->whereHas('meeting', function ($builder) {
                 $builder->where('status', 'completed');
+            })
+            ->where(function ($q) {
+                $q->where('attendances.status', '!=', 'alpha')
+                    ->orWhere(function ($sub) {
+                        $sub->where(function ($s) {
+                            $s->where('attendances.sp_ignored', 0)
+                                ->orWhereNull('attendances.sp_ignored');
+                        })->where(function ($s) {
+                            $s->whereNull('meetings.sifat_kegiatan')
+                                ->orWhere('meetings.sifat_kegiatan', '!=', 'dibebaskan');
+                        });
+                    });
             });
 
         if (in_array($status, ['hadir', 'izin', 'sakit', 'alpha'], true)) {
-            $query->where('status', $status);
+            $query->where('attendances.status', $status);
         }
 
         $attendances = $query
@@ -109,7 +124,59 @@ class PortalController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('portal.attendance', compact('member', 'stats', 'attendances', 'status'));
+        // Breakdown per kategori rapat untuk visualisasi diagram track record
+        $categoryStats = $member->attendances()
+            ->join('meetings', 'meetings.id', '=', 'attendances.meeting_id')
+            ->where('meetings.status', 'completed')
+            ->where(function ($q) {
+                $q->where('attendances.status', '!=', 'alpha')
+                    ->orWhere(function ($sub) {
+                        $sub->where(function ($s) {
+                            $s->where('attendances.sp_ignored', 0)
+                                ->orWhereNull('attendances.sp_ignored');
+                        })->where(function ($s) {
+                            $s->whereNull('meetings.sifat_kegiatan')
+                                ->orWhere('meetings.sifat_kegiatan', '!=', 'dibebaskan');
+                        });
+                    });
+            })
+            ->select(
+                'meetings.jenis_rapat',
+                DB::raw('COUNT(*) as total'),
+                DB::raw("SUM(CASE WHEN attendances.status = 'hadir' THEN 1 ELSE 0 END) as hadir"),
+                DB::raw("SUM(CASE WHEN attendances.status = 'izin' THEN 1 ELSE 0 END) as izin"),
+                DB::raw("SUM(CASE WHEN attendances.status = 'sakit' THEN 1 ELSE 0 END) as sakit"),
+                DB::raw("SUM(CASE WHEN attendances.status = 'alpha' THEN 1 ELSE 0 END) as alpha")
+            )
+            ->groupBy('meetings.jenis_rapat')
+            ->get()
+            ->map(function ($row) {
+                $icon = match ($row->jenis_rapat) {
+                    'internal_dept' => 'fa-building',
+                    'kepanitiaan' => 'fa-calendar-alt',
+                    'kegiatan' => 'fa-users',
+                    'bph' => 'fa-user-tie',
+                    'perdana' => 'fa-flag',
+                    'lintas_dept' => 'fa-handshake',
+                    default => 'fa-clipboard-list',
+                };
+                $label = match ($row->jenis_rapat) {
+                    'internal_dept' => 'Internal Dept',
+                    'kepanitiaan' => 'Kepanitiaan',
+                    'kegiatan' => 'Kegiatan',
+                    'bph' => 'BPH / Inti',
+                    'perdana' => 'Rapat Perdana',
+                    'lintas_dept' => 'Lintas Dept',
+                    default => ucfirst(str_replace('_', ' ', (string) $row->jenis_rapat)),
+                };
+                $row->icon = $icon;
+                $row->label = $label;
+                $row->pct = $row->total > 0 ? round(($row->hadir / $row->total) * 100) : 0;
+
+                return $row;
+            });
+
+        return view('portal.attendance', compact('member', 'stats', 'attendances', 'status', 'categoryStats'));
     }
 
     public function qr()
@@ -280,6 +347,44 @@ class PortalController extends Controller
             $badges = collect();
         }
 
+        // Tampilkan lencana kepanitiaan event yang sedang berlangsung (belum selesai)
+        // dengan visual pudar dan border putus-putus
+        $existingEventIds = $badges->pluck('event_id')->filter()->all();
+        $activeMemberships = $member->eventMembers()
+            ->with(['event', 'division'])
+            ->whereHas('event', function ($q) {
+                $q->where('status', '!=', 'completed');
+            })
+            ->whereNotIn('event_id', $existingEventIds)
+            ->get();
+
+        $gamification = app(GamificationService::class);
+        $pendingBadges = $activeMemberships->map(function ($em) use ($member, $gamification) {
+            $event = $em->event;
+            $jabatan = $em->jabatan_panitia ?: 'Anggota Panitia';
+            $divisi = $em->division?->nama_divisi;
+            $exp = $gamification->calculateEventMemberExp($jabatan);
+            $trackRecord = $event ? $gamification->calculateEventMemberTrackRecord($event, $member->id) : null;
+
+            $badge = new MemberBadge([
+                'user_id' => $member->id,
+                'event_id' => $event?->id,
+                'event_name' => $event?->nama_event ?? 'Event HIMA TI',
+                'jabatan' => $jabatan,
+                'divisi' => $divisi,
+                'badge_type' => 'event_in_progress',
+                'exp_earned' => $exp,
+                'attendance_summary' => $trackRecord,
+            ]);
+            $badge->setRelation('event', $event);
+            $badge->created_at = $event?->tanggal_mulai ? Carbon::parse($event->tanggal_mulai) : $em->created_at;
+            $badge->is_in_progress = true;
+
+            return $badge;
+        });
+
+        $badges = $badges->concat($pendingBadges);
+
         return view('portal.profile', compact('member', 'feedbacks', 'badges'));
     }
 
@@ -439,6 +544,18 @@ class PortalController extends Controller
                     ->orWhere('attendances.status', '!=', 'alpha')
                     ->orWhereDate('meetings.tanggal', '<', now()->toDateString());
             })
+            ->where(function ($q) {
+                $q->where('attendances.status', '!=', 'alpha')
+                    ->orWhere(function ($sub) {
+                        $sub->where(function ($s) {
+                            $s->where('attendances.sp_ignored', 0)
+                                ->orWhereNull('attendances.sp_ignored');
+                        })->where(function ($s) {
+                            $s->whereNull('meetings.sifat_kegiatan')
+                                ->orWhere('meetings.sifat_kegiatan', '!=', 'dibebaskan');
+                        });
+                    });
+            })
             ->orderByDesc('meetings.tanggal')
             ->orderByDesc('meetings.waktu_mulai')
             ->select('attendances.*')
@@ -457,6 +574,42 @@ class PortalController extends Controller
                 $badges = collect();
             }
         }
+
+        $existingEventIds = $badges->pluck('event_id')->filter()->all();
+        $activeMemberships = $member->eventMembers()
+            ->with(['event', 'division'])
+            ->whereHas('event', function ($q) {
+                $q->where('status', '!=', 'completed');
+            })
+            ->whereNotIn('event_id', $existingEventIds)
+            ->get();
+
+        $gamification = app(GamificationService::class);
+        $pendingBadges = $activeMemberships->map(function ($em) use ($member, $gamification) {
+            $event = $em->event;
+            $jabatan = $em->jabatan_panitia ?: 'Anggota Panitia';
+            $divisi = $em->division?->nama_divisi;
+            $exp = $gamification->calculateEventMemberExp($jabatan);
+            $trackRecord = $event ? $gamification->calculateEventMemberTrackRecord($event, $member->id) : null;
+
+            $badge = new MemberBadge([
+                'user_id' => $member->id,
+                'event_id' => $event?->id,
+                'event_name' => $event?->nama_event ?? 'Event HIMA TI',
+                'jabatan' => $jabatan,
+                'divisi' => $divisi,
+                'badge_type' => 'event_in_progress',
+                'exp_earned' => $exp,
+                'attendance_summary' => $trackRecord,
+            ]);
+            $badge->setRelation('event', $event);
+            $badge->created_at = $event?->tanggal_mulai ? Carbon::parse($event->tanggal_mulai) : $em->created_at;
+            $badge->is_in_progress = true;
+
+            return $badge;
+        });
+
+        $badges = $badges->concat($pendingBadges);
 
         $meetingsCreated = $member->meetingsCreated()
             ->orderByDesc('tanggal')
@@ -493,6 +646,18 @@ class PortalController extends Controller
                     $q->where('meetings.status', 'completed')
                         ->orWhere('attendances.status', '!=', 'alpha')
                         ->orWhereDate('meetings.tanggal', '<', now()->toDateString());
+                })
+                ->where(function ($q) {
+                    $q->where('attendances.status', '!=', 'alpha')
+                        ->orWhere(function ($sub) {
+                            $sub->where(function ($s) {
+                                $s->where('attendances.sp_ignored', 0)
+                                    ->orWhereNull('attendances.sp_ignored');
+                            })->where(function ($s) {
+                                $s->whereNull('meetings.sifat_kegiatan')
+                                    ->orWhere('meetings.sifat_kegiatan', '!=', 'dibebaskan');
+                            });
+                        });
                 })
                 ->selectRaw("
                     COUNT(*) as total,

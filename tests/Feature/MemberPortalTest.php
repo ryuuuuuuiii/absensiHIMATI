@@ -4,8 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\Admin;
 use App\Models\Attendance;
+use App\Models\Event;
+use App\Models\EventDivision;
+use App\Models\EventMember;
 use App\Models\Meeting;
 use App\Models\Member;
+use App\Services\GamificationService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -547,6 +551,138 @@ class MemberPortalTest extends TestCase
             ->assertOk()
             ->assertSee('Rina Kartika')
             ->assertSee('Koor Medinfo');
+    }
+
+    public function test_member_attendance_history_shows_track_record_diagram_and_category_breakdown(): void
+    {
+        $member = $this->createMember();
+        $meeting = $this->createMeeting('Rapat Evaluasi Akbar', 'completed');
+
+        Attendance::create([
+            'meeting_id' => $meeting->id,
+            'user_id' => $member->id,
+            'status' => 'hadir',
+            'scanned_at' => now(),
+            'scan_method' => 'qr_scan',
+        ]);
+
+        $response = $this->actingAs($member, 'member')
+            ->get(route('portal.attendance'))
+            ->assertOk();
+
+        $response->assertSee('Diagram Track Record Kehadiran');
+        $response->assertSee('attendanceStatusChart');
+        $response->assertSee('Rasio Status Presensi');
+        $response->assertSee('Distribusi per Kategori Rapat');
+        $response->assertSee('Internal Dept');
+    }
+
+    public function test_member_profile_shows_pending_event_badge_with_in_progress_styling(): void
+    {
+        $member = $this->createMember();
+        $event = Event::create([
+            'nama_event' => 'HIMATI Cup 2026',
+            'deskripsi' => 'Turnamen Olahraga & Seni',
+            'status' => 'active',
+            'tanggal_mulai' => now()->toDateString(),
+        ]);
+
+        $division = EventDivision::create([
+            'event_id' => $event->id,
+            'nama_divisi' => 'Acara',
+        ]);
+
+        EventMember::create([
+            'event_id' => $event->id,
+            'division_id' => $division->id,
+            'user_id' => $member->id,
+            'jabatan_panitia' => 'Ketua Pelaksana',
+            'created_at' => now(),
+        ]);
+
+        // When event is active (not completed yet), badge appears with pending styling
+        $response = $this->actingAs($member, 'member')
+            ->get(route('portal.profile'))
+            ->assertOk();
+
+        $response->assertSee('HIMATI Cup 2026');
+        $response->assertSee('badge-item-pending');
+        $response->assertSee('Sedang Berlangsung');
+
+        // Now complete the event
+        app(GamificationService::class)->completeEvent($event);
+
+        $responseCompleted = $this->actingAs($member, 'member')
+            ->get(route('portal.profile'))
+            ->assertOk();
+
+        $responseCompleted->assertSee('HIMATI Cup 2026');
+        $responseCompleted->assertSee('+900 EXP');
+    }
+
+    public function test_voluntary_kegiatan_absence_is_not_counted_as_alpha_in_portal_stats_or_history(): void
+    {
+        $member = $this->createMember();
+
+        // 1. Mandatory meeting with alpha
+        $meetingWajib = Meeting::create([
+            'created_by' => $member->id,
+            'jenis_rapat' => 'internal_dept',
+            'kategori' => 'rapat',
+            'sifat_kegiatan' => 'wajib',
+            'mode_rapat' => 'offline',
+            'departemen' => 'PSDM',
+            'fokus_bahasan' => 'Rapat Internal Wajib',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '09:00:00',
+            'status' => 'completed',
+            'unique_link' => Str::lower(Str::random(12)),
+            'absent_link' => Str::lower(Str::random(12)),
+        ]);
+
+        Attendance::create([
+            'meeting_id' => $meetingWajib->id,
+            'user_id' => $member->id,
+            'status' => 'alpha',
+            'sp_ignored' => false,
+        ]);
+
+        // 2. Voluntary kegiatan where member did not attend (sp_ignored = 1)
+        $meetingBebas = Meeting::create([
+            'created_by' => $member->id,
+            'jenis_rapat' => 'kegiatan',
+            'kategori' => 'kegiatan',
+            'sifat_kegiatan' => 'dibebaskan',
+            'mode_rapat' => 'offline',
+            'nama_event' => 'Bakti Sosial TI',
+            'fokus_bahasan' => 'Bakti Sosial TI',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '13:00:00',
+            'status' => 'completed',
+            'unique_link' => Str::lower(Str::random(12)),
+            'absent_link' => Str::lower(Str::random(12)),
+        ]);
+
+        Attendance::create([
+            'meeting_id' => $meetingBebas->id,
+            'user_id' => $member->id,
+            'status' => 'alpha',
+            'sp_ignored' => true,
+        ]);
+
+        // Clear portal stats cache
+        Cache::forget("portal_stats_{$member->id}");
+
+        $response = $this->actingAs($member, 'member')
+            ->get(route('portal.attendance'))
+            ->assertOk();
+
+        // Alpha count must only be 1 (from mandatory meeting), NOT 2!
+        $response->assertSee('<h3 class="stat-num-red">1</h3>', false);
+
+        // In attendance history list, the voluntary kegiatan absence must NOT appear as an alpha row
+        $response->assertSee('Rapat Internal Wajib');
+        $response->assertDontSee('Bakti Sosial TI');
     }
 
     private function createMember(array $attributes = []): Member

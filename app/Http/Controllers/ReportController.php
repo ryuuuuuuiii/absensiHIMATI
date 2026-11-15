@@ -47,13 +47,13 @@ class ReportController extends Controller
                 'u.nama_lengkap',
                 'u.departemen',
                 'u.jabatan',
-                DB::raw('COUNT(DISTINCT m.id) as total_rapat'),
+                DB::raw('COUNT(DISTINCT CASE WHEN a.status IN ("hadir", "izin", "sakit") OR (a.status = "alpha" AND (a.sp_ignored = 0 OR a.sp_ignored IS NULL) AND (m.sifat_kegiatan IS NULL OR m.sifat_kegiatan != "dibebaskan")) THEN m.id ELSE NULL END) as total_rapat'),
                 DB::raw('SUM(CASE WHEN a.status = "hadir" THEN 1 ELSE 0 END) as hadir'),
                 DB::raw('SUM(CASE WHEN a.status = "izin" THEN 1 ELSE 0 END) as izin'),
                 DB::raw('SUM(CASE WHEN a.status = "sakit" THEN 1 ELSE 0 END) as sakit'),
-                DB::raw('SUM(CASE WHEN a.status = "alpha" THEN 1 ELSE 0 END) as alpha'),
-                DB::raw('SUM(CASE WHEN a.status = "alpha" AND (a.sp_ignored = 0 OR a.sp_ignored IS NULL) THEN 1 ELSE 0 END) as alpha_wajib'),
-                DB::raw('SUM(CASE WHEN a.status = "alpha" AND a.sp_ignored = 1 THEN 1 ELSE 0 END) as alpha_dibebaskan')
+                DB::raw('SUM(CASE WHEN a.status = "alpha" AND (a.sp_ignored = 0 OR a.sp_ignored IS NULL) AND (m.sifat_kegiatan IS NULL OR m.sifat_kegiatan != "dibebaskan") THEN 1 ELSE 0 END) as alpha'),
+                DB::raw('SUM(CASE WHEN a.status = "alpha" AND (a.sp_ignored = 0 OR a.sp_ignored IS NULL) AND (m.sifat_kegiatan IS NULL OR m.sifat_kegiatan != "dibebaskan") THEN 1 ELSE 0 END) as alpha_wajib'),
+                DB::raw('SUM(CASE WHEN a.status = "alpha" AND (a.sp_ignored = 1 OR m.sifat_kegiatan = "dibebaskan") THEN 1 ELSE 0 END) as alpha_dibebaskan')
             );
 
         if ($filterDept) {

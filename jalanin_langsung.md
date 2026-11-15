@@ -1,3 +1,4 @@
-1. bikin absensi untuk suatu kegiatan
-2. bikin timeline atau kalender kegiatan semua agenda pada proker
-3. bikin acitment even itu ditampikan terlebih ddahulu walau belum selesai evennya namun status nya belum selesai
+1. pada menu riwayat absensi pada halama user bikin ada diagramnya menyesuaikan track recordnya.
+2. bikin lencana nya muncul walau event nya belum selesai, namun gambarnya itu seperti pudar dan garis corner putus2. jadi apabila sudah selesai baru tampilannya full.
+3. untuk absensi kegiatan yg dibebaskan seharusnya yg tidak hadir itu gk kena hitung alpa, disini masih kena jadi alpa. tolong diperbaiki.
+4.

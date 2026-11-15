@@ -46,6 +46,124 @@
     </div>
 </div>
 
+<!-- Diagram Track Record Kehadiran -->
+<div class="card mb-6" style="padding: 18px 20px;">
+    <div class="card-header" style="padding-bottom: 12px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <div>
+            <h3 class="card-title" style="margin: 0; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-chart-pie" style="color: #38BDF8;"></i>
+                <span>Diagram Track Record Kehadiran</span>
+            </h3>
+            <p style="margin: 2px 0 0 0; font-size: 0.78rem; color: var(--text-muted);">
+                Visualisasi rasio status kehadiran dan statistik per kategori rapat Anda
+            </p>
+        </div>
+        <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38BDF8; font-weight: 700; font-size: 0.8rem; padding: 4px 10px;">
+            <i class="fas fa-bullseye"></i> {{ $stats['percentage'] }}% Kedisiplinan
+        </span>
+    </div>
+
+    @if($stats['total'] === 0)
+        <div style="text-align: center; padding: 24px 16px; color: var(--text-muted); font-size: 0.85rem;">
+            <i class="fas fa-chart-simple" style="font-size: 2rem; color: var(--text-muted); opacity: 0.5; margin-bottom: 8px; display: block;"></i>
+            Belum ada data presensi rapat untuk menampilkan diagram track record.
+        </div>
+    @else
+        <div class="track-record-grid">
+            <!-- Donut Chart & Status Breakdown -->
+            <div class="track-record-donut-box">
+                <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-chart-donut" style="color: #10B981;"></i> Rasio Status Presensi
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap;">
+                    <div style="position: relative; width: 140px; height: 140px; flex-shrink: 0;">
+                        <canvas id="attendanceStatusChart" width="140" height="140"></canvas>
+                        <div class="donut-center-text">
+                            <span class="donut-pct">{{ $stats['percentage'] }}%</span>
+                            <span class="donut-label">Hadir</span>
+                        </div>
+                    </div>
+
+                    <div class="track-record-legend-list">
+                        <div class="track-legend-item">
+                            <span class="legend-dot" style="background: #10B981;"></span>
+                            <span class="legend-title">Hadir</span>
+                            <strong class="legend-val">{{ $stats['hadir'] }}</strong>
+                            <small class="legend-pct">({{ $stats['total'] > 0 ? round(($stats['hadir'] / $stats['total']) * 100) : 0 }}%)</small>
+                        </div>
+                        <div class="track-legend-item">
+                            <span class="legend-dot" style="background: #38BDF8;"></span>
+                            <span class="legend-title">Izin</span>
+                            <strong class="legend-val">{{ $stats['izin'] }}</strong>
+                            <small class="legend-pct">({{ $stats['total'] > 0 ? round(($stats['izin'] / $stats['total']) * 100) : 0 }}%)</small>
+                        </div>
+                        <div class="track-legend-item">
+                            <span class="legend-dot" style="background: #F59E0B;"></span>
+                            <span class="legend-title">Sakit</span>
+                            <strong class="legend-val">{{ $stats['sakit'] }}</strong>
+                            <small class="legend-pct">({{ $stats['total'] > 0 ? round(($stats['sakit'] / $stats['total']) * 100) : 0 }}%)</small>
+                        </div>
+                        <div class="track-legend-item">
+                            <span class="legend-dot" style="background: #EF4444;"></span>
+                            <span class="legend-title">Alpha</span>
+                            <strong class="legend-val">{{ $stats['alpha'] }}</strong>
+                            <small class="legend-pct">({{ $stats['total'] > 0 ? round(($stats['alpha'] / $stats['total']) * 100) : 0 }}%)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Breakdown Bars -->
+            <div class="track-record-cats-box">
+                <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-layer-group" style="color: #6366F1;"></i> Distribusi per Kategori Rapat
+                    </span>
+                    <small style="color: var(--text-muted); font-size: 0.72rem;">{{ $categoryStats->count() }} Jenis Pertemuan</small>
+                </div>
+
+                @if($categoryStats->isEmpty())
+                    <p style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">
+                        Belum ada data kategori rapat yang selesai diikuti.
+                    </p>
+                @else
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        @foreach($categoryStats as $cat)
+                            <div class="cat-stat-row">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; font-size: 0.78rem;">
+                                    <span style="font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                                        <i class="fas {{ $cat->icon }}" style="color: #38BDF8; font-size: 0.85rem; width: 14px;"></i>
+                                        {{ $cat->label }}
+                                    </span>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="font-size: 0.72rem; color: var(--text-muted);">
+                                            {{ $cat->hadir }}/{{ $cat->total }} Rapat
+                                        </span>
+                                        <span class="badge" style="font-size: 0.68rem; padding: 1px 6px; background: {{ $cat->pct >= 75 ? 'rgba(16,185,129,0.15)' : ($cat->pct >= 50 ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)') }}; color: {{ $cat->pct >= 75 ? '#10B981' : ($cat->pct >= 50 ? '#F59E0B' : '#EF4444') }}; font-weight: 700;">
+                                            {{ $cat->pct }}%
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="cat-bar-track">
+                                    @php
+                                        $hadirPct = $cat->total > 0 ? ($cat->hadir / $cat->total) * 100 : 0;
+                                        $izinPct = $cat->total > 0 ? (($cat->izin + $cat->sakit) / $cat->total) * 100 : 0;
+                                        $alphaPct = $cat->total > 0 ? ($cat->alpha / $cat->total) * 100 : 0;
+                                    @endphp
+                                    <div class="cat-bar-segment" style="width: {{ $hadirPct }}%; background: #10B981;" title="Hadir: {{ $cat->hadir }}"></div>
+                                    <div class="cat-bar-segment" style="width: {{ $izinPct }}%; background: #38BDF8;" title="Izin/Sakit: {{ $cat->izin + $cat->sakit }}"></div>
+                                    <div class="cat-bar-segment" style="width: {{ $alphaPct }}%; background: #EF4444;" title="Alpha: {{ $cat->alpha }}"></div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        </div>
+    @endif
+</div>
+
 <div class="filter-bar">
     <form method="GET" action="{{ route('portal.attendance') }}" style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
         <select name="status" class="form-control" style="max-width: 220px;" onchange="this.form.submit()">
@@ -202,3 +320,195 @@
     @endif
 </div>
 @endsection
+
+@push('styles')
+<style>
+.track-record-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.35fr;
+    gap: 18px;
+    align-items: stretch;
+}
+.track-record-donut-box,
+.track-record-cats-box {
+    background: var(--bg-surface-subtle);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+}
+.donut-center-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+    line-height: 1.1;
+}
+.donut-pct {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+.donut-label {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    margin-top: 1px;
+}
+.track-record-legend-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 130px;
+}
+.track-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+}
+.legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.legend-title {
+    color: var(--text-muted);
+    flex: 1;
+}
+.legend-val {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+.legend-pct {
+    color: var(--text-muted);
+    font-size: 0.68rem;
+}
+.cat-stat-row {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+.cat-bar-track {
+    height: 7px;
+    border-radius: 9999px;
+    background: var(--bg-surface-subtle);
+    overflow: hidden;
+    display: flex;
+    border: 1px solid var(--border-color);
+}
+.cat-bar-segment {
+    height: 100%;
+    transition: width 0.4s ease;
+}
+
+[data-theme="dark"] .track-record-donut-box,
+[data-theme="dark"] .track-record-cats-box {
+    background: #0E1A2B !important;
+    border-color: #1A2E47 !important;
+}
+[data-theme="dark"] .cat-stat-row {
+    background: #091322 !important;
+    border-color: #1A2E47 !important;
+}
+[data-theme="dark"] .cat-bar-track {
+    background: #050B14 !important;
+    border-color: #1A2E47 !important;
+}
+
+@media (max-width: 768px) {
+    .track-record-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px;
+    }
+}
+</style>
+@endpush
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+    let statusChartInstance = null;
+
+    function renderStatusChart() {
+        const canvas = document.getElementById('attendanceStatusChart');
+        if (!canvas) return;
+
+        const hadir = {{ (int) $stats['hadir'] }};
+        const izin = {{ (int) $stats['izin'] }};
+        const sakit = {{ (int) $stats['sakit'] }};
+        const alpha = {{ (int) $stats['alpha'] }};
+        const total = {{ (int) $stats['total'] }};
+
+        if (total === 0) return;
+
+        if (typeof Chart === 'undefined') {
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.beginPath();
+                ctx.arc(70, 70, 55, 0, 2 * Math.PI);
+                ctx.strokeStyle = '#10B981';
+                ctx.lineWidth = 14;
+                ctx.stroke();
+            }
+            return;
+        }
+
+        if (statusChartInstance) {
+            statusChartInstance.destroy();
+            statusChartInstance = null;
+        }
+
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const borderColor = isDark ? '#0E1A2B' : '#FFFFFF';
+
+        statusChartInstance = new Chart(canvas, {
+            type: 'doughnut',
+            data: {
+                labels: ['Hadir', 'Izin', 'Sakit', 'Alpha'],
+                datasets: [{
+                    data: [hadir, izin, sakit, alpha],
+                    backgroundColor: ['#10B981', '#38BDF8', '#F59E0B', '#EF4444'],
+                    borderWidth: 2,
+                    borderColor: borderColor,
+                    hoverOffset: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '72%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const val = ctx.raw || 0;
+                                const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+                                return ` ${ctx.label}: ${val} (${pct}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', renderStatusChart);
+    } else {
+        renderStatusChart();
+    }
+    document.addEventListener('portal:page-loaded', renderStatusChart);
+})();
+</script>
+@endpush

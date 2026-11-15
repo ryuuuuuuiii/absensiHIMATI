@@ -842,6 +842,36 @@
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4) !important;
 }
 
+/* Lencana Event yang belum selesai (Sedang Berlangsung): Tampilan Pudar & Garis Corner Putus-putus */
+.badge-item-card.badge-item-pending {
+    opacity: 0.65 !important;
+    filter: grayscale(35%) contrast(90%) !important;
+    border: 1.8px dashed var(--border-color) !important;
+    background: var(--bg-surface-subtle) !important;
+    transition: all var(--transition-fast) !important;
+}
+.badge-item-card.badge-item-pending:hover {
+    opacity: 0.88 !important;
+    filter: grayscale(10%) contrast(95%) !important;
+    border-color: #F59E0B !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(245, 158, 11, 0.12) !important;
+}
+.badge-icon-box.badge-icon-pending {
+    opacity: 0.75 !important;
+    border: 1.5px dashed rgba(255, 255, 255, 0.5) !important;
+    box-shadow: none !important;
+}
+
+[data-theme="dark"] .badge-item-card.badge-item-pending {
+    background: rgba(17, 24, 39, 0.55) !important;
+    border-color: rgba(148, 163, 184, 0.3) !important;
+}
+[data-theme="dark"] .badge-item-card.badge-item-pending:hover {
+    border-color: rgba(245, 158, 11, 0.65) !important;
+    box-shadow: 0 6px 18px rgba(245, 158, 11, 0.2) !important;
+}
+
 [data-theme="dark"] .profile-center-card::before {
     background: linear-gradient(135deg, rgba(48, 175, 255, 0.22) 0%, rgba(14, 34, 56, 0.9) 100%) !important;
     border-bottom: 2px solid rgba(48, 175, 255, 0.35) !important;
@@ -1145,8 +1175,11 @@
         @else
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
                 @foreach($badges as $badge)
-                    <div class="badge-item-card">
-                        <div style="width: 44px; height: 44px; border-radius: 14px; background: {{ $badge->badge_color }}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+                    @php
+                        $isPending = !empty($badge->is_in_progress);
+                    @endphp
+                    <div class="badge-item-card {{ $isPending ? 'badge-item-pending' : '' }}">
+                        <div class="badge-icon-box {{ $isPending ? 'badge-icon-pending' : '' }}" style="width: 44px; height: 44px; border-radius: 14px; background: {{ $badge->badge_color }}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
                             <i class="fas {{ $badge->icon }}"></i>
                         </div>
                         <div style="flex: 1; min-width: 0;">
@@ -1154,9 +1187,15 @@
                                 <span style="font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: {{ $badge->badge_color }};">
                                     {{ $badge->role_title }}
                                 </span>
-                                <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #F59E0B; font-weight: 700; font-size: 0.68rem; padding: 2px 6px;">
-                                    +{{ number_format($badge->exp_earned, 0, ',', '.') }} EXP
-                                </span>
+                                @if($isPending)
+                                    <span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #F59E0B; font-weight: 700; font-size: 0.65rem; padding: 2px 6px; border: 1px dashed rgba(245, 158, 11, 0.5);" title="Event masih berjalan, lencana akan aktif penuh setelah event diselesaikan Admin">
+                                        <i class="fas fa-hourglass-half"></i> Sedang Berlangsung
+                                    </span>
+                                @else
+                                    <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #F59E0B; font-weight: 700; font-size: 0.68rem; padding: 2px 6px;">
+                                        +{{ number_format($badge->exp_earned, 0, ',', '.') }} EXP
+                                    </span>
+                                @endif
                             </div>
                             <div style="font-size: 0.86rem; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 2px 0;" title="{{ $badge->event_name }}">
                                 {{ $badge->event_name }}
@@ -1164,7 +1203,7 @@
                             <div style="font-size: 0.72rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
                                 <span>{{ $badge->divisi ?: 'Panitia' }}</span>
                                 <span>&bull;</span>
-                                <span>{{ $badge->created_at ? $badge->created_at->format('d M Y') : '' }}</span>
+                                <span>{{ $isPending ? 'Event Aktif' : ($badge->created_at ? $badge->created_at->format('d M Y') : '') }}</span>
                             </div>
                             @php $track = $badge->track_record; @endphp
                             @if($track)

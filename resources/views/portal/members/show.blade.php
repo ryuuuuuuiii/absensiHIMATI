@@ -232,9 +232,13 @@
             @else
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     @foreach ($badges as $badge)
-                        <span class="badge badge-primary" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; padding: 4px 10px;" title="{{ $badge->event?->nama_event ?? 'Kegiatan' }}">
-                            <i class="fas fa-medal" style="color: #F59E0B;"></i>
-                            <span>{{ $badge->badge_name ?? $badge->event?->nama_event ?? 'Lencana' }}</span>
+                        @php $isPending = !empty($badge->is_in_progress); @endphp
+                        <span class="badge {{ $isPending ? 'badge-warning' : 'badge-primary' }}" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; padding: 4px 10px; {{ $isPending ? 'opacity: 0.7; border: 1.5px dashed rgba(245, 158, 11, 0.6);' : '' }}" title="{{ $badge->event?->nama_event ?? $badge->event_name ?? 'Kegiatan' }}{{ $isPending ? ' (Sedang Berlangsung)' : '' }}">
+                            <i class="fas {{ $isPending ? 'fa-hourglass-half' : 'fa-medal' }}" style="color: #F59E0B;"></i>
+                            <span>{{ $badge->badge_name ?? $badge->event?->nama_event ?? $badge->event_name ?? 'Lencana' }}</span>
+                            @if($isPending)
+                                <small style="font-size: 0.65rem; opacity: 0.85;">(Berlangsung)</small>
+                            @endif
                         </span>
                     @endforeach
                 </div>
