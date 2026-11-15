@@ -162,6 +162,7 @@ class MeetingSpamProtectionService
             'kepanitiaan' => $request->input('fokus_bahasan_kepanitiaan'),
             'bph' => $request->input('fokus_bahasan_bph'),
             'lintas_dept' => $request->input('fokus_bahasan_lintas'),
+            'kegiatan' => $request->input('nama_event_kegiatan') ?: $request->input('fokus_bahasan_kegiatan'),
             default => null,
         };
 
@@ -188,6 +189,11 @@ class MeetingSpamProtectionService
     {
         if (isset($this->meetingValidityCache[$meeting->id])) {
             return $this->meetingValidityCache[$meeting->id];
+        }
+
+        // Kegiatan bersifat sukarela / bebas hadir sehingga tidak pernah memicu akumulasi SP
+        if ($meeting->isKegiatan()) {
+            return $this->meetingValidityCache[$meeting->id] = false;
         }
 
         if ($meeting->status !== 'completed') {
@@ -273,35 +279,41 @@ class MeetingSpamProtectionService
                     return 'Event yang dipilih tidak ditemukan.';
                 }
 
-                $eventMember = EventMember::with('division')
-                    ->where('event_id', $eventId)
-                    ->where('user_id', $creator->id)
-                    ->first();
+                if (! $isHimatiInti) {
+                    $eventMember = EventMember::with('division')
+                        ->where('event_id', $eventId)
+                        ->where('user_id', $creator->id)
+                        ->first();
 
-                if (! $eventMember) {
-                    return "Anda tidak terdaftar sebagai panitia dalam event '{$event->nama_event}', sehingga tidak dapat membuat rapat untuk event tersebut.";
-                }
+                    if (! $eventMember) {
+                        return "Anda tidak terdaftar sebagai panitia dalam event '{$event->nama_event}', sehingga tidak dapat membuat rapat untuk event tersebut.";
+                    }
 
-                // Cek apakah pembuat merupakan Inti Panitia Event
-                $role = strtolower(trim((string) ($eventMember->jabatan_panitia ?? '')));
-                $isEventInti = str_contains($role, 'ketua') ||
-                    str_contains($role, 'project officer') ||
-                    str_contains($role, 'leader') ||
-                    str_contains($role, 'penanggung jawab') ||
-                    str_contains($role, 'penanggungjawab') ||
-                    $role === 'pj' ||
-                    str_contains($role, 'pj ') ||
-                    str_contains($role, 'wakil') ||
-                    str_contains($role, 'vice') ||
-                    empty($eventMember->division_id);
+                    // Cek apakah pembuat merupakan Inti Panitia Event
+                    $role = strtolower(trim((string) ($eventMember->jabatan_panitia ?? '')));
+                    $isEventInti = str_contains($role, 'ketua') ||
+                        str_contains($role, 'project officer') ||
+                        str_contains($role, 'leader') ||
+                        str_contains($role, 'penanggung jawab') ||
+                        str_contains($role, 'penanggungjawab') ||
+                        $role === 'pj' ||
+                        str_contains($role, 'pj ') ||
+                        str_contains($role, 'wakil') ||
+                        str_contains($role, 'vice') ||
+                        empty($eventMember->division_id);
 
-                if ($tipeDivisi === 'perdivisi' && $divisiId) {
-                    if (! $isEventInti && (int) $divisiId !== (int) $eventMember->division_id) {
-                        $myDivisiName = $eventMember->division?->nama_divisi ?? 'divisi Anda';
+                    if ($tipeDivisi === 'perdivisi' && $divisiId) {
+                        if (! $isEventInti && (int) $divisiId !== (int) $eventMember->division_id) {
+                            $myDivisiName = $eventMember->division?->nama_divisi ?? 'divisi Anda';
 
-                        return "Anda hanya dapat membuat rapat untuk divisi Anda sendiri ({$myDivisiName}). Anda tidak memiliki izin membuat rapat untuk divisi lain pada event ini.";
+                            return "Anda hanya dapat membuat rapat untuk divisi Anda sendiri ({$myDivisiName}). Anda tidak memiliki izin membuat rapat untuk divisi lain pada event ini.";
+                        }
                     }
                 }
+                break;
+
+            case 'kegiatan':
+                // Seluruh pengurus berhak membuat sesi presensi kegiatan yang terbuka untuk semua anggota
                 break;
         }
 

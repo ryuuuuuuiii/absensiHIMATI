@@ -88,6 +88,7 @@
         @csrf
         <input type="hidden" name="jenis_rapat" id="jenisRapat" value="">
         <input type="hidden" name="mode_rapat" id="modeRapat" value="offline">
+        <input type="hidden" name="kategori" id="kategoriInput" value="{{ old('kategori', 'rapat') }}">
 
         @if ($loggedMember)
             <input type="hidden" name="created_by" id="selectCreator" value="{{ $loggedMember->id }}" data-name="{{ $loggedMember->nama_lengkap }}" data-dept="{{ $loggedMember->departemen }}" data-jabatan="{{ $loggedMember->jabatan }}">
@@ -113,12 +114,12 @@
             <input type="hidden" name="created_by" id="selectCreator" value="{{ $creatorId }}">
         @endif
 
-        <!-- ========== STEP 1: Pilih Jenis Rapat ========== -->
+        <!-- ========== STEP 1: Pilih Jenis Rapat / Presensi ========== -->
         <div class="step-content active" id="step1">
             <h3 style="margin-bottom: var(--space-6); text-align: center; color: var(--text-secondary);">
-                Pilih Jenis Rapat
+                Pilih Jenis Presensi / Agenda
             </h3>
-            
+
             <div class="rapat-type-grid">
                 <div class="rapat-type-card" data-jenis="internal_dept" onclick="selectRapatType('internal_dept', this)">
                     <div class="type-icon icon-dept"><i class="fas fa-building"></i></div>
@@ -148,12 +149,19 @@
                         <div class="type-desc">Kolaborasi antar departemen</div>
                     </div>
                 </div>
+                <div class="rapat-type-card" data-jenis="kegiatan" onclick="selectRapatType('kegiatan', this)">
+                    <div class="type-icon icon-kegiatan"><i class="fas fa-camera"></i></div>
+                    <div>
+                        <div class="type-name">Kegiatan</div>
+                        <div class="type-desc">Absensi kegiatan dengan foto dokumentasi</div>
+                    </div>
+                </div>
             </div>
-            
+
             <div id="step1Error" class="form-error text-center mt-4" style="display: none;">
-                Silakan pilih jenis rapat terlebih dahulu
+                Silakan pilih jenis presensi terlebih dahulu
             </div>
-            
+
             <div class="step-nav-actions right-only">
                 <button type="button" class="btn btn-primary" onclick="nextStep(1)">
                     Lanjut <i class="fas fa-arrow-right"></i>
@@ -166,7 +174,7 @@
             <h3 style="margin-bottom: var(--space-6); text-align: center; color: var(--text-secondary);">
                 Detail Rapat
             </h3>
-            
+
             <!-- Internal Departemen -->
             <div id="fields_internal_dept" class="dynamic-fields" style="display: none;">
                 <div class="form-group">
@@ -195,7 +203,7 @@
                     <textarea name="fokus_bahasan_internal" class="form-control" placeholder="Tuliskan fokus pembahasan rapat..." rows="3"></textarea>
                 </div>
             </div>
-            
+
             <!-- Rapat Perdana -->
             <div id="fields_perdana" class="dynamic-fields" style="display: none;">
                 <div class="form-group">
@@ -203,7 +211,7 @@
                     <input type="text" name="nama_event_perdana" class="form-control" placeholder="Contoh: Rapat Perdana Kabinet">
                 </div>
             </div>
-            
+
             <!-- Kepanitiaan -->
             <div id="fields_kepanitiaan" class="dynamic-fields" style="display: none;">
                 <div class="form-group">
@@ -254,7 +262,7 @@
                     <textarea name="fokus_bahasan_kepanitiaan" class="form-control" placeholder="Tuliskan agenda rapat..." rows="3"></textarea>
                 </div>
             </div>
-            
+
             <!-- Lintas Departemen -->
             <div id="fields_lintas_dept" class="dynamic-fields" style="display: none;">
                 <div class="form-group">
@@ -273,7 +281,64 @@
                     <textarea name="fokus_bahasan_lintas" class="form-control" placeholder="Tuliskan agenda rapat lintas departemen..." rows="3"></textarea>
                 </div>
             </div>
-            
+
+            <!-- Kegiatan -->
+            <div id="fields_kegiatan" class="dynamic-fields" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">Sumber Nama Kegiatan <span class="required">*</span></label>
+                    <div class="segmented-control">
+                        <label class="segmented-option">
+                            <input type="radio" name="sumber_nama_kegiatan" value="manual" onchange="toggleSumberKegiatan('manual')" checked>
+                            <span class="segmented-btn">
+                                <i class="fas fa-pen"></i>
+                                <span>Bikin / Ketik Sendiri</span>
+                            </span>
+                        </label>
+                        <label class="segmented-option">
+                            <input type="radio" name="sumber_nama_kegiatan" value="event" onchange="toggleSumberKegiatan('event')">
+                            <span class="segmented-btn">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Ambil dari Event</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group" id="groupNamaKegiatanManual">
+                    <label class="form-label">Nama Kegiatan <span class="required">*</span></label>
+                    <input type="text" name="nama_event_kegiatan" id="namaEventKegiatan" class="form-control" placeholder="Contoh: Makrab HIMA TI, Workshop UI/UX, Buka Bersama">
+                </div>
+
+                <div class="form-group" id="groupNamaKegiatanEvent" style="display: none;">
+                    <label class="form-label">Pilih Event Terdaftar <span class="required">*</span></label>
+                    <select name="kegiatan_event_id" id="selectKegiatanEvent" class="form-control" onchange="onKegiatanEventSelect(this)" disabled>
+                        <option value="">— Pilih Event —</option>
+                        @foreach ($activeEvents ?? $events as $event)
+                            <option value="{{ $event->id }}" data-nama="{{ $event->nama_event }}">{{ $event->nama_event }}</option>
+                        @endforeach
+                    </select>
+                    <small class="form-hint" style="color: var(--text-muted); margin-top: 4px; display: block;">
+                        <i class="fas fa-info-circle"></i> Nama kegiatan akan otomatis menggunakan nama event yang dipilih.
+                    </small>
+                </div>
+
+                <!-- Info Banner: Peserta Bebas & Tanpa SP -->
+                <div class="kegiatan-info-banner" style="background: rgba(245, 158, 11, 0.08); border: 1.5px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: var(--space-4); display: flex; align-items: flex-start; gap: 12px;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(245, 158, 11, 0.2); color: #d97706; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">
+                        <strong style="color: var(--text-primary); display: block; margin-bottom: 2px;">Peserta: Terbuka untuk Seluruh Anggota</strong>
+                        Siapa pun anggota dibebaskan untuk presensi (foto selfie di lokasi kegiatan / screenshot on-cam). Anggota yang tidak hadir <strong style="color: #10b981;">bebas sanksi SP (tidak dihitung Alpha)</strong>.
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Deskripsi / Keterangan Kegiatan (Opsional)</label>
+                    <textarea name="fokus_bahasan_kegiatan" class="form-control" placeholder="Tuliskan catatan, lokasi kumpul, atau instruksi kegiatan..." rows="3"></textarea>
+                </div>
+            </div>
+
             <!-- Common: Tanggal & Waktu -->
             <div class="meeting-datetime-grid">
                 <div class="form-group">
@@ -285,7 +350,7 @@
                     <input type="time" name="waktu_mulai" class="form-control" value="{{ date('H:i') }}" required>
                 </div>
             </div>
-            
+
             <div class="step-nav-actions">
                 <button type="button" class="btn btn-secondary" onclick="prevStep(2)">
                     <i class="fas fa-arrow-left"></i> Kembali
@@ -301,7 +366,7 @@
             <h3 style="margin-bottom: var(--space-6); text-align: center; color: var(--text-primary); font-weight: 700;">
                 <i class="fas fa-broadcast-tower text-primary" style="margin-right: 8px;"></i>Pilih Mode Rapat
             </h3>
-            
+
             <div class="mode-selection">
                 <div class="mode-card selected" data-mode="offline" onclick="selectMode('offline', this)">
                     <div class="mode-icon"><i class="fas fa-qrcode"></i></div>
@@ -336,7 +401,7 @@
                     </small>
                 </div>
             </div>
-            
+
             <div class="step-nav-actions">
                 <button type="button" class="btn btn-secondary" onclick="prevStep(3)">
                     <i class="fas fa-arrow-left"></i> Kembali
@@ -360,11 +425,11 @@
                     Periksa kembali data rapat sebelum disimpan dan disebarkan ke peserta
                 </p>
             </div>
-            
+
             <div id="confirmGrid" style="margin-bottom: var(--space-6);">
                 <!-- Populated dynamically by public-meeting.js -->
             </div>
-            
+
             <div class="step-nav-actions">
                 <button type="button" class="btn btn-secondary" onclick="prevStep(4)">
                     <i class="fas fa-arrow-left"></i> Kembali
@@ -380,5 +445,34 @@
         window.DEPARTEMEN_LABELS = {!! json_encode(config('himati.departments', [])) !!};
     </script>
     <script src="{{ asset('assets/js/public-meeting.js') }}?v={{ file_exists(public_path('assets/js/public-meeting.js')) ? filemtime(public_path('assets/js/public-meeting.js')) : time() }}"></script>
+    <script>
+        function toggleSumberKegiatan(val) {
+            const groupManual = document.getElementById('groupNamaKegiatanManual');
+            const groupEvent = document.getElementById('groupNamaKegiatanEvent');
+            const inputManual = document.getElementById('namaEventKegiatan');
+            const selectEvent = document.getElementById('selectKegiatanEvent');
+
+            if (val === 'event') {
+                if (groupManual) groupManual.style.display = 'none';
+                if (groupEvent) groupEvent.style.display = 'block';
+                if (inputManual) inputManual.disabled = true;
+                if (selectEvent) selectEvent.disabled = false;
+            } else {
+                if (groupManual) groupManual.style.display = 'block';
+                if (groupEvent) groupEvent.style.display = 'none';
+                if (inputManual) inputManual.disabled = false;
+                if (selectEvent) selectEvent.disabled = true;
+            }
+            if (typeof saveMeetingDraft === 'function') {
+                saveMeetingDraft();
+            }
+        }
+
+        function onKegiatanEventSelect(el) {
+            if (typeof saveMeetingDraft === 'function') {
+                saveMeetingDraft();
+            }
+        }
+    </script>
 </div>
 @endsection

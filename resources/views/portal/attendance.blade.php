@@ -94,6 +94,7 @@
                     $methodLabel = match($attendance->scan_method) {
                         'qr_scan' => 'Scan QR',
                         'online_link' => 'Online',
+                        'foto_kegiatan' => 'Foto Kegiatan',
                         'absent_form' => 'Form Izin',
                         default => 'Presensi',
                     };
@@ -171,6 +172,7 @@
                                     @switch($attendance->scan_method)
                                         @case('qr_scan') Scan QR @break
                                         @case('online_link') Link Online @break
+                                        @case('foto_kegiatan') Foto Kegiatan @break
                                         @case('absent_form') Form Izin @break
                                         @default Manual @break
                                     @endswitch

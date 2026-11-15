@@ -29,19 +29,32 @@ class PublicMeetingController extends Controller
 
     public function index()
     {
-        $allMembers = cache()->remember('active_members_for_meeting', 300, function () {
+        // Cache disimpan sebagai array atribut mentah (bukan objek Eloquent), karena
+        // cache.serializable_classes = false memblokir unserialize objek di Laravel 13.
+        $allMembers = Member::hydrate(cache()->remember('active_members_for_meeting_rows', 300, function () {
             return Member::select(['id', 'nama_lengkap', 'departemen', 'jabatan', 'email', 'profile_photo'])
                 ->orderBy('departemen')
                 ->orderBy('nama_lengkap')
-                ->get();
-        });
+                ->get()
+                ->map(fn (Member $member) => $member->getAttributes())
+                ->all();
+        }));
         $usersByDept = $allMembers->groupBy('departemen');
         $departments = config('himati.departments', []);
         $loggedMember = auth('member')->user();
         $loggedAdmin = auth('web')->user();
 
-        // Jika pengurus biasa (bukan admin), hanya tampilkan event di mana pengurus terdaftar sebagai panitia
-        if ($loggedMember && ! $loggedAdmin) {
+        $activeEvents = Event::hydrate(cache()->remember('active_events_for_meeting_rows', 300, function () {
+            return Event::select(['id', 'nama_event', 'status'])
+                ->where('status', 'active')
+                ->orderBy('nama_event')
+                ->get()
+                ->map(fn (Event $event) => $event->getAttributes())
+                ->all();
+        }));
+
+        // Jika pengurus biasa (bukan admin dan bukan BPH Inti), hanya tampilkan event di mana pengurus terdaftar sebagai panitia
+        if ($loggedMember && ! $loggedAdmin && ! $loggedMember->isBphInti()) {
             $myEventIds = EventMember::where('user_id', $loggedMember->id)->pluck('event_id')->unique()->all();
             $events = Event::select(['id', 'nama_event', 'status'])
                 ->where('status', 'active')
@@ -49,12 +62,7 @@ class PublicMeetingController extends Controller
                 ->orderBy('nama_event')
                 ->get();
         } else {
-            $events = cache()->remember('active_events_for_meeting', 300, function () {
-                return Event::select(['id', 'nama_event', 'status'])
-                    ->where('status', 'active')
-                    ->orderBy('nama_event')
-                    ->get();
-            });
+            $events = $activeEvents;
         }
 
         return view('public.meeting_create', compact(
@@ -62,6 +70,7 @@ class PublicMeetingController extends Controller
             'usersByDept',
             'departments',
             'events',
+            'activeEvents',
             'loggedMember',
             'loggedAdmin'
         ));
@@ -70,8 +79,9 @@ class PublicMeetingController extends Controller
     public function store(Request $request)
     {
         $rules = [
-            'jenis_rapat' => ['required', 'in:internal_dept,perdana,kepanitiaan,bph,lintas_dept'],
+            'jenis_rapat' => ['required', 'in:internal_dept,perdana,kepanitiaan,bph,lintas_dept,kegiatan'],
             'mode_rapat' => ['required', 'in:offline,online'],
+            'kategori' => ['nullable', 'in:rapat,kegiatan'],
             'tanggal' => ['required', 'date'],
             'waktu_mulai' => ['required'],
             'waktu_selesai' => ['nullable', 'string'],
@@ -93,6 +103,7 @@ class PublicMeetingController extends Controller
 
         $jenisRapat = $request->input('jenis_rapat');
         $modeRapat = $request->input('mode_rapat', 'offline');
+        $kategori = ($jenisRapat === 'kegiatan' || $request->input('kategori') === 'kegiatan') ? 'kegiatan' : 'rapat';
 
         $departemen = null;
         $namaEvent = null;
@@ -155,6 +166,30 @@ class PublicMeetingController extends Controller
                     return back()->withInput()->with('danger', 'Agenda bahasan wajib diisi.');
                 }
                 break;
+
+            case 'kegiatan':
+                $sumberNama = $request->input('sumber_nama_kegiatan', 'manual');
+                if ($sumberNama === 'event' && $request->filled('kegiatan_event_id')) {
+                    $eventId = (int) $request->input('kegiatan_event_id');
+                    $ev = Event::find($eventId);
+                    if ($ev) {
+                        $namaEvent = $ev->nama_event;
+                    } else {
+                        return back()->withInput()->with('danger', 'Event yang dipilih tidak ditemukan.');
+                    }
+                } else {
+                    $namaEvent = $request->input('nama_event_kegiatan');
+                    $eventId = null;
+                }
+
+                if (! $namaEvent) {
+                    return back()->withInput()->with('danger', 'Nama kegiatan wajib diisi atau dipilih dari event.');
+                }
+
+                $fokusBahasan = $request->input('fokus_bahasan_kegiatan') ?: $namaEvent;
+                // Target peserta selalu seluruh anggota (dibebaskan siapa pun boleh absen & tanpa sanksi SP)
+                $departemen = null;
+                break;
         }
 
         $creator = Member::find($createdBy);
@@ -177,13 +212,14 @@ class PublicMeetingController extends Controller
         $absentLink = Str::lower(Str::random(12));
 
         $meeting = DB::transaction(function () use (
-            $createdBy, $jenisRapat, $modeRapat, $eventId, $departemen, $namaEvent,
+            $createdBy, $jenisRapat, $kategori, $modeRapat, $eventId, $departemen, $namaEvent,
             $divisiRapat, $tipeDivisi, $fokusBahasan, $departemenCollab,
             $request, $uniqueLink, $absentLink
         ) {
             $m = Meeting::create([
                 'created_by' => $createdBy,
                 'jenis_rapat' => $jenisRapat,
+                'kategori' => $kategori,
                 'mode_rapat' => $modeRapat,
                 'event_id' => $eventId,
                 'departemen' => $departemen,
@@ -250,11 +286,16 @@ class PublicMeetingController extends Controller
                     }
                     $memberIds = $query->pluck('id');
                     break;
+
+                case 'kegiatan':
+                    $memberIds = Member::pluck('id');
+                    break;
             }
 
             $now = now();
             $attendanceRecords = [];
             $hasCreatorAttended = false;
+            $isKegiatan = ($kategori === 'kegiatan' || $jenisRapat === 'kegiatan');
             foreach ($memberIds as $mId) {
                 $isCreator = ($m->created_by && (int) $mId === (int) $m->created_by);
                 if ($isCreator) {
@@ -267,6 +308,7 @@ class PublicMeetingController extends Controller
                     'status' => $isCreator ? 'hadir' : 'alpha',
                     'scanned_at' => $isCreator ? $now : null,
                     'scan_method' => $isCreator ? 'manual' : 'qr_scan',
+                    'sp_ignored' => $isKegiatan ? 1 : 0,
                     'exp_awarded' => $isCreator,
                     'created_at' => $now,
                 ];

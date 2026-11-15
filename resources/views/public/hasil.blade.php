@@ -381,7 +381,11 @@
     <!-- Primary Action: Open Scanner, Online Attend, or Finish Meeting -->
     <div style="display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap;">
         @if ($meeting->status === 'scanning' || $meeting->status === 'draft')
-            @if ($meeting->mode_rapat === 'offline')
+            @if ($meeting->isKegiatan())
+                <a href="{{ $onlineUrl }}" target="_blank" class="btn btn-primary btn-lg" style="display: inline-flex; align-items: center; gap: 10px; padding: 14px 28px; font-size: var(--font-base);">
+                    <i class="fas fa-camera"></i> Buka Presensi Foto Kegiatan
+                </a>
+            @elseif ($meeting->mode_rapat === 'offline')
                 <a href="{{ $scanUrl }}" class="btn btn-primary btn-lg" style="display: inline-flex; align-items: center; gap: 10px; padding: 14px 28px; font-size: var(--font-base);">
                     <i class="fas fa-qrcode"></i> Buka Scanner Kamera
                 </a>
@@ -435,12 +439,12 @@
 <div class="card mb-6">
     <h3 class="card-title mb-4"><i class="fas fa-share-alt"></i> Link Absensi untuk Dibagikan</h3>
 
-    @if ($meeting->mode_rapat === 'online')
-        <!-- Rapat Online: 1 Link Rapat Tunggal -->
+    @if ($meeting->isKegiatan() || $meeting->mode_rapat === 'online')
+        <!-- Link Presensi Mandiri (Kegiatan / Online) -->
         <div>
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px;">
                 <label class="form-label" style="font-size: var(--font-xs); color: var(--info); font-weight: 600; margin: 0;">
-                    <i class="fas fa-globe"></i> Link Presensi Rapat Online (Bagikan ke Seluruh Peserta)
+                    <i class="fas {{ $meeting->isKegiatan() ? 'fa-camera text-warning' : 'fa-globe text-primary' }}"></i> Link Presensi {{ $meeting->isKegiatan() ? 'Kegiatan (Foto Kehadiran / Izin / Sakit)' : 'Rapat Online (Bagikan ke Seluruh Peserta)' }}
                 </label>
                 @if($meeting->status === 'scanning')
                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -454,7 +458,9 @@
                 @endif
             </div>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0 0 var(--space-2);">
-                Peserta dapat langsung mengisi absensi (Hadir, Izin, atau Sakit beserta bukti) melalui link tunggal ini sebelum batas waktu berakhir.
+                {{ $meeting->isKegiatan()
+                    ? 'Peserta dapat membuka link ini (atau langsung dari akun/dashboard portal masing-masing) untuk mengunggah foto kehadiran kegiatan atau mengajukan izin/sakit.'
+                    : 'Peserta dapat langsung mengisi absensi (Hadir, Izin, atau Sakit beserta bukti) melalui link tunggal ini sebelum batas waktu berakhir.' }}
             </p>
             <div class="share-link-box">
                 <input type="text" value="{{ $onlineUrl }}" readonly id="onlineLinkInput">
@@ -639,6 +645,8 @@
                                             📷 QR Scanner
                                         @elseif($a->scan_method === 'online_link')
                                             🌐 Online Link
+                                        @elseif($a->scan_method === 'foto_kegiatan')
+                                            📸 Foto Kegiatan
                                         @else
                                             ✍️ Manual
                                         @endif
@@ -688,8 +696,13 @@
 <!-- Meeting Info Card -->
 <div class="card mb-6">
     <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-info-circle"></i> Ringkasan Rapat</h3>
-        <span class="badge badge-primary">{{ $meeting->jenis_label }}</span>
+        <h3 class="card-title"><i class="fas fa-info-circle"></i> Ringkasan {{ $meeting->isKegiatan() ? 'Kegiatan' : 'Rapat' }}</h3>
+        <div>
+            @if($meeting->isKegiatan())
+                <span class="badge badge-warning" style="margin-right: 4px;"><i class="fas fa-camera"></i> Kegiatan</span>
+            @endif
+            <span class="badge badge-primary">{{ $meeting->jenis_label }}</span>
+        </div>
     </div>
     
     <div class="meeting-info-grid">
@@ -946,6 +959,7 @@
                     let methodLabel = '✍️ Manual';
                     if (item.scan_method === 'qr_scan') methodLabel = '📷 QR Scanner';
                     else if (item.scan_method === 'online_link') methodLabel = '🌐 Online Link';
+                    else if (item.scan_method === 'foto_kegiatan') methodLabel = '📸 Foto Kegiatan';
 
                     timeHtml = `
                         <div style="font-weight: 600; color: var(--text-primary); font-size: 0.85rem;">

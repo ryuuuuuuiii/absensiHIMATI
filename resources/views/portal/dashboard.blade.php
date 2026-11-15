@@ -389,6 +389,7 @@
                                     default => 'cat-default',
                                 };
                                 $isOnline = $attendance->meeting->mode_rapat === 'online';
+                                $isKegiatan = $attendance->meeting->isKegiatan();
                                 $isScanning = $attendance->meeting->status === 'scanning';
                             @endphp
                             <div class="meeting-item-card is-pending">
@@ -406,7 +407,7 @@
                                 </div>
 
                                 <div class="meeting-card-meta">
-                                    <span class="meeting-meta-cat {{ $catClass }}">{{ $catLabel }}</span>
+                                    <span class="meeting-meta-cat {{ $catClass }}">{{ $isKegiatan ? 'Kegiatan · ' : '' }}{{ $catLabel }}</span>
                                     <span class="meta-dot">&bull;</span>
                                     <span>{{ $attendance->meeting->tanggal->locale('id')->translatedFormat('d M Y') }}, {{ substr($attendance->meeting->waktu_mulai, 0, 5) }} WITA</span>
                                     <span class="meta-dot">&bull;</span>
@@ -416,7 +417,11 @@
                                 </div>
 
                                 <div class="meeting-card-actions">
-                                    @if ($isOnline && $isScanning)
+                                    @if ($isKegiatan && $isScanning)
+                                        <a href="{{ route('public.online', $attendance->meeting->unique_link) }}" class="btn-chip btn-chip-green" title="Unggah foto kehadiran kegiatan">
+                                            <i class="fas fa-camera"></i> Foto Hadir
+                                        </a>
+                                    @elseif ($isOnline && $isScanning)
                                         <form action="{{ route('portal.presence.store', $attendance->id) }}" method="POST" style="margin: 0;">
                                             @csrf
                                             <button type="submit" class="btn-chip btn-chip-green" onclick="return confirm('Catat kehadiran Anda pada rapat online ini?')">
@@ -454,11 +459,12 @@
                                 @if ($attendance->meeting)
                                     @php
                                         $isOnline = $attendance->meeting->mode_rapat === 'online';
+                                        $isKegiatan = $attendance->meeting->isKegiatan();
                                         $isScanning = $attendance->meeting->status === 'scanning';
                                     @endphp
                                     <tr>
                                         <td>
-                                            <div style="font-weight: 700; color: var(--text-primary);">{{ $attendance->meeting->jenis_label }}</div>
+                                            <div style="font-weight: 700; color: var(--text-primary);">{{ $isKegiatan ? 'Kegiatan' : $attendance->meeting->jenis_label }}</div>
                                             <small style="color: var(--text-muted);">
                                                 {{ $attendance->meeting->fokus_bahasan ?? $attendance->meeting->nama_event ?? '-' }}
                                             </small>
@@ -482,7 +488,11 @@
                                         </td>
                                         <td style="text-align: right;">
                                             <div style="display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; justify-content: flex-end;">
-                                                @if ($isOnline && $isScanning)
+                                                @if ($isKegiatan && $isScanning)
+                                                    <a href="{{ route('public.online', $attendance->meeting->unique_link) }}" class="btn btn-sm btn-success" title="Unggah foto kehadiran kegiatan">
+                                                        <i class="fas fa-camera"></i> Foto Hadir
+                                                    </a>
+                                                @elseif ($isOnline && $isScanning)
                                                     <form action="{{ route('portal.presence.store', $attendance->id) }}" method="POST" style="margin: 0; display: inline;">
                                                         @csrf
                                                         <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Catat kehadiran Anda pada rapat online ini?')">
@@ -560,7 +570,7 @@
                                 </div>
 
                                 <div class="meeting-card-meta">
-                                    <span class="meeting-meta-cat {{ $catClass }}">{{ $catLabel }}</span>
+                                    <span class="meeting-meta-cat {{ $catClass }}">{{ $isKegiatan ? 'Kegiatan · ' : '' }}{{ $catLabel }}</span>
                                     <span class="meta-dot">&bull;</span>
                                     <span>{{ $attendance->meeting->tanggal->locale('id')->translatedFormat('d M Y') }}, {{ substr($attendance->meeting->waktu_mulai, 0, 5) }} WITA</span>
                                     <span class="meta-dot">&bull;</span>
@@ -654,6 +664,7 @@
                         $methodLabel = match($attendance->scan_method) {
                             'qr_scan' => 'Scan QR',
                             'online_link' => 'Online',
+                            'foto_kegiatan' => 'Foto Kegiatan',
                             'absent_form' => 'Form Izin',
                             default => 'Presensi',
                         };

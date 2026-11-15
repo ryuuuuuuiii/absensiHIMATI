@@ -292,7 +292,7 @@
                             </div>
                             <div style="margin-top: 3px;">
                                 <span class="badge badge-secondary" style="font-size: 10px; font-weight: 500;">
-                                    {{ $a->scan_method === 'qr_scan' ? '📷 Scanner QR' : ($a->scan_method === 'online_link' ? '🌐 Online' : '✍️ Manual') }}
+                                    {{ $a->scan_method === 'qr_scan' ? '📷 Scanner QR' : ($a->scan_method === 'online_link' ? '🌐 Online' : ($a->scan_method === 'foto_kegiatan' ? '📸 Foto Kegiatan' : '✍️ Manual')) }}
                                 </span>
                             </div>
                         @else

@@ -841,6 +841,39 @@
     border-color: #3B82F6 !important;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4) !important;
 }
+
+[data-theme="dark"] .profile-center-card::before {
+    background: linear-gradient(135deg, rgba(48, 175, 255, 0.22) 0%, rgba(14, 34, 56, 0.9) 100%) !important;
+    border-bottom: 2px solid rgba(48, 175, 255, 0.35) !important;
+}
+
+[data-theme="dark"] .profile-avatar-large {
+    background: #0E2238 !important;
+    border-color: #30AFFF !important;
+    box-shadow: 0 5px 0 #000000 !important;
+}
+
+[data-theme="dark"] .profile-avatar-edit-badge {
+    background: #30AFFF !important;
+    color: #061A2E !important;
+    border-color: #30AFFF !important;
+    box-shadow: 0 3px 0 #000000 !important;
+}
+
+[data-theme="dark"] .profile-name {
+    color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .profile-qr-badge {
+    background: #0E2238 !important;
+    border-color: rgba(48, 175, 255, 0.35) !important;
+    color: #92EEFF !important;
+    box-shadow: 0 2px 0 #000000 !important;
+}
+
+[data-theme="dark"] .profile-qr-badge code {
+    color: #38BDF8 !important;
+}
 </style>
 
 <div class="profile-wrapper">
@@ -936,30 +969,6 @@
 
         <div class="profile-qr-badge">
             <i class="fas fa-qrcode"></i> ID Anggota: <code>{{ $member->qr_code }}</code>
-        </div>
-
-        <!-- Pilihan Mode Tampilan (Theme Switcher) -->
-        <div class="profile-theme-box">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-palette text-primary"></i> Mode Tampilan
-                </div>
-                <small style="color: var(--text-muted); font-size: 0.72rem;">Pilih tema portal</small>
-            </div>
-            <div class="theme-segmented-group">
-                <button type="button" class="theme-option-btn" data-theme-option="light" onclick="setAppTheme('light')">
-                    <i class="fas fa-sun" style="color: #F59E0B;"></i>
-                    <span>Terang</span>
-                </button>
-                <button type="button" class="theme-option-btn" data-theme-option="dark" onclick="setAppTheme('dark')">
-                    <i class="fas fa-moon" style="color: #30AFFF;"></i>
-                    <span>Gelap</span>
-                </button>
-                <button type="button" class="theme-option-btn" data-theme-option="auto" onclick="setAppTheme('auto')">
-                    <i class="fas fa-mobile-alt"></i>
-                    <span>Sistem HP</span>
-                </button>
-            </div>
         </div>
 
         <!-- Tombol Aksi: Klik untuk Membuka Form Edit / Password -->

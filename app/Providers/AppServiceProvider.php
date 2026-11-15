@@ -58,29 +58,23 @@ class AppServiceProvider extends ServiceProvider
                 $portalMember = auth('member')->user();
                 app(SpService::class)->ensureActiveSpNotification($portalMember);
 
-                [$portalAnnouncements, $portalUnreadNotifCount] = cache()->remember(
-                    "portal_layout_notifs_{$portalMember->id}",
-                    30,
-                    function () use ($portalMember) {
-                        $announcements = Announcement::active()
-                            ->forMember($portalMember)
-                            ->with(['admin', 'reads' => function ($q) use ($portalMember) {
-                                $q->where('user_id', $portalMember->id);
-                            }])
-                            ->orderBy('pinned', 'desc')
-                            ->orderBy('created_at', 'desc')
-                            ->take(10)
-                            ->get();
+                // Tidak di-cache: objek Eloquent tidak bisa di-unserialize dari cache
+                // (cache.serializable_classes = false di Laravel 13), dan query ini ringan (maks 10 baris).
+                $portalAnnouncements = Announcement::active()
+                    ->forMember($portalMember)
+                    ->with(['admin', 'reads' => function ($q) use ($portalMember) {
+                        $q->where('user_id', $portalMember->id);
+                    }])
+                    ->orderBy('pinned', 'desc')
+                    ->orderBy('created_at', 'desc')
+                    ->take(10)
+                    ->get();
 
-                        $unreadCount = $announcements->filter(function ($a) {
-                            $read = $a->reads->first();
+                $portalUnreadNotifCount = $portalAnnouncements->filter(function ($a) {
+                    $read = $a->reads->first();
 
-                            return ! ($read && $read->read_at);
-                        })->count();
-
-                        return [$announcements, $unreadCount];
-                    }
-                );
+                    return ! ($read && $read->read_at);
+                })->count();
 
                 $view->with('portalAnnouncements', $portalAnnouncements)
                     ->with('portalUnreadNotifCount', $portalUnreadNotifCount);

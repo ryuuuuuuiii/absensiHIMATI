@@ -85,15 +85,25 @@ class PublicAttendanceController extends Controller
         $status = $request->input('status');
         $isProofRequired = ($status === 'hadir' || ! $status) && ! $hasExistingProof;
 
+        $isFaceRequired = $meeting->isKegiatan() && $meeting->mode_rapat === 'offline' && $status === 'hadir';
+
+        $proofMessage = match (true) {
+            $meeting->isKegiatan() && $meeting->mode_rapat === 'offline' => 'Foto kehadiran di lokasi kegiatan (wajah Anda harus terlihat jelas) wajib diunggah.',
+            $meeting->isKegiatan() => 'Screenshot Zoom/Google Meet dengan kamera menyala (wajah terlihat) wajib diunggah.',
+            default => 'Foto bukti dokumentasi rapat online (screenshot Google Meet/Zoom atau foto kehadiran) wajib diunggah.',
+        };
+
         $request->validate([
             'status' => ['required', 'in:hadir,izin,sakit'],
             'keterangan' => ['nullable', 'string', 'max:255'],
             'bukti_foto' => [$isProofRequired ? 'required' : 'nullable', 'image', 'max:5120'], // 5MB
+            'konfirmasi_wajah' => [$isFaceRequired ? 'accepted' : 'nullable'],
         ], [
             'status.required' => 'Status kehadiran wajib dipilih.',
-            'bukti_foto.required' => 'Foto bukti dokumentasi rapat online (screenshot Google Meet/Zoom atau foto kehadiran) wajib diunggah.',
+            'bukti_foto.required' => $proofMessage,
             'bukti_foto.image' => 'File bukti dokumentasi harus berupa file gambar (JPG, PNG, JPEG, dll.).',
             'bukti_foto.max' => 'Ukuran file foto bukti dokumentasi maksimal 5MB.',
+            'konfirmasi_wajah.accepted' => 'Centang pernyataan bahwa wajah Anda terlihat jelas pada foto.',
         ]);
 
         $status = $request->input('status');
@@ -103,8 +113,12 @@ class PublicAttendanceController extends Controller
             'status' => $status,
             'keterangan' => $keterangan,
             'scanned_at' => now(),
-            'scan_method' => 'online_link',
+            'scan_method' => $meeting->isKegiatan() ? 'foto_kegiatan' : 'online_link',
         ];
+
+        if ($meeting->isKegiatan()) {
+            $data['sp_ignored'] = true;
+        }
 
         if ($request->hasFile('bukti_foto')) {
             $file = $request->file('bukti_foto');
@@ -132,7 +146,9 @@ class PublicAttendanceController extends Controller
             }
         }
 
-        return back()->with('success', 'Presensi online berhasil dicatat atas nama '.$member->nama_lengkap.'!'.$expNotice.' Terima kasih.'.$member->sp_attendance_notice);
+        $successLabel = $meeting->isKegiatan() ? 'Presensi kegiatan' : 'Presensi online';
+
+        return back()->with('success', $successLabel.' berhasil dicatat atas nama '.$member->nama_lengkap.'!'.$expNotice.' Terima kasih.'.$member->sp_attendance_notice);
     }
 
     public function absentForm($absentLink)
@@ -208,6 +224,10 @@ class PublicAttendanceController extends Controller
             'scanned_at' => now(),
             'scan_method' => 'absent_form',
         ];
+
+        if ($meeting->isKegiatan()) {
+            $data['sp_ignored'] = true;
+        }
 
         if ($request->hasFile('bukti_foto')) {
             $file = $request->file('bukti_foto');

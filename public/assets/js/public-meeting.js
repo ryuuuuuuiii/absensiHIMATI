@@ -149,6 +149,23 @@ function validateStep2() {
                 return false;
             }
             break;
+        case 'kegiatan': {
+            const sumber = document.querySelector('[name="sumber_nama_kegiatan"]:checked')?.value || 'manual';
+            if (sumber === 'event') {
+                const selectEvent = document.getElementById('selectKegiatanEvent');
+                if (!selectEvent || !selectEvent.value) {
+                    showToast('warning', 'Peringatan', 'Silakan pilih event untuk kegiatan ini.');
+                    return false;
+                }
+            } else {
+                const namaInput = document.getElementById('namaEventKegiatan');
+                if (!namaInput || !namaInput.value.trim()) {
+                    showToast('warning', 'Peringatan', 'Silakan isi nama kegiatan.');
+                    return false;
+                }
+            }
+            break;
+        }
     }
     
     if (!document.querySelector('[name="tanggal"]').value || !document.querySelector('[name="waktu_mulai"]').value) {
@@ -170,6 +187,38 @@ function selectRapatType(jenis, card) {
     if (jenisInput) jenisInput.value = jenis;
     const err = document.getElementById('step1Error');
     if (err) err.style.display = 'none';
+
+    // Otomatis sinkronkan kategori: kegiatan vs rapat
+    const isKegiatan = (jenis === 'kegiatan');
+    const kategoriInput = document.getElementById('kategoriInput');
+    if (kategoriInput) {
+        kategoriInput.value = isKegiatan ? 'kegiatan' : 'rapat';
+    }
+
+    // Update deskripsi mode card (Step 3) & teks tombol submit
+    const offlineCard = document.querySelector('.mode-card[data-mode="offline"]');
+    const onlineCard = document.querySelector('.mode-card[data-mode="online"]');
+    if (offlineCard) {
+        const titleEl = offlineCard.querySelector('.mode-title');
+        const descEl = offlineCard.querySelector('.mode-desc');
+        if (titleEl) titleEl.textContent = isKegiatan ? 'Presensi di Lokasi (Offline)' : 'Rapat Tatap Muka (Offline)';
+        if (descEl) descEl.textContent = isKegiatan
+            ? 'Peserta hadir langsung & presensi dengan berfoto di lokasi kegiatan (verifikasi wajah)'
+            : 'Presensi menggunakan Scanner Kamera QR Code atau tanda tangan kehadiran';
+    }
+    if (onlineCard) {
+        const titleEl = onlineCard.querySelector('.mode-title');
+        const descEl = onlineCard.querySelector('.mode-desc');
+        if (titleEl) titleEl.textContent = isKegiatan ? 'Presensi Virtual (Online)' : 'Rapat Daring (Online)';
+        if (descEl) descEl.textContent = isKegiatan
+            ? 'Peserta hadir online & presensi dengan tangkapan layar (foto) saat on-cam di Zoom/GMeet'
+            : 'Presensi mandiri jarak jauh via tautan absensi khusus anggota';
+    }
+
+    const submitBtn = document.getElementById('btnSubmit');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> ' + (isKegiatan ? 'Buat Sesi Kegiatan Sekarang' : 'Buat Rapat Sekarang');
+    }
     
     document.querySelectorAll('.dynamic-fields').forEach(f => f.style.display = 'none');
     const fieldGroup = document.getElementById('fields_' + jenis);
@@ -187,7 +236,7 @@ function selectRapatType(jenis, card) {
 }
 
 function selectMode(mode, card) {
-    document.querySelectorAll('.mode-selection .mode-card').forEach(c => {
+    document.querySelectorAll('.mode-selection:not(.kategori-selection) .mode-card').forEach(c => {
         c.classList.remove('selected');
         c.classList.remove('active');
     });
@@ -443,6 +492,9 @@ function populateConfirmation() {
     const { name: creatorName, role: creatorJabatan, dept: creatorDept, initials } = parseCreatorInfo(creatorOpt);
 
     // 2. Jenis Rapat & Mode
+    const katEl = document.getElementById('kategoriInput');
+    const isKegiatan = katEl && katEl.value === 'kegiatan';
+    const katBadge = isKegiatan ? '<span class="badge badge-warning" style="margin-right: 6px;"><i class="fas fa-camera"></i> Kegiatan</span>' : '';
     const jenisLabel = (typeof JENIS_RAPAT_LABELS !== 'undefined' && JENIS_RAPAT_LABELS[selectedJenis]) ? JENIS_RAPAT_LABELS[selectedJenis] : selectedJenis;
 
     const jenisIcons = {
@@ -450,13 +502,18 @@ function populateConfirmation() {
         'perdana': 'fa-flag',
         'kepanitiaan': 'fa-calendar-check',
         'bph': 'fa-crown',
-        'lintas_dept': 'fa-people-arrows'
+        'lintas_dept': 'fa-people-arrows',
+        'kegiatan': 'fa-camera'
     };
     const jenisIcon = jenisIcons[selectedJenis] || 'fa-layer-group';
 
-    const modeHtml = selectedMode === 'offline'
-        ? `<span class="confirm-hero-mode offline"><span class="confirm-mode-dot"></span><i class="fas fa-qrcode"></i> Offline (Scan QR)</span>`
-        : `<span class="confirm-hero-mode online"><span class="confirm-mode-dot"></span><i class="fas fa-globe"></i> Online (Link Presensi)</span>`;
+    const modeHtml = isKegiatan
+        ? (selectedMode === 'offline'
+            ? `<span class="confirm-hero-mode offline"><span class="confirm-mode-dot"></span><i class="fas fa-camera"></i> Offline (Foto Wajah Lokasi)</span>`
+            : `<span class="confirm-hero-mode online"><span class="confirm-mode-dot"></span><i class="fas fa-video"></i> Online (Screenshot Kamera On)</span>`)
+        : (selectedMode === 'offline'
+            ? `<span class="confirm-hero-mode offline"><span class="confirm-mode-dot"></span><i class="fas fa-qrcode"></i> Offline (Scan QR)</span>`
+            : `<span class="confirm-hero-mode online"><span class="confirm-mode-dot"></span><i class="fas fa-globe"></i> Online (Link Presensi)</span>`);
 
     // 3. Tanggal & Waktu
     const tanggal = document.querySelector('[name="tanggal"]')?.value || '';
@@ -591,6 +648,33 @@ function populateConfirmation() {
             `;
             break;
         }
+        case 'kegiatan': {
+            const sumber = document.querySelector('[name="sumber_nama_kegiatan"]:checked')?.value || 'manual';
+            let namaKegiatan = 'Kegiatan HIMA TI';
+            if (sumber === 'event') {
+                const selectEvent = document.getElementById('selectKegiatanEvent');
+                if (selectEvent && selectEvent.selectedIndex >= 0 && selectEvent.value) {
+                    namaKegiatan = selectEvent.options[selectEvent.selectedIndex].text;
+                }
+            } else {
+                namaKegiatan = document.getElementById('namaEventKegiatan')?.value.trim() || 'Kegiatan HIMA TI';
+            }
+            fokusText = document.querySelector('[name="fokus_bahasan_kegiatan"]')?.value.trim() || '';
+
+            heroTitle = namaKegiatan;
+            heroSubtitle = 'Sesi Presensi Kegiatan Mahasiswa';
+
+            targetHtml = `
+                <div class="confirm-target-box">
+                    <i class="fas fa-camera text-primary" style="font-size: 1.15rem;"></i>
+                    <div>
+                        <strong class="confirm-target-title">${escapeHtml(namaKegiatan)}</strong>
+                        <div class="confirm-target-desc"><i class="fas fa-users"></i> Target: Seluruh Anggota HIMA TI (Bebas Hadir & Bebas SP)</div>
+                    </div>
+                </div>
+            `;
+            break;
+        }
     }
 
     const html = `
@@ -598,7 +682,7 @@ function populateConfirmation() {
             <!-- Hero Header Card -->
             <div class="confirm-hero-card">
                 <div class="confirm-hero-header">
-                    <span class="confirm-hero-type"><i class="fas ${jenisIcon}"></i> ${escapeHtml(jenisLabel)}</span>
+                    <span class="confirm-hero-type">${katBadge}<i class="fas ${jenisIcon}"></i> ${escapeHtml(jenisLabel)}</span>
                     ${modeHtml}
                 </div>
                 <h4 class="confirm-hero-title">${escapeHtml(heroTitle)}</h4>
@@ -691,6 +775,7 @@ function saveMeetingDraft() {
 
         const draft = {
             currentStep: currentStep,
+            kategori: document.getElementById('kategoriInput')?.value || 'rapat',
             selectedJenis: selectedJenis,
             selectedMode: selectedMode,
             created_by: (creatorEl && creatorEl.tagName === 'SELECT') ? creatorEl.value : undefined,
@@ -703,6 +788,10 @@ function saveMeetingDraft() {
             fokus_bahasan_kepanitiaan: form.querySelector('[name="fokus_bahasan_kepanitiaan"]')?.value || '',
             departemen_collab: collabChecked,
             fokus_bahasan_lintas: form.querySelector('[name="fokus_bahasan_lintas"]')?.value || '',
+            sumber_nama_kegiatan: form.querySelector('[name="sumber_nama_kegiatan"]:checked')?.value || 'manual',
+            nama_event_kegiatan: form.querySelector('[name="nama_event_kegiatan"]')?.value || '',
+            kegiatan_event_id: document.getElementById('selectKegiatanEvent')?.value || '',
+            fokus_bahasan_kegiatan: form.querySelector('[name="fokus_bahasan_kegiatan"]')?.value || '',
             tanggal: form.querySelector('[name="tanggal"]')?.value || '',
             waktu_mulai: form.querySelector('[name="waktu_mulai"]')?.value || '',
             updatedAt: Date.now()
@@ -793,6 +882,29 @@ function restoreMeetingDraft() {
         if (draft.fokus_bahasan_lintas !== undefined) {
             const el = form.querySelector('[name="fokus_bahasan_lintas"]');
             if (el) el.value = draft.fokus_bahasan_lintas;
+        }
+
+        if (draft.sumber_nama_kegiatan) {
+            const el = form.querySelector(`[name="sumber_nama_kegiatan"][value="${draft.sumber_nama_kegiatan}"]`);
+            if (el) {
+                el.checked = true;
+                if (typeof toggleSumberKegiatan === 'function') toggleSumberKegiatan(draft.sumber_nama_kegiatan);
+            }
+        }
+
+        if (draft.nama_event_kegiatan !== undefined) {
+            const el = form.querySelector('[name="nama_event_kegiatan"]');
+            if (el) el.value = draft.nama_event_kegiatan;
+        }
+
+        if (draft.kegiatan_event_id !== undefined && draft.kegiatan_event_id !== '') {
+            const el = document.getElementById('selectKegiatanEvent');
+            if (el) el.value = draft.kegiatan_event_id;
+        }
+
+        if (draft.fokus_bahasan_kegiatan !== undefined) {
+            const el = form.querySelector('[name="fokus_bahasan_kegiatan"]');
+            if (el) el.value = draft.fokus_bahasan_kegiatan;
         }
 
         // Cek dan pulihkan tanggal: hanya gunakan tanggal draft jika tanggalnya hari ini atau di masa depan

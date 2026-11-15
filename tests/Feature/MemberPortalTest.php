@@ -8,6 +8,7 @@ use App\Models\Meeting;
 use App\Models\Member;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -146,6 +147,20 @@ class MemberPortalTest extends TestCase
 
         $this->get('/portal/absen')->assertOk()->assertSee('Form Izin / Sakit');
         $this->get('/portal/profil')->assertOk()->assertSee('Profil Pengurus');
+    }
+
+    public function test_member_can_open_meeting_create_page_repeatedly_with_serialized_cache(): void
+    {
+        config(['cache.stores.array.serialize' => true]);
+        Cache::forgetDriver('array');
+
+        $member = $this->createMember(['nama_lengkap' => 'Pengurus Cache Rapat']);
+        $this->actingAs($member, 'member');
+
+        $this->get(route('public.meeting.create'))->assertOk();
+        $this->get(route('public.meeting.create'))
+            ->assertOk()
+            ->assertSee('Pengurus Cache Rapat');
     }
 
     public function test_member_can_mark_presence_for_active_meeting(): void

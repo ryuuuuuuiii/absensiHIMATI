@@ -4,40 +4,70 @@
  */
 
 // ============================================
-// SIDEBAR TOGGLE
+// SIDEBAR TOGGLE (DESKTOP / LAPTOP / SPLIT-SCREEN)
 // ============================================
 function toggleSidebar(e) {
     if (e && typeof e.stopPropagation === 'function') {
         e.stopPropagation();
     }
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    if (!sidebar) return;
-    const isActive = sidebar.classList.toggle('active');
-    if (overlay) {
-        overlay.classList.toggle('active', isActive);
-    }
+
+    // On mobile phone (<= 768px), sidebar is completely disabled (bottom nav is used)
     if (window.innerWidth <= 768) {
-        document.body.style.overflow = isActive ? 'hidden' : '';
-    }
-}
-
-// Close sidebar on outside click (mobile)
-document.addEventListener('click', (e) => {
-    const sidebar = document.getElementById('sidebar');
-    if (!sidebar || !sidebar.classList.contains('active')) return;
-
-    // Ignore clicks inside sidebar or on any toggle element
-    if (sidebar.contains(e.target) || 
-        e.target.closest('.menu-toggle') || 
-        e.target.closest('.tab-menu') || 
-        e.target.closest('.sidebar-close-btn')) {
         return;
     }
 
-    toggleSidebar();
-});
+    const isCollapsed = document.body.classList.contains('sidebar-collapsed') ||
+                        document.documentElement.classList.contains('sidebar-collapsed');
 
+    if (isCollapsed) {
+        // BUKA SIDEBAR
+        document.body.classList.remove('sidebar-collapsed');
+        document.documentElement.classList.remove('sidebar-collapsed');
+        try { localStorage.setItem('himati_sidebar_collapsed', '0'); } catch(err) {}
+    } else {
+        // TUTUP SIDEBAR
+        document.body.classList.add('sidebar-collapsed');
+        document.documentElement.classList.add('sidebar-collapsed');
+        try { localStorage.setItem('himati_sidebar_collapsed', '1'); } catch(err) {}
+    }
+}
+
+// Restore collapsed state on desktop / split-screen on page load
+(function restoreSidebarState() {
+    try {
+        if (window.innerWidth > 768) {
+            var saved = localStorage.getItem('himati_sidebar_collapsed');
+            // Jika disimpan '1' (tertutup), atau pertama kali buka di layar split (<= 1024px) tanpa preferensi, default tertutup
+            if (saved === '1' || (saved === null && window.innerWidth <= 1024)) {
+                document.documentElement.classList.add('sidebar-collapsed');
+                if (document.body) {
+                    document.body.classList.add('sidebar-collapsed');
+                } else {
+                    document.addEventListener('DOMContentLoaded', () => {
+                        document.body.classList.add('sidebar-collapsed');
+                    });
+                }
+            } else if (saved === '0') {
+                document.documentElement.classList.remove('sidebar-collapsed');
+                if (document.body) {
+                    document.body.classList.remove('sidebar-collapsed');
+                }
+            }
+        }
+    } catch(err) {}
+})();
+
+// Tooltip nama menu untuk ikon sidebar (berguna saat sidebar mode ikon/tertutup)
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.sidebar .nav-item').forEach((item) => {
+        if (!item.getAttribute('title')) {
+            const label = item.querySelector('span:not(.portal-sidebar-badge)');
+            if (label && label.textContent.trim()) {
+                item.setAttribute('title', label.textContent.trim());
+            }
+        }
+    });
+});
 // ============================================
 // TOAST NOTIFICATIONS
 // ============================================
@@ -331,108 +361,74 @@ function initBottomNav() {
 document.addEventListener('DOMContentLoaded', initBottomNav);
 
 // ============================================
-// THEME SYSTEM (Manual Toggle + System Auto Support)
+// MODE TAMPILAN OTOMATIS (MODE BY DEVICE / OS)
 // ============================================
 (function() {
-    function getStoredTheme() {
+    function clearLegacyThemeStorage() {
         try {
-            return localStorage.getItem('himati_theme') || 'auto';
+            localStorage.removeItem('himati_theme');
+            localStorage.removeItem('theme');
+            sessionStorage.removeItem('himati_theme');
+        } catch(e) {}
+    }
+
+    function isDeviceDark() {
+        try {
+            return Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
         } catch(e) {
-            return 'auto';
+            return false;
         }
     }
 
     function applyCurrentTheme() {
-        var preference = getStoredTheme();
-        var isDark = false;
-        if (preference === 'dark') {
-            isDark = true;
-        } else if (preference === 'light') {
-            isDark = false;
-        } else {
-            isDark = Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        }
+        clearLegacyThemeStorage();
 
+        var isDark = isDeviceDark();
         var themeStr = isDark ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', themeStr);
+        var root = document.documentElement;
+
+        if (root.getAttribute('data-theme') !== themeStr) {
+            root.setAttribute('data-theme', themeStr);
+        }
 
         // Update meta theme-color for mobile notch/browser header
-        var metaThemeColor = document.querySelector('meta[name="theme-color"]:not([media])') || document.querySelector('meta[name="theme-color"]');
-        if (metaThemeColor) {
-            metaThemeColor.setAttribute('content', isDark ? '#071320' : '#F4FAFF');
-        }
-
-        updateThemeToggleUI(preference, isDark);
-    }
-
-    function setAppTheme(theme) {
-        // theme: 'light' | 'dark' | 'auto'
         try {
-            localStorage.setItem('himati_theme', theme);
+            var metaThemeColor = document.querySelector('meta[name="theme-color"]:not([media])') || document.querySelector('meta[name="theme-color"]');
+            if (metaThemeColor) {
+                metaThemeColor.setAttribute('content', isDark ? '#071320' : '#F4FAFF');
+            }
         } catch(e) {}
-        applyCurrentTheme();
     }
 
-    function toggleAppTheme() {
-        var current = document.documentElement.getAttribute('data-theme');
-        var target = current === 'dark' ? 'light' : 'dark';
-        setAppTheme(target);
-    }
-
-    function updateThemeToggleUI(preference, isDark) {
-        document.querySelectorAll('.portal-theme-toggle-btn').forEach(function(btn) {
-            var sun = btn.querySelector('.theme-icon-light');
-            var moon = btn.querySelector('.theme-icon-dark');
-            if (sun && moon) {
-                if (isDark) {
-                    sun.style.display = 'inline-block';
-                    moon.style.display = 'none';
-                    btn.setAttribute('title', 'Mode Gelap Aktif — Klik untuk Mode Terang');
-                    btn.setAttribute('aria-label', 'Ganti ke Mode Terang');
-                } else {
-                    sun.style.display = 'none';
-                    moon.style.display = 'inline-block';
-                    btn.setAttribute('title', 'Mode Terang Aktif — Klik untuk Mode Gelap');
-                    btn.setAttribute('aria-label', 'Ganti ke Mode Gelap');
-                }
-            }
-        });
-
-        // Update segmented theme controls in profile if present
-        document.querySelectorAll('[data-theme-option]').forEach(function(el) {
-            var opt = el.getAttribute('data-theme-option');
-            el.classList.toggle('active', opt === preference);
-        });
-    }
-
-    // Expose globally
-    window.getStoredTheme = getStoredTheme;
-    window.setAppTheme = setAppTheme;
-    window.toggleAppTheme = toggleAppTheme;
+    // Expose functions globally for compatibility (as pure device sync)
+    window.getStoredTheme = function() { return 'auto'; };
+    window.setAppTheme = function() { applyCurrentTheme(); };
+    window.toggleAppTheme = function() { applyCurrentTheme(); };
     window.applyCurrentTheme = applyCurrentTheme;
+    window.syncDeviceTheme = applyCurrentTheme;
 
-    // Listen to system prefers-color-scheme changes
+    // Listen to system prefers-color-scheme changes in real-time
     try {
-        var mqTheme = window.matchMedia('(prefers-color-scheme: dark)');
-        var onMqChange = function() {
-            if (getStoredTheme() === 'auto') {
-                applyCurrentTheme();
+        if (window.matchMedia) {
+            var mqTheme = window.matchMedia('(prefers-color-scheme: dark)');
+            if (mqTheme.addEventListener) {
+                mqTheme.addEventListener('change', applyCurrentTheme);
+            } else if (mqTheme.addListener) {
+                mqTheme.addListener(applyCurrentTheme);
             }
-        };
-        if (mqTheme.addEventListener) {
-            mqTheme.addEventListener('change', onMqChange);
-        } else if (mqTheme.addListener) {
-            mqTheme.addListener(onMqChange);
         }
     } catch(e) {}
 
-    // When returning from background or changing tabs on mobile
+    // When returning from background, changing tabs, or changing settings on mobile
     window.addEventListener('pageshow', applyCurrentTheme);
+    window.addEventListener('focus', applyCurrentTheme);
     document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'visible') {
+        if (!document.hidden) {
             applyCurrentTheme();
         }
     });
+
+    document.addEventListener('portal:page-loaded', applyCurrentTheme);
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', applyCurrentTheme);

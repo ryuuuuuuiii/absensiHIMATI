@@ -1,5 +1,5 @@
 /* ==========================================================================
-   DESIGN SYSTEM — ABSENSI HIMA TI POLITEKNIK HASNUR
+   DESIGN SYSTEM â€” ABSENSI HIMA TI POLITEKNIK HASNUR
    Color Palette: #30AFFF, #92EEFF, #D8FFC5, dan Putih (#FFFFFF)
    Design Aesthetic: Pomegranate.health Authentic Style (Gliker/Fredoka Display,
    2px Crisp Dark Ink Borders #061A2E, Hard 3D Offset Shadows, Stacked Ribbons)
@@ -1808,6 +1808,10 @@ textarea.form-control {
     background: rgba(48, 175, 255, 0.18);
     color: #0369A1;
 }
+.rapat-type-card .type-icon.icon-kegiatan {
+    background: rgba(245, 158, 11, 0.2);
+    color: #D97706;
+}
 
 /* Selected state: Vibrant solid gradient + white icon */
 .rapat-type-card.selected .type-icon.icon-dept {
@@ -1833,6 +1837,13 @@ textarea.form-control {
 .rapat-type-card.selected .type-icon.icon-lintas {
     background: linear-gradient(135deg, #30AFFF, #D8FFC5);
     color: #0A223B !important;
+    box-shadow: 0 4px 0 #0284C7;
+}
+.rapat-type-card.selected .type-icon.icon-kegiatan {
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 0 #B45309;
+}
     box-shadow: 0 4px 0 #0E75B4;
 }
 
@@ -2192,19 +2203,163 @@ textarea.form-control {
     transition: margin-left var(--transition-base);
 }
 
-@media (max-width: 992px) {
+/* Sidebar Toggle Button in Header */
+.sidebar-toggle-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    border-radius: var(--radius-md, 10px);
+    background: var(--bg-surface, #FFFFFF);
+    color: var(--text-primary, #061A2E);
+    border: var(--ink-border, 2px solid #061A2E);
+    box-shadow: var(--shadow-sm, 0 3px 0 #061A2E);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0;
+    transition: transform var(--transition-fast, 150ms ease), background var(--transition-fast, 150ms ease), box-shadow var(--transition-fast, 150ms ease);
+    margin-right: 8px;
+    flex-shrink: 0;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+[data-theme="dark"] .sidebar-toggle-btn {
+    background: var(--bg-surface, #0E2033);
+    border-color: var(--border-color, #193654);
+    color: var(--text-primary, #F0F8FF);
+    box-shadow: 0 3px 0 #000000;
+}
+
+.sidebar-toggle-btn:hover {
+    background: var(--blue-subtle, #EAF7FF);
+    color: var(--blue-primary, #30AFFF);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md, 0 5px 0 #061A2E);
+}
+
+[data-theme="dark"] .sidebar-toggle-btn:hover {
+    background: var(--bg-surface-hover, #1D3B5C);
+    border-color: var(--blue-primary, #30AFFF);
+}
+
+.sidebar-toggle-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 0 var(--border-color, #061A2E);
+}
+
+/* Sidebar Close Button */
+.sidebar-close-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-muted, #4B6A88);
+    border: 1.5px solid var(--border-color, #061A2E);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-left: auto;
+    transition: all 0.15s ease;
+}
+
+.sidebar-close-btn:hover {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: var(--danger, #EF4444);
+    color: var(--danger, #EF4444);
+}
+
+/* Sidebar Overlay: COMPLETELY DISABLED & NO BLUR */
+.sidebar-overlay {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* Desktop, Laptop, Split-Screen & Tablet (> 768px) */
+@media (min-width: 769px) {
+    .sidebar-toggle-btn {
+        display: inline-flex !important;
+    }
+
     .sidebar {
-        transform: translateX(-100%);
+        position: fixed !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        width: var(--sidebar-width, 270px) !important;
+        z-index: 100 !important;
+        background: #FFFFFF !important;
+        border-right: 2px solid #061A2E !important;
+        transform: translateX(0) !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        transition: transform var(--transition-base, 240ms cubic-bezier(0.16, 1, 0.3, 1)),
+                    left var(--transition-base, 240ms cubic-bezier(0.16, 1, 0.3, 1)),
+                    visibility var(--transition-base, 240ms cubic-bezier(0.16, 1, 0.3, 1)) !important;
     }
-    .sidebar.active {
-        transform: translateX(0);
-    }
+
     .app-header {
-        left: 0;
+        left: var(--sidebar-width, 270px) !important;
+        transition: left var(--transition-base, 240ms cubic-bezier(0.16, 1, 0.3, 1)) !important;
+    }
+
+    .main-content {
+        margin-left: var(--sidebar-width, 270px) !important;
+        transition: margin-left var(--transition-base, 240ms cubic-bezier(0.16, 1, 0.3, 1)) !important;
+    }
+
+    body.sidebar-collapsed .sidebar,
+    html.sidebar-collapsed .sidebar {
+        transform: translateX(-100%) !important;
+        left: calc(-1 * var(--sidebar-width, 270px)) !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    body.sidebar-collapsed .app-header,
+    html.sidebar-collapsed .app-header {
+        left: 0 !important;
+    }
+
+    body.sidebar-collapsed .main-content,
+    html.sidebar-collapsed .main-content {
+        margin-left: 0 !important;
+    }
+
+    .sidebar-close-btn {
+        display: inline-flex !important;
+    }
+}
+
+/* Mobile Phone Mode (<= 768px): NO SIDEBAR MENU AT ALL */
+@media (max-width: 768px) {
+    .sidebar,
+    .sidebar-overlay,
+    .sidebar-toggle-btn,
+    .sidebar-close-btn,
+    .menu-toggle {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    .app-header {
+        left: 0 !important;
         padding: 0 var(--space-4);
     }
+
     .main-content {
-        margin-left: 0;
+        margin-left: 0 !important;
         padding: var(--space-4);
         padding-top: calc(var(--header-height) + var(--space-4));
     }
@@ -3245,16 +3400,17 @@ textarea.form-control {
 }
 
 .sidebar-overlay {
-    display: none;
+    display: none !important;
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.45);
-    backdrop-filter: blur(4px);
-    z-index: 95;
+    background: transparent;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    z-index: -1;
 }
 
 .sidebar-overlay.active {
-    display: block;
+    display: none !important;
 }
 
 .header-right {
@@ -3667,17 +3823,17 @@ nav[role="navigation"] svg,
 .sidebar-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.5);
-    backdrop-filter: blur(4px);
-    z-index: 95;
-    display: none;
+    background: transparent;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    z-index: -1;
+    display: none !important;
     opacity: 0;
-    transition: opacity 0.25s ease;
 }
 
 .sidebar-overlay.active {
-    display: block;
-    opacity: 1;
+    display: none !important;
+    opacity: 0 !important;
 }
 
 @media (max-width: 992px) {
@@ -4149,7 +4305,7 @@ nav[role="navigation"] svg,
 }
 
 /* ==========================================================================
-   PORTAL PENGURUS — POMEGRANATE TACTILE & PLAYFUL UI
+   PORTAL PENGURUS â€” POMEGRANATE TACTILE & PLAYFUL UI
    ========================================================================== */
 .portal-hero-card {
     background: radial-gradient(circle at top right, rgba(146, 238, 255, 0.32), transparent 50%),
@@ -6001,8 +6157,6 @@ html, body {
        Hides sidebar drawer, mobile overlay, and hamburger button completely.
        Full navigation is seamlessly provided by the persistent bottom navigation bar
        and the interactive bottom sheet menu. */
-    .sidebar,
-    .sidebar-overlay,
     .menu-toggle {
         display: none !important;
     }
@@ -8185,10 +8339,28 @@ h1, h2, h3, h4,
         position: fixed !important;
         top: 0 !important;
         bottom: 0 !important;
-        left: 0 !important;
+        left: 0;
         z-index: 100 !important;
         background: #FFFFFF !important;
         border-right: 2px solid #061A2E !important;
+    }
+
+    body.sidebar-collapsed .sidebar,
+    html.sidebar-collapsed .sidebar {
+        transform: translateX(-100%) !important;
+        left: calc(-1 * var(--sidebar-width, 270px)) !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    body.sidebar-collapsed .app-header,
+    html.sidebar-collapsed .app-header {
+        left: 0 !important;
+    }
+
+    body.sidebar-collapsed .main-content,
+    html.sidebar-collapsed .main-content {
+        margin-left: 0 !important;
     }
 }
 
@@ -8987,6 +9159,39 @@ textarea.form-control {
     border: 2px solid #30AFFF !important;
     box-shadow: 0 6px 0 #000000, 0 7px 0 1px rgba(48, 175, 255, 0.45), 0 8px 20px rgba(48, 175, 255, 0.22) !important;
     color: #F0F8FF !important;
+}
+
+[data-theme="dark"] .profile-center-card::before {
+    background: linear-gradient(135deg, rgba(48, 175, 255, 0.22) 0%, rgba(14, 34, 56, 0.9) 100%) !important;
+    border-bottom: 2px solid rgba(48, 175, 255, 0.35) !important;
+}
+
+[data-theme="dark"] .profile-avatar-large {
+    background: #0E2238 !important;
+    border-color: #30AFFF !important;
+    box-shadow: 0 5px 0 #000000 !important;
+}
+
+[data-theme="dark"] .profile-avatar-edit-badge {
+    background: #30AFFF !important;
+    color: #061A2E !important;
+    border-color: #30AFFF !important;
+    box-shadow: 0 3px 0 #000000 !important;
+}
+
+[data-theme="dark"] .profile-name {
+    color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .profile-qr-badge {
+    background: #0E2238 !important;
+    border: 1.5px solid rgba(48, 175, 255, 0.35) !important;
+    color: #92EEFF !important;
+    box-shadow: 0 2px 0 #000000 !important;
+}
+
+[data-theme="dark"] .profile-qr-badge code {
+    color: #38BDF8 !important;
 }
 
 [data-theme="dark"] .portal-hero-card {
@@ -10117,8 +10322,18 @@ textarea.form-control {
 }
 
 /* ====================================================
-   THEME TOGGLE BUTTON & CONTROLS (Light / Dark Mode)
+   THEME TOGGLE BUTTON & CONTROLS (Disembunyikan: Mode Otomatis by Device)
    ==================================================== */
+.portal-theme-toggle-btn,
+#headerThemeToggleBtn,
+.profile-theme-box,
+.theme-segmented-group,
+.theme-option-btn {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
 .portal-theme-toggle-btn {
     width: 40px !important;
     height: 40px !important;
@@ -10262,9 +10477,279 @@ textarea.form-control {
 }
 
 
+/* ==========================================================================
+   SIDEBAR TOGGLE BUTTON (INSIDE HEADER) & MINI RAIL (Desktop & Tablet)
+   ========================================================================== */
+:root {
+    --sidebar-rail-width: 78px;
+}
 
+.sidebar {
+    overflow-x: hidden;
+}
 
+.sidebar .nav-item {
+    position: relative;
+}
 
+/* Header sidebar: tata letak flex rapi, padding pas, tidak ada yang keluar */
+.sidebar .sidebar-header {
+    height: var(--header-height, 72px) !important;
+    padding: 0 10px 0 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    background: #FFFFFF !important;
+    border-bottom: 2px solid #061A2E !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+}
 
+/* Logo dirapatkan dan disesuaikan ukurannya */
+.sidebar .sidebar-logos {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 3px !important;
+    flex-shrink: 0 !important;
+}
 
+.sidebar .sidebar-logos img,
+.sidebar .sidebar-logos .sidebar-logo-img {
+    width: 32px !important;
+    height: 32px !important;
+    object-fit: contain !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)) !important;
+    flex-shrink: 0 !important;
+}
 
+.sidebar .sidebar-logos img:first-of-type,
+.sidebar .sidebar-logos .sidebar-logo-img:first-of-type {
+    width: 35px !important;
+    height: 35px !important;
+}
+
+.sidebar .sidebar-logos .logo-placeholder {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    font-size: 0.85rem !important;
+    flex-shrink: 0 !important;
+}
+
+/* Teks brand dirapatkan agar tidak menimpa tombol */
+.sidebar .sidebar-brand {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+}
+
+.sidebar .sidebar-brand-title {
+    font-family: var(--font-heading), 'Fredoka', sans-serif !important;
+    font-weight: 800 !important;
+    font-size: 1rem !important;
+    color: #061A2E !important;
+    letter-spacing: 0.01em !important;
+    line-height: 1.1 !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+}
+
+.sidebar .sidebar-brand-sub,
+.sidebar .sidebar-brand small {
+    font-family: var(--font-family), 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 0.62rem !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.02em !important;
+    color: #0284C7 !important;
+    line-height: 1 !important;
+    margin-top: 2px !important;
+    display: block !important;
+    white-space: nowrap !important;
+}
+
+/* Tombol panah: berada DI DALAM sidebar header (di sebelah kanan) */
+.sidebar-edge-toggle {
+    position: static !important;
+    margin-left: auto !important;
+    flex-shrink: 0 !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    background: #FFFFFF !important;
+    color: #061A2E !important;
+    border: 2px solid #061A2E !important;
+    box-shadow: 0 2px 0 #061A2E !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    cursor: pointer !important;
+    z-index: 10 !important;
+    font-size: 0.8rem !important;
+    -webkit-tap-highlight-color: transparent !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease !important;
+}
+
+.sidebar-edge-toggle i {
+    transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.sidebar-edge-toggle:hover {
+    background: #30AFFF !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 3px 0 #061A2E !important;
+}
+
+.sidebar-edge-toggle:active {
+    transform: translateY(1px) !important;
+    box-shadow: 0 1px 0 #061A2E !important;
+}
+
+[data-theme="dark"] .sidebar-edge-toggle {
+    background: #0E2033 !important;
+    color: #F0F8FF !important;
+    border-color: #30AFFF !important;
+    box-shadow: 0 2px 0 #000000 !important;
+}
+
+[data-theme="dark"] .sidebar-edge-toggle:hover {
+    background: #1D3B5C !important;
+}
+
+/* Tombol lama dinonaktifkan */
+.sidebar-toggle-btn,
+.sidebar-close-btn {
+    display: none !important;
+}
+
+@media (min-width: 769px) {
+    /* Navbar header normal (tidak ada tombol yang nongol ke luar) */
+    .app-header {
+        left: var(--sidebar-width, 270px) !important;
+        padding-left: var(--space-4, 16px) !important;
+        transition: left 240ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    .main-content {
+        margin-left: var(--sidebar-width, 270px) !important;
+        transition: margin-left 240ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    /* Saat sidebar tertutup / collapsed (Mini Rail 78px) */
+    html.sidebar-collapsed .sidebar,
+    body.sidebar-collapsed .sidebar {
+        transform: none !important;
+        left: 0 !important;
+        width: var(--sidebar-rail-width, 78px) !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        transition: width 240ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    .sidebar {
+        transition: width 240ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    html.sidebar-collapsed .app-header,
+    body.sidebar-collapsed .app-header {
+        left: var(--sidebar-rail-width, 78px) !important;
+        padding-left: var(--space-4, 16px) !important;
+    }
+
+    html.sidebar-collapsed .main-content,
+    body.sidebar-collapsed .main-content {
+        margin-left: var(--sidebar-rail-width, 78px) !important;
+    }
+
+    /* Header sidebar di mode mini rail: sembunyikan logo & teks brand, pusatkan tombol panah */
+    html.sidebar-collapsed .sidebar .sidebar-header,
+    body.sidebar-collapsed .sidebar .sidebar-header {
+        padding: 0 !important;
+        justify-content: center !important;
+    }
+
+    html.sidebar-collapsed .sidebar .sidebar-logos,
+    html.sidebar-collapsed .sidebar .sidebar-brand,
+    html.sidebar-collapsed .sidebar .nav-section-title,
+    html.sidebar-collapsed .sidebar .nav-item span:not(.portal-sidebar-badge),
+    body.sidebar-collapsed .sidebar .sidebar-logos,
+    body.sidebar-collapsed .sidebar .sidebar-brand,
+    body.sidebar-collapsed .sidebar .nav-section-title,
+    body.sidebar-collapsed .sidebar .nav-item span:not(.portal-sidebar-badge) {
+        display: none !important;
+    }
+
+    /* Tombol panah di mode mini rail terpusat di dalam 78px header */
+    html.sidebar-collapsed .sidebar .sidebar-edge-toggle,
+    body.sidebar-collapsed .sidebar .sidebar-edge-toggle {
+        margin: 0 auto !important;
+    }
+
+    html.sidebar-collapsed .sidebar .sidebar-edge-toggle i,
+    body.sidebar-collapsed .sidebar .sidebar-edge-toggle i {
+        transform: rotate(180deg) !important; /* Menghadap kanan */
+    }
+
+    /* Item menu jadi tombol ikon bulat di tengah */
+    html.sidebar-collapsed .sidebar .nav-item,
+    body.sidebar-collapsed .sidebar .nav-item {
+        width: 48px !important;
+        height: 48px !important;
+        margin: 6px auto !important;
+        padding: 0 !important;
+        gap: 0 !important;
+        justify-content: center !important;
+        text-align: center !important;
+    }
+
+    html.sidebar-collapsed .sidebar .nav-item i,
+    body.sidebar-collapsed .sidebar .nav-item i {
+        margin: 0 !important;
+        font-size: 1.1rem !important;
+    }
+
+    html.sidebar-collapsed .sidebar .sidebar-footer,
+    body.sidebar-collapsed .sidebar .sidebar-footer {
+        padding: 10px 0 !important;
+    }
+
+    /* Badge notifikasi di pojok ikon */
+    html.sidebar-collapsed .sidebar .portal-sidebar-badge,
+    body.sidebar-collapsed .sidebar .portal-sidebar-badge {
+        position: absolute !important;
+        top: 2px !important;
+        right: 2px !important;
+        margin: 0 !important;
+        min-width: 18px !important;
+        height: 18px !important;
+        padding: 0 4px !important;
+        font-size: 0.6rem !important;
+        line-height: 14px !important;
+    }
+}
+
+/* Mode HP: tidak ada sidebar sama sekali */
+@media (max-width: 768px) {
+    .sidebar,
+    .sidebar-overlay,
+    .sidebar-toggle-btn,
+    .sidebar-close-btn,
+    .sidebar-edge-toggle,
+    .menu-toggle {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+}

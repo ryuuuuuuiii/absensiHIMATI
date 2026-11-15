@@ -25,27 +25,70 @@
     
     <script>
         (function() {
-            var theme = 'auto';
-            try {
-                theme = localStorage.getItem('himati_theme') || 'auto';
-            } catch(e) {}
-
-            var isDark = false;
-            if (theme === 'dark') {
-                isDark = true;
-            } else if (theme === 'light') {
-                isDark = false;
-            } else {
-                isDark = Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            // Mode tampilan otomatis murni mengikuti preferensi device (Sistem HP / OS)
+            function clearLegacyThemeStorage() {
+                try {
+                    localStorage.removeItem('himati_theme');
+                    localStorage.removeItem('theme');
+                    sessionStorage.removeItem('himati_theme');
+                } catch(e) {}
             }
 
-            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            function syncDeviceTheme() {
+                clearLegacyThemeStorage();
 
-            window.toggleAppTheme = window.toggleAppTheme || function() {
-                var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                try { localStorage.setItem('himati_theme', cur); } catch(e) {}
-                document.documentElement.setAttribute('data-theme', cur);
-            };
+                var isDark = false;
+                try {
+                    isDark = Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                } catch(e) {
+                    isDark = false;
+                }
+
+                var targetTheme = isDark ? 'dark' : 'light';
+                var root = document.documentElement;
+
+                if (root.getAttribute('data-theme') !== targetTheme) {
+                    root.setAttribute('data-theme', targetTheme);
+                }
+
+                try {
+                    var metaTheme = document.querySelector('meta[name="theme-color"]:not([media])') || document.querySelector('meta[name="theme-color"]');
+                    if (metaTheme) {
+                        metaTheme.setAttribute('content', isDark ? '#071320' : '#F4FAFF');
+                    }
+                } catch(e) {}
+            }
+
+            // Eksekusi segera sebelum first-paint agar tidak ada glitch/kedipan
+            syncDeviceTheme();
+
+            // Real-time listener saat user mengganti tema di OS/Device
+            try {
+                if (window.matchMedia) {
+                    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+                    if (typeof mq.addEventListener === 'function') {
+                        mq.addEventListener('change', syncDeviceTheme);
+                    } else if (typeof mq.addListener === 'function') {
+                        mq.addListener(syncDeviceTheme);
+                    }
+                }
+            } catch(e) {}
+
+            // Listener ketika aplikasi kembali dari background, switch tab, atau kembali dari menu pengaturan HP
+            window.addEventListener('pageshow', syncDeviceTheme);
+            window.addEventListener('focus', syncDeviceTheme);
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    syncDeviceTheme();
+                }
+            });
+
+            // Expose globally
+            window.syncDeviceTheme = syncDeviceTheme;
+            window.toggleAppTheme = syncDeviceTheme;
+            window.setAppTheme = syncDeviceTheme;
+            window.getStoredTheme = function() { return 'auto'; };
+            window.applyCurrentTheme = syncDeviceTheme;
         })();
     </script>
 
@@ -98,12 +141,6 @@
                 <div class="public-brand-text">
                     <h1>@yield('page_heading', config('himati.app_full_name'))</h1>
                     <p>@yield('page_subheading', 'Sistem Absensi Digital Himpunan Mahasiswa Teknologi Informasi')</p>
-                </div>
-                <div class="public-brand-actions" style="margin-left: auto;">
-                    <button type="button" class="portal-theme-toggle-btn" onclick="toggleAppTheme()" aria-label="Ganti Mode Tampilan (Terang / Gelap)" title="Ganti Mode Tampilan">
-                        <i class="fas fa-sun theme-icon-light"></i>
-                        <i class="fas fa-moon theme-icon-dark"></i>
-                    </button>
                 </div>
             </div>
 
@@ -247,7 +284,7 @@
     @endif
 
     <div id="toastContainer" class="toast-container"></div>
-    <script src="{{ asset('assets/js/app.js') }}"></script>
+    <script src="{{ asset('assets/js/app.js') }}?v={{ file_exists(public_path('assets/js/app.js')) ? filemtime(public_path('assets/js/app.js')) : time() }}"></script>
     <script>
         window.BASE_URL = "{{ url('/') }}";
         window.CSRF_TOKEN = "{{ csrf_token() }}";

@@ -1,8 +1,19 @@
 @extends('layouts.public')
 
-@section('title', 'Presensi Online — ' . $meeting->jenis_label)
+@php
+    $isKegiatan = $meeting->isKegiatan();
+    $isOfflineKegiatan = $isKegiatan && $meeting->mode_rapat === 'offline';
+    $isOnlineKegiatan = $isKegiatan && $meeting->mode_rapat === 'online';
+    $proofHelper = $isOfflineKegiatan
+        ? 'Wajib foto di lokasi kegiatan dan WAJAH ANDA HARUS TERLIHAT JELAS (maksimal 5MB).'
+        : ($isOnlineKegiatan
+            ? 'Wajib screenshot layar Zoom / Google Meet dengan KAMERA MENYALA dan wajah Anda terlihat (maksimal 5MB).'
+            : 'Wajib melampirkan screenshot layar rapat online (Google Meet, Zoom, dll.) atau foto kehadiran Anda (maksimal 5MB).');
+@endphp
+
+@section('title', 'Presensi ' . ($isKegiatan ? 'Kegiatan' : 'Online') . ' — ' . $meeting->jenis_label)
 @section('page_heading', config('himati.app_name'))
-@section('page_subheading', 'Form Kehadiran Rapat Online')
+@section('page_subheading', $isKegiatan ? 'Form Kehadiran Kegiatan (' . ($isOfflineKegiatan ? 'Offline' : 'Online') . ')' : 'Form Kehadiran Rapat Online')
 @section('container_width', '650px')
 
 @section('content')
@@ -12,7 +23,14 @@
     <div class="meeting-header-content">
         <div class="meeting-header-details">
             <div class="meeting-type-badge-row">
-                <span class="badge badge-info"><i class="fas fa-video"></i> Online</span>
+                @if($isKegiatan)
+                    <span class="badge badge-warning"><i class="fas fa-camera"></i> Kegiatan</span>
+                @endif
+                @if($meeting->mode_rapat === 'offline')
+                    <span class="badge badge-dept"><i class="fas fa-map-marker-alt"></i> Offline</span>
+                @else
+                    <span class="badge badge-info"><i class="fas fa-video"></i> Online</span>
+                @endif
 
                 @if($meeting->status === 'scanning')
                     <span class="badge badge-success badge-pulse"><span class="pulse-dot"></span> Presensi Aktif</span>
@@ -108,7 +126,7 @@
     </div>
 @else
     <div class="card mb-6">
-        <h3 class="card-title mb-4"><i class="fas fa-user-check"></i> Form Presensi Kehadiran Online</h3>
+        <h3 class="card-title mb-4"><i class="fas fa-user-check"></i> {{ $isKegiatan ? 'Form Presensi Kegiatan (Foto Dokumentasi)' : 'Form Presensi Kehadiran Online' }}</h3>
 
         <!-- Expiry Deadline Banner -->
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: var(--space-5); padding: 10px 14px; background: rgba(59, 130, 246, 0.08); border-radius: var(--radius-md); border-left: 3px solid var(--info);">
@@ -225,6 +243,26 @@
             </div>
         @endif
 
+        @if($isKegiatan)
+            <div class="alert alert-warning mb-4" style="border-radius: 12px;">
+                <i class="fas fa-camera"></i>
+                <div>
+                    @if($isOfflineKegiatan)
+                        <strong>Presensi Offline — Wajib Foto dengan Wajah Terlihat</strong>
+                        <div style="font-size: 0.88rem; margin-top: 2px;">
+                            Ambil foto langsung di lokasi kegiatan. Wajah Anda harus terlihat jelas. Foto tanpa wajah, foto orang lain, atau foto bukan di lokasi kegiatan dapat dianggap tidak sah.
+                        </div>
+                    @else
+                        <strong>Presensi Online — Wajib Screenshot dengan Kamera Menyala</strong>
+                        <div style="font-size: 0.88rem; margin-top: 2px;">
+                            Unggah screenshot layar Zoom / Google Meet saat kegiatan berlangsung dengan kamera Anda menyala dan wajah terlihat. Kamera mati dapat dianggap tidak sah.
+                        </div>
+                    @endif
+                    <div style="font-size: 0.82rem; margin-top: 4px;">Tidak bisa hadir? Pilih status <strong>Izin</strong> atau <strong>Sakit</strong> di bawah dan isi keterangannya.</div>
+                </div>
+            </div>
+        @endif
+
         <form action="{{ route('public.online.submit', $meeting->unique_link) }}" method="POST" enctype="multipart/form-data">
             @csrf
 
@@ -248,7 +286,7 @@
 
             <div class="form-group">
                 <label class="form-label" for="keterangan">Keterangan (Opsional)</label>
-                <textarea name="keterangan" id="keterangan" class="form-control" placeholder="Contoh: Mengikuti via Google Meet / Zoom" rows="2">{{ old('keterangan', $existingAttendance?->keterangan) }}</textarea>
+                <textarea name="keterangan" id="keterangan" class="form-control" placeholder="{{ $isKegiatan ? 'Contoh: Hadir sebagai peserta / alasan jika izin atau sakit' : 'Contoh: Mengikuti via Google Meet / Zoom' }}" rows="2">{{ old('keterangan', $existingAttendance?->keterangan) }}</textarea>
             </div>
 
             <div class="form-group">
@@ -268,9 +306,23 @@
                     </div>
                 @enderror
                 <small id="helperBuktiFoto" style="color: var(--text-muted); display: block; margin-top: 4px;">
-                    Wajib melampirkan screenshot layar rapat online (Google Meet, Zoom, dll.) atau foto kehadiran Anda (maksimal 5MB).
+                    {{ $proofHelper }}
                 </small>
             </div>
+
+            @if($isOfflineKegiatan)
+                <div class="form-group" id="faceConfirmGroup">
+                    <label class="form-check" style="align-items: flex-start;">
+                        <input type="checkbox" name="konfirmasi_wajah" id="konfirmasiWajah" value="1" {{ old('konfirmasi_wajah') ? 'checked' : '' }}>
+                        <span class="form-check-label">Saya menyatakan wajah saya terlihat jelas pada foto dan foto diambil di lokasi kegiatan.</span>
+                    </label>
+                    @error('konfirmasi_wajah')
+                        <div class="invalid-feedback" style="display: block; color: var(--danger); font-size: 0.8rem; margin-top: 4px;">
+                            <i class="fas fa-exclamation-circle"></i> {{ $message }}
+                        </div>
+                    @enderror
+                </div>
+            @endif
 
             <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnOnlineSubmit" style="margin-top: var(--space-6);" {{ ($eligibilityError || $member->sp_level >= 3) ? 'disabled' : '' }}>
                 <i class="fas fa-paper-plane"></i> {{ $existingAttendance ? 'Perbarui Presensi' : 'Kirim Presensi Kehadiran' }}
@@ -283,12 +335,18 @@
 @push('scripts')
 <script>
     const hasExistingProof = {{ ($existingAttendance && filled($existingAttendance->bukti_foto)) ? 'true' : 'false' }};
+    const proofHelperHadir = @json($proofHelper);
 
     function updateDocRequirement() {
         const isHadir = document.getElementById('statusHadir')?.checked ?? true;
         const inputBukti = document.getElementById('bukti_foto');
         const reqBadge = document.getElementById('reqBuktiFoto');
         const helper = document.getElementById('helperBuktiFoto');
+        const faceGroup = document.getElementById('faceConfirmGroup');
+        const faceCheck = document.getElementById('konfirmasiWajah');
+
+        if (faceGroup) faceGroup.style.display = isHadir ? '' : 'none';
+        if (faceCheck) faceCheck.required = isHadir;
 
         if (!inputBukti) return;
 
@@ -298,7 +356,7 @@
                 inputBukti.required = true;
             }
             if (helper) {
-                helper.textContent = 'Wajib melampirkan screenshot layar rapat online (Google Meet, Zoom, dll.) atau foto kehadiran Anda (maksimal 5MB).';
+                helper.textContent = proofHelperHadir;
             }
         } else {
             if (reqBadge) reqBadge.style.display = 'none';

@@ -21,6 +21,7 @@ return [
         'kepanitiaan' => 'Rapat Kepanitiaan / Even',
         'bph' => 'Rapat BPH / Inti',
         'lintas_dept' => 'Rapat Lintas Departemen',
+        'kegiatan' => 'Kegiatan',
     ],
 
     'attendance_statuses' => [

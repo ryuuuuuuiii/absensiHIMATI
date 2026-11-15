@@ -221,6 +221,11 @@ class PortalController extends Controller
             return back()->with('error', 'Presensi hanya dapat dilakukan saat rapat sedang berlangsung.');
         }
 
+        if ($meeting->isKegiatan()) {
+            return redirect()->route('public.online', $meeting->unique_link)
+                ->with('info', 'Presensi kegiatan wajib menyertakan foto dokumentasi. Silakan unggah foto Anda.');
+        }
+
         if ($meeting->mode_rapat === 'offline') {
             return back()->with('error', 'Rapat ini diselenggarakan secara offline (tatap muka). Kehadiran wajib dicatat melalui scan QR Code oleh scanner panitia.');
         }

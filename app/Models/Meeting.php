@@ -15,6 +15,7 @@ class Meeting extends Model
     protected $fillable = [
         'created_by',
         'jenis_rapat',
+        'kategori',
         'mode_rapat',
         'event_id',
         'departemen',
@@ -69,6 +70,20 @@ class Meeting extends Model
         $types = config('himati.meeting_types', []);
 
         return $types[$this->jenis_rapat] ?? $this->jenis_rapat;
+    }
+
+    /**
+     * Kegiatan = absensi berbasis foto dokumentasi (offline: foto wajah di lokasi,
+     * online: screenshot Zoom/Google Meet dengan kamera menyala).
+     */
+    public function isKegiatan(): bool
+    {
+        return $this->kategori === 'kegiatan' || $this->jenis_rapat === 'kegiatan';
+    }
+
+    public function getKategoriLabelAttribute(): string
+    {
+        return $this->isKegiatan() ? 'Kegiatan' : 'Rapat';
     }
 
     public function getHadirCountAttribute(): int
@@ -150,7 +165,8 @@ class Meeting extends Model
                 break;
 
             case 'perdana':
-                // Seluruh anggota HIMA TI berhak hadir
+            case 'kegiatan':
+                // Seluruh anggota HIMA TI berhak hadir secara bebas
                 break;
         }
 
