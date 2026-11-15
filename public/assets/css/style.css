@@ -10506,6 +10506,12 @@ textarea.form-control {
     overflow: hidden !important;
 }
 
+[data-theme="dark"] .sidebar .sidebar-header,
+[data-theme="dark"] .sidebar-header {
+    background: #0B1D30 !important;
+    border-bottom: 2px solid #30AFFF !important;
+}
+
 /* Logo dirapatkan dan disesuaikan ukurannya */
 .sidebar .sidebar-logos {
     display: inline-flex !important;
@@ -10577,6 +10583,25 @@ textarea.form-control {
     margin-top: 2px !important;
     display: block !important;
     white-space: nowrap !important;
+}
+
+[data-theme="dark"] .sidebar .sidebar-brand-title,
+[data-theme="dark"] .sidebar-brand-title {
+    color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .sidebar .sidebar-brand-sub,
+[data-theme="dark"] .sidebar .sidebar-brand small,
+[data-theme="dark"] .sidebar-brand-sub,
+[data-theme="dark"] .sidebar-brand small {
+    color: #92EEFF !important;
+}
+
+[data-theme="dark"] .sidebar .sidebar-logos .logo-placeholder,
+[data-theme="dark"] .sidebar-logos .logo-placeholder {
+    background: #0E2033 !important;
+    color: #92EEFF !important;
+    border-color: #30AFFF !important;
 }
 
 /* Tombol panah: berada DI DALAM sidebar header (di sebelah kanan) */
