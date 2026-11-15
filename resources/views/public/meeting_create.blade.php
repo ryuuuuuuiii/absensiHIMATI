@@ -309,6 +309,44 @@
                     <input type="text" name="nama_event_kegiatan" id="namaEventKegiatan" class="form-control" placeholder="Contoh: Makrab HIMA TI, Workshop UI/UX, Buka Bersama">
                 </div>
 
+                <!-- 2 Opsi untuk Bikin/Ketik Sendiri: Semua Pengurus atau Dibebaskan -->
+                <div class="form-group" id="groupSifatKegiatanManual">
+                    <label class="form-label">Ketentuan Peserta / Sifat Presensi <span class="required">*</span></label>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+                        <label class="sifat-kegiatan-option" style="cursor: pointer; display: block; margin: 0;">
+                            <input type="radio" name="sifat_kegiatan_manual" value="semua" style="display: none;" onchange="onSifatKegiatanChange(this)">
+                            <div class="sifat-card" id="sifatCardSemua" style="border: 2px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 14px; background: var(--bg-surface-subtle); transition: all 0.2s ease; height: 100%;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                                    <span style="font-weight: 700; font-size: 0.92rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                                        <i class="fas fa-users" style="color: #2563eb;"></i>
+                                        <span>Semua Pengurus</span>
+                                    </span>
+                                    <span class="badge badge-primary" style="font-size: 0.68rem; padding: 2px 7px;">Wajib</span>
+                                </div>
+                                <p style="margin: 0; font-size: 0.77rem; color: var(--text-muted); line-height: 1.4;">
+                                    Diwajibkan untuk seluruh pengurus. Yang tidak hadir dicatat <strong>Alpha</strong> dan masuk sanksi SP.
+                                </p>
+                            </div>
+                        </label>
+
+                        <label class="sifat-kegiatan-option" style="cursor: pointer; display: block; margin: 0;">
+                            <input type="radio" name="sifat_kegiatan_manual" value="dibebaskan" checked style="display: none;" onchange="onSifatKegiatanChange(this)">
+                            <div class="sifat-card" id="sifatCardDibebaskan" style="border: 2px solid #30AFFF; border-radius: var(--radius-md); padding: 12px 14px; background: rgba(48, 175, 255, 0.08); transition: all 0.2s ease; height: 100%; box-shadow: 0 0 0 1px #30AFFF;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                                    <span style="font-weight: 700; font-size: 0.92rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                                        <i class="fas fa-user-check" style="color: #10b981;"></i>
+                                        <span>Dibebaskan</span>
+                                    </span>
+                                    <span class="badge badge-success" style="font-size: 0.68rem; padding: 2px 7px;">Bebas SP</span>
+                                </div>
+                                <p style="margin: 0; font-size: 0.77rem; color: var(--text-muted); line-height: 1.4;">
+                                    Siapa pun pengurus dibebaskan presensi. Yang tidak hadir <strong style="color: #10b981;">bebas sanksi SP</strong>.
+                                </p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
                 <div class="form-group" id="groupNamaKegiatanEvent" style="display: none;">
                     <label class="form-label">Pilih Event Terdaftar <span class="required">*</span></label>
                     <select name="kegiatan_event_id" id="selectKegiatanEvent" class="form-control" onchange="onKegiatanEventSelect(this)" disabled>
@@ -320,16 +358,16 @@
                     <small class="form-hint" style="color: var(--text-muted); margin-top: 4px; display: block;">
                         <i class="fas fa-info-circle"></i> Nama kegiatan akan otomatis menggunakan nama event yang dipilih.
                     </small>
-                </div>
 
-                <!-- Info Banner: Peserta Bebas & Tanpa SP -->
-                <div class="kegiatan-info-banner" style="background: rgba(245, 158, 11, 0.08); border: 1.5px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: var(--space-4); display: flex; align-items: flex-start; gap: 12px;">
-                    <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(245, 158, 11, 0.2); color: #d97706; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px;">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">
-                        <strong style="color: var(--text-primary); display: block; margin-bottom: 2px;">Peserta: Terbuka untuk Seluruh Anggota</strong>
-                        Siapa pun anggota dibebaskan untuk presensi (foto selfie di lokasi kegiatan / screenshot on-cam). Anggota yang tidak hadir <strong style="color: #10b981;">bebas sanksi SP (tidak dihitung Alpha)</strong>.
+                    <!-- Banner Info Khusus Event: Diharuskan untuk Seluruh Pengurus -->
+                    <div style="background: rgba(37, 99, 235, 0.08); border: 1.5px solid rgba(37, 99, 235, 0.3); border-radius: var(--radius-lg); padding: 12px 14px; margin-top: 12px; display: flex; align-items: flex-start; gap: 12px;">
+                        <div style="width: 34px; height: 34px; border-radius: 50%; background: rgba(37, 99, 235, 0.2); color: var(--blue-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 15px;">
+                            <i class="fas fa-user-lock"></i>
+                        </div>
+                        <div style="font-size: 0.83rem; line-height: 1.45; color: var(--text-secondary);">
+                            <strong style="color: var(--text-primary); display: block; margin-bottom: 2px;">Peserta: Diharuskan untuk Seluruh Pengurus</strong>
+                            Kegiatan berbasis event ini bersifat <strong style="color: var(--blue-primary);">wajib diikuti oleh seluruh pengurus</strong> HIMA TI. Pengurus yang tidak hadir akan dicatat Alpha dan dihitung ke dalam sanksi SP.
+                        </div>
                     </div>
                 </div>
 
@@ -448,21 +486,52 @@
     <script>
         function toggleSumberKegiatan(val) {
             const groupManual = document.getElementById('groupNamaKegiatanManual');
+            const groupSifat = document.getElementById('groupSifatKegiatanManual');
             const groupEvent = document.getElementById('groupNamaKegiatanEvent');
             const inputManual = document.getElementById('namaEventKegiatan');
             const selectEvent = document.getElementById('selectKegiatanEvent');
 
             if (val === 'event') {
                 if (groupManual) groupManual.style.display = 'none';
+                if (groupSifat) groupSifat.style.display = 'none';
                 if (groupEvent) groupEvent.style.display = 'block';
                 if (inputManual) inputManual.disabled = true;
                 if (selectEvent) selectEvent.disabled = false;
             } else {
                 if (groupManual) groupManual.style.display = 'block';
+                if (groupSifat) groupSifat.style.display = 'block';
                 if (groupEvent) groupEvent.style.display = 'none';
                 if (inputManual) inputManual.disabled = false;
                 if (selectEvent) selectEvent.disabled = true;
             }
+            if (typeof saveMeetingDraft === 'function') {
+                saveMeetingDraft();
+            }
+        }
+
+        function onSifatKegiatanChange(radio) {
+            const cardSemua = document.getElementById('sifatCardSemua');
+            const cardDibebaskan = document.getElementById('sifatCardDibebaskan');
+            if (cardSemua && cardDibebaskan) {
+                if (radio.value === 'semua') {
+                    cardSemua.style.borderColor = '#30AFFF';
+                    cardSemua.style.background = 'rgba(48, 175, 255, 0.08)';
+                    cardSemua.style.boxShadow = '0 0 0 1px #30AFFF';
+
+                    cardDibebaskan.style.borderColor = 'var(--border-color)';
+                    cardDibebaskan.style.background = 'var(--bg-surface-subtle)';
+                    cardDibebaskan.style.boxShadow = 'none';
+                } else {
+                    cardDibebaskan.style.borderColor = '#30AFFF';
+                    cardDibebaskan.style.background = 'rgba(48, 175, 255, 0.08)';
+                    cardDibebaskan.style.boxShadow = '0 0 0 1px #30AFFF';
+
+                    cardSemua.style.borderColor = 'var(--border-color)';
+                    cardSemua.style.background = 'var(--bg-surface-subtle)';
+                    cardSemua.style.boxShadow = 'none';
+                }
+            }
+
             if (typeof saveMeetingDraft === 'function') {
                 saveMeetingDraft();
             }

@@ -191,8 +191,8 @@ class MeetingSpamProtectionService
             return $this->meetingValidityCache[$meeting->id];
         }
 
-        // Kegiatan bersifat sukarela / bebas hadir sehingga tidak pernah memicu akumulasi SP
-        if ($meeting->isKegiatan()) {
+        // Kegiatan yang dibebaskan bersifat sukarela / bebas hadir sehingga tidak pernah memicu akumulasi SP
+        if ($meeting->isKegiatan() && $meeting->isDibebaskan()) {
             return $this->meetingValidityCache[$meeting->id] = false;
         }
 

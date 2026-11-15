@@ -16,6 +16,7 @@ class Meeting extends Model
         'created_by',
         'jenis_rapat',
         'kategori',
+        'sifat_kegiatan',
         'mode_rapat',
         'event_id',
         'departemen',
@@ -79,6 +80,30 @@ class Meeting extends Model
     public function isKegiatan(): bool
     {
         return $this->kategori === 'kegiatan' || $this->jenis_rapat === 'kegiatan';
+    }
+
+    /**
+     * Memeriksa apakah kegiatan bersifat dibebaskan (sukarela / bebas sanksi SP).
+     */
+    public function isDibebaskan(): bool
+    {
+        if ($this->sifat_kegiatan === 'dibebaskan') {
+            return true;
+        }
+
+        if (in_array($this->sifat_kegiatan, ['wajib', 'semua'], true)) {
+            return false;
+        }
+
+        return $this->isKegiatan() && (bool) $this->attendances()->where('sp_ignored', 1)->exists();
+    }
+
+    /**
+     * Memeriksa apakah kegiatan / rapat bersifat wajib / diharuskan untuk seluruh pengurus.
+     */
+    public function isWajib(): bool
+    {
+        return ! $this->isDibebaskan();
     }
 
     public function getKategoriLabelAttribute(): string

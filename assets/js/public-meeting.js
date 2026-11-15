@@ -651,13 +651,22 @@ function populateConfirmation() {
         case 'kegiatan': {
             const sumber = document.querySelector('[name="sumber_nama_kegiatan"]:checked')?.value || 'manual';
             let namaKegiatan = 'Kegiatan HIMA TI';
+            let targetKetDesc = '';
+
             if (sumber === 'event') {
                 const selectEvent = document.getElementById('selectKegiatanEvent');
                 if (selectEvent && selectEvent.selectedIndex >= 0 && selectEvent.value) {
                     namaKegiatan = selectEvent.options[selectEvent.selectedIndex].text;
                 }
+                targetKetDesc = '<i class="fas fa-user-lock text-primary"></i> Target: Seluruh Pengurus (Diharuskan / Wajib — Sanksi SP Berlaku)';
             } else {
                 namaKegiatan = document.getElementById('namaEventKegiatan')?.value.trim() || 'Kegiatan HIMA TI';
+                const sifat = document.querySelector('[name="sifat_kegiatan_manual"]:checked')?.value || 'dibebaskan';
+                if (sifat === 'semua' || sifat === 'wajib') {
+                    targetKetDesc = '<i class="fas fa-users text-primary"></i> Target: Semua Pengurus (Wajib Hadir — Sanksi SP Berlaku)';
+                } else {
+                    targetKetDesc = '<i class="fas fa-user-check text-success"></i> Target: Seluruh Pengurus (Dibebaskan — Bebas Sanksi SP)';
+                }
             }
             fokusText = document.querySelector('[name="fokus_bahasan_kegiatan"]')?.value.trim() || '';
 
@@ -669,7 +678,7 @@ function populateConfirmation() {
                     <i class="fas fa-camera text-primary" style="font-size: 1.15rem;"></i>
                     <div>
                         <strong class="confirm-target-title">${escapeHtml(namaKegiatan)}</strong>
-                        <div class="confirm-target-desc"><i class="fas fa-users"></i> Target: Seluruh Anggota HIMA TI (Bebas Hadir & Bebas SP)</div>
+                        <div class="confirm-target-desc">${targetKetDesc}</div>
                     </div>
                 </div>
             `;
@@ -790,6 +799,7 @@ function saveMeetingDraft() {
             fokus_bahasan_lintas: form.querySelector('[name="fokus_bahasan_lintas"]')?.value || '',
             sumber_nama_kegiatan: form.querySelector('[name="sumber_nama_kegiatan"]:checked')?.value || 'manual',
             nama_event_kegiatan: form.querySelector('[name="nama_event_kegiatan"]')?.value || '',
+            sifat_kegiatan_manual: form.querySelector('[name="sifat_kegiatan_manual"]:checked')?.value || 'dibebaskan',
             kegiatan_event_id: document.getElementById('selectKegiatanEvent')?.value || '',
             fokus_bahasan_kegiatan: form.querySelector('[name="fokus_bahasan_kegiatan"]')?.value || '',
             tanggal: form.querySelector('[name="tanggal"]')?.value || '',
@@ -895,6 +905,14 @@ function restoreMeetingDraft() {
         if (draft.nama_event_kegiatan !== undefined) {
             const el = form.querySelector('[name="nama_event_kegiatan"]');
             if (el) el.value = draft.nama_event_kegiatan;
+        }
+
+        if (draft.sifat_kegiatan_manual !== undefined) {
+            const el = form.querySelector(`[name="sifat_kegiatan_manual"][value="${draft.sifat_kegiatan_manual}"]`);
+            if (el) {
+                el.checked = true;
+                if (typeof onSifatKegiatanChange === 'function') onSifatKegiatanChange(el);
+            }
         }
 
         if (draft.kegiatan_event_id !== undefined && draft.kegiatan_event_id !== '') {

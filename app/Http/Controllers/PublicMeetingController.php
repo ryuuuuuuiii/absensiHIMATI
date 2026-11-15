@@ -82,6 +82,7 @@ class PublicMeetingController extends Controller
             'jenis_rapat' => ['required', 'in:internal_dept,perdana,kepanitiaan,bph,lintas_dept,kegiatan'],
             'mode_rapat' => ['required', 'in:offline,online'],
             'kategori' => ['nullable', 'in:rapat,kegiatan'],
+            'sifat_kegiatan_manual' => ['nullable', 'in:semua,dibebaskan,wajib'],
             'tanggal' => ['required', 'date'],
             'waktu_mulai' => ['required'],
             'waktu_selesai' => ['nullable', 'string'],
@@ -112,6 +113,7 @@ class PublicMeetingController extends Controller
         $fokusBahasan = null;
         $departemenCollab = null;
         $eventId = null;
+        $sifatKegiatan = null;
 
         switch ($jenisRapat) {
             case 'internal_dept':
@@ -177,9 +179,14 @@ class PublicMeetingController extends Controller
                     } else {
                         return back()->withInput()->with('danger', 'Event yang dipilih tidak ditemukan.');
                     }
+                    // Kegiatan dari event diharuskan untuk seluruh pengurus (wajib)
+                    $sifatKegiatan = 'wajib';
                 } else {
                     $namaEvent = $request->input('nama_event_kegiatan');
                     $eventId = null;
+                    // Bikin/ketik sendiri: 2 opsi (semua pengurus / dibebaskan)
+                    $sifatOption = $request->input('sifat_kegiatan_manual', 'dibebaskan');
+                    $sifatKegiatan = in_array($sifatOption, ['semua', 'wajib'], true) ? 'wajib' : 'dibebaskan';
                 }
 
                 if (! $namaEvent) {
@@ -187,7 +194,6 @@ class PublicMeetingController extends Controller
                 }
 
                 $fokusBahasan = $request->input('fokus_bahasan_kegiatan') ?: $namaEvent;
-                // Target peserta selalu seluruh anggota (dibebaskan siapa pun boleh absen & tanpa sanksi SP)
                 $departemen = null;
                 break;
         }
@@ -212,7 +218,7 @@ class PublicMeetingController extends Controller
         $absentLink = Str::lower(Str::random(12));
 
         $meeting = DB::transaction(function () use (
-            $createdBy, $jenisRapat, $kategori, $modeRapat, $eventId, $departemen, $namaEvent,
+            $createdBy, $jenisRapat, $kategori, $sifatKegiatan, $modeRapat, $eventId, $departemen, $namaEvent,
             $divisiRapat, $tipeDivisi, $fokusBahasan, $departemenCollab,
             $request, $uniqueLink, $absentLink
         ) {
@@ -220,6 +226,7 @@ class PublicMeetingController extends Controller
                 'created_by' => $createdBy,
                 'jenis_rapat' => $jenisRapat,
                 'kategori' => $kategori,
+                'sifat_kegiatan' => $sifatKegiatan,
                 'mode_rapat' => $modeRapat,
                 'event_id' => $eventId,
                 'departemen' => $departemen,
@@ -296,6 +303,7 @@ class PublicMeetingController extends Controller
             $attendanceRecords = [];
             $hasCreatorAttended = false;
             $isKegiatan = ($kategori === 'kegiatan' || $jenisRapat === 'kegiatan');
+            $spIgnored = ($isKegiatan && $sifatKegiatan === 'dibebaskan') ? 1 : 0;
             foreach ($memberIds as $mId) {
                 $isCreator = ($m->created_by && (int) $mId === (int) $m->created_by);
                 if ($isCreator) {
@@ -308,7 +316,7 @@ class PublicMeetingController extends Controller
                     'status' => $isCreator ? 'hadir' : 'alpha',
                     'scanned_at' => $isCreator ? $now : null,
                     'scan_method' => $isCreator ? 'manual' : 'qr_scan',
-                    'sp_ignored' => $isKegiatan ? 1 : 0,
+                    'sp_ignored' => $spIgnored,
                     'exp_awarded' => $isCreator,
                     'created_at' => $now,
                 ];

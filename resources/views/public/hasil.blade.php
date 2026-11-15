@@ -727,6 +727,18 @@
             <label><i class="fas fa-wifi"></i> Mode Rapat</label>
             <p>{{ $meeting->mode_rapat === 'offline' ? '🏢 Tatap Muka (Offline)' : '🌐 Online Link' }}</p>
         </div>
+        @if($meeting->isKegiatan())
+        <div class="meeting-info-item">
+            <label><i class="fas fa-users-cog"></i> Sifat Presensi</label>
+            <p>
+                @if($meeting->isDibebaskan())
+                    <span class="badge badge-success" style="font-size: 0.78rem;"><i class="fas fa-user-check"></i> Dibebaskan (Bebas SP)</span>
+                @else
+                    <span class="badge badge-primary" style="font-size: 0.78rem;"><i class="fas fa-user-lock"></i> Wajib Seluruh Pengurus</span>
+                @endif
+            </p>
+        </div>
+        @endif
         @if($meeting->departemen)
         <div class="meeting-info-item">
             <label><i class="fas fa-building"></i> Departemen</label>

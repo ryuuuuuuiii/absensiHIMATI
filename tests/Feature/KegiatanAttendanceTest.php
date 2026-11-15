@@ -210,11 +210,12 @@ class KegiatanAttendanceTest extends TestCase
         $this->assertSame('kegiatan', $meeting->kategori);
         $this->assertNull($meeting->departemen);
 
-        // Verify all created attendances have sp_ignored = 1
+        // Verify all created attendances have sp_ignored = 0 (karena event diharuskan untuk seluruh pengurus)
+        $this->assertSame('wajib', $meeting->sifat_kegiatan);
         $attendances = $meeting->attendances()->get();
         $this->assertGreaterThan(0, $attendances->count());
         foreach ($attendances as $att) {
-            $this->assertTrue((bool) $att->sp_ignored);
+            $this->assertFalse((bool) $att->sp_ignored);
         }
     }
 
@@ -225,6 +226,7 @@ class KegiatanAttendanceTest extends TestCase
             'created_by' => $creator->id,
             'jenis_rapat' => 'kegiatan',
             'kategori' => 'kegiatan',
+            'sifat_kegiatan' => 'dibebaskan',
             'mode_rapat' => 'offline',
             'nama_event' => 'Bakti Sosial Sukarela',
             'tanggal' => now()->toDateString(),
@@ -240,6 +242,94 @@ class KegiatanAttendanceTest extends TestCase
 
         $member = $this->createMember();
         $this->assertNull($meeting->checkMemberEligibility($member));
+    }
+
+    public function test_kegiatan_from_event_is_automatically_wajib_for_all_pengurus(): void
+    {
+        $creator = Member::where('departemen', 'Inti')->firstOrFail();
+        $event = Event::create([
+            'nama_event' => 'Dies Natalis HIMA TI',
+            'deskripsi' => 'Perayaan tahunan',
+            'status' => 'active',
+            'tanggal_mulai' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($creator, 'member')->post('/rapat', [
+            'created_by' => $creator->id,
+            'jenis_rapat' => 'kegiatan',
+            'mode_rapat' => 'offline',
+            'sumber_nama_kegiatan' => 'event',
+            'kegiatan_event_id' => $event->id,
+            'fokus_bahasan_kegiatan' => 'Puncak Acara Dies Natalis',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '09:00',
+        ])->assertRedirect();
+
+        $meeting = Meeting::where('nama_event', 'Dies Natalis HIMA TI')->firstOrFail();
+        $this->assertSame('kegiatan', $meeting->kategori);
+        $this->assertSame('wajib', $meeting->sifat_kegiatan);
+        $this->assertTrue($meeting->isWajib());
+        $this->assertFalse($meeting->isDibebaskan());
+
+        // Attendances harus sp_ignored = 0 karena diharuskan untuk seluruh pengurus
+        $sampleAtt = $meeting->attendances()->first();
+        $this->assertNotNull($sampleAtt);
+        $this->assertEquals(0, $sampleAtt->sp_ignored);
+    }
+
+    public function test_kegiatan_manual_with_semua_pengurus_is_wajib_for_all_pengurus(): void
+    {
+        $creator = Member::where('departemen', 'Inti')->firstOrFail();
+
+        $this->actingAs($creator, 'member')->post('/rapat', [
+            'created_by' => $creator->id,
+            'jenis_rapat' => 'kegiatan',
+            'mode_rapat' => 'offline',
+            'sumber_nama_kegiatan' => 'manual',
+            'nama_event_kegiatan' => 'Pelatihan Kepemimpinan Pengurus',
+            'sifat_kegiatan_manual' => 'semua',
+            'fokus_bahasan_kegiatan' => 'Materi LKMM-TD',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '08:00',
+        ])->assertRedirect();
+
+        $meeting = Meeting::where('nama_event', 'Pelatihan Kepemimpinan Pengurus')->firstOrFail();
+        $this->assertSame('kegiatan', $meeting->kategori);
+        $this->assertSame('wajib', $meeting->sifat_kegiatan);
+        $this->assertTrue($meeting->isWajib());
+        $this->assertFalse($meeting->isDibebaskan());
+
+        $sampleAtt = $meeting->attendances()->first();
+        $this->assertNotNull($sampleAtt);
+        $this->assertEquals(0, $sampleAtt->sp_ignored);
+    }
+
+    public function test_kegiatan_manual_with_dibebaskan_is_exempt_from_sp(): void
+    {
+        $creator = Member::where('departemen', 'Inti')->firstOrFail();
+
+        $this->actingAs($creator, 'member')->post('/rapat', [
+            'created_by' => $creator->id,
+            'jenis_rapat' => 'kegiatan',
+            'mode_rapat' => 'offline',
+            'sumber_nama_kegiatan' => 'manual',
+            'nama_event_kegiatan' => 'Buka Puasa Bersama Himpunan',
+            'sifat_kegiatan_manual' => 'dibebaskan',
+            'fokus_bahasan_kegiatan' => 'Silaturahmi & Buber',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '17:00',
+        ])->assertRedirect();
+
+        $meeting = Meeting::where('nama_event', 'Buka Puasa Bersama Himpunan')->firstOrFail();
+        $this->assertSame('kegiatan', $meeting->kategori);
+        $this->assertSame('dibebaskan', $meeting->sifat_kegiatan);
+        $this->assertTrue($meeting->isDibebaskan());
+        $this->assertFalse($meeting->isWajib());
+
+        // Attendances harus sp_ignored = 1 karena dibebaskan
+        $sampleAtt = $meeting->attendances()->first();
+        $this->assertNotNull($sampleAtt);
+        $this->assertEquals(1, $sampleAtt->sp_ignored);
     }
 
     private function createKegiatan(string $mode): Meeting
