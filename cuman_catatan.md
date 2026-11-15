@@ -15,6 +15,10 @@ prioritas
 2.
 3. saat scan absensi dia scan berulang untuk akun pengurus yg sama
 
+4. bikin absensi untuk suatu kegiatan
+5. bikin timeline atau kalender kegiatan semua agenda pada proker
+6. bikin acitment even itu ditampikan terlebih ddahulu walau belum selesai evennya namun status nya belum selesai
+
 font
 
 1. poppins

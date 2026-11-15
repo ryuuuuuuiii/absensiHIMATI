@@ -79,6 +79,13 @@
                                     @else
                                         <span class="badge badge-secondary" style="font-size: 10px;"><i class="fas fa-building"></i> Offline</span>
                                     @endif
+                                    @if($m->isKegiatan())
+                                        @if($m->isDibebaskan())
+                                            <span class="badge badge-success" style="font-size: 10px;" title="Presensi dibebaskan (tidak dikenakan sanksi SP)"><i class="fas fa-user-check"></i> Bebas SP</span>
+                                        @else
+                                            <span class="badge badge-primary" style="font-size: 10px;" title="Presensi wajib untuk seluruh pengurus"><i class="fas fa-user-lock"></i> Wajib</span>
+                                        @endif
+                                    @endif
                                     @if($m->departemen)
                                         <span class="badge badge-orange" style="font-size: 10px;">{{ $m->departemen }}</span>
                                     @endif

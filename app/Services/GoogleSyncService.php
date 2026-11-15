@@ -60,9 +60,18 @@ class GoogleSyncService
             $data = [];
             foreach ($attendances as $att) {
                 $member = $att->member;
+                $sifat = $meeting->isKegiatan()
+                    ? ($meeting->isDibebaskan() ? 'Dibebaskan (Bebas SP)' : 'Wajib (Seluruh Pengurus)')
+                    : 'Wajib';
+                $sanksiSp = ($att->status === 'alpha')
+                    ? ($att->sp_ignored ? 'Bebas SP' : 'SP Berlaku')
+                    : '-';
+
                 $data[] = [
                     'tanggal' => $meeting->tanggal ? $meeting->tanggal->format('Y-m-d') : '',
                     'jenis_rapat' => $meeting->jenis_rapat,
+                    'sifat' => $sifat,
+                    'sanksi_sp' => $sanksiSp,
                     'departemen_rapat' => $meeting->departemen ?? '',
                     'nama_event' => $meeting->nama_event ?? '',
                     'fokus_bahasan' => $meeting->fokus_bahasan ?? '',

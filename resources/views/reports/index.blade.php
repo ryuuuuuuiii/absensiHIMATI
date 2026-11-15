@@ -86,7 +86,23 @@
                     <td><span class="badge badge-hadir">{{ $row->hadir }}</span></td>
                     <td><span class="badge badge-izin">{{ $row->izin }}</span></td>
                     <td><span class="badge badge-sakit">{{ $row->sakit }}</span></td>
-                    <td><span class="badge badge-alpha">{{ $row->alpha }}</span></td>
+                    <td>
+                        <span class="badge badge-alpha">{{ $row->alpha }}</span>
+                        @if($row->alpha > 0 && (($row->alpha_wajib ?? 0) > 0 || ($row->alpha_dibebaskan ?? 0) > 0))
+                            <div style="display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap;">
+                                @if(($row->alpha_wajib ?? 0) > 0)
+                                    <span class="badge badge-danger" style="font-size: 9px; padding: 2px 5px;" title="{{ $row->alpha_wajib }} Alpha di pertemuan wajib (kena SP)">
+                                        <i class="fas fa-exclamation-triangle"></i> {{ $row->alpha_wajib }} Wajib
+                                    </span>
+                                @endif
+                                @if(($row->alpha_dibebaskan ?? 0) > 0)
+                                    <span class="badge badge-success" style="font-size: 9px; padding: 2px 5px;" title="{{ $row->alpha_dibebaskan }} Alpha di kegiatan dibebaskan (bebas sanksi SP)">
+                                        <i class="fas fa-shield-alt"></i> {{ $row->alpha_dibebaskan }} Bebas SP
+                                    </span>
+                                @endif
+                            </div>
+                        @endif
+                    </td>
                     <td>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <div style="flex: 1; height: 8px; background: var(--dark-surface-2); border-radius: 4px; overflow: hidden; min-width: 60px;">

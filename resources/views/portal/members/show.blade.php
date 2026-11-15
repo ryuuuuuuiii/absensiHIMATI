@@ -328,11 +328,20 @@
                             <span class="chip-status chip-sakit"><i class="fas fa-heartbeat"></i> Sakit</span>
                         @else
                             <span class="chip-status chip-alpha"><i class="fas fa-times"></i> Alpha</span>
+                            @if ($att->sp_ignored)
+                                <span class="badge badge-success" style="font-size: 0.68rem; padding: 2px 6px;" title="Presensi dibebaskan, tidak kena sanksi SP"><i class="fas fa-shield-alt"></i> Bebas SP</span>
+                            @elseif ($m?->isWajib())
+                                <span class="badge badge-danger" style="font-size: 0.68rem; padding: 2px 6px;" title="Presensi wajib, sanksi SP berlaku"><i class="fas fa-exclamation-triangle"></i> SP Berlaku</span>
+                            @endif
                         @endif
                     </div>
 
                     <div style="display: flex; align-items: center; gap: 6px; font-size: 0.74rem; color: var(--text-muted); flex-wrap: wrap;">
                         <span class="meeting-meta-cat">{{ $catLabel }}</span>
+                        @if($m?->isKegiatan())
+                            <span class="meta-dot">&bull;</span>
+                            <span class="badge badge-{{ $m->isDibebaskan() ? 'success' : 'primary' }}" style="font-size: 0.68rem; padding: 1px 5px;">{{ $m->isDibebaskan() ? 'Bebas SP' : 'Wajib' }}</span>
+                        @endif
                         <span class="meta-dot">&bull;</span>
                         <span>{{ $m?->tanggal?->locale('id')->translatedFormat('d M Y') ?? '-' }}</span>
                         <span class="meta-dot">&bull;</span>
@@ -408,6 +417,15 @@
                             </td>
                             <td>
                                 <span class="badge badge-secondary" style="font-size: 0.72rem;">{{ $catLabel }}</span>
+                                @if($m?->isKegiatan())
+                                    <div style="margin-top: 3px;">
+                                        @if($m->isDibebaskan())
+                                            <span class="badge badge-success" style="font-size: 9px; padding: 1px 5px;" title="Presensi dibebaskan"><i class="fas fa-user-check"></i> Bebas SP</span>
+                                        @else
+                                            <span class="badge badge-primary" style="font-size: 9px; padding: 1px 5px;" title="Presensi wajib"><i class="fas fa-user-lock"></i> Wajib</span>
+                                        @endif
+                                    </div>
+                                @endif
                                 <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
                                     <i class="fas fa-{{ $m?->mode_rapat === 'online' ? 'globe' : 'building' }}"></i>
                                     {{ ucfirst($m?->mode_rapat ?? 'offline') }}
@@ -430,6 +448,15 @@
                                     <span class="badge badge-warning" style="background: rgba(239, 68, 68, 0.15); color: #EF4444;"><i class="fas fa-heartbeat"></i> Sakit</span>
                                 @else
                                     <span class="badge badge-danger"><i class="fas fa-times"></i> Alpha</span>
+                                    @if ($att->sp_ignored)
+                                        <div style="margin-top: 3px;">
+                                            <span class="badge badge-success" style="font-size: 9px; padding: 2px 6px;" title="Presensi dibebaskan, tidak kena sanksi SP"><i class="fas fa-shield-alt"></i> Bebas SP</span>
+                                        </div>
+                                    @elseif ($m?->isWajib())
+                                        <div style="margin-top: 3px;">
+                                            <span class="badge badge-danger" style="font-size: 9px; padding: 2px 6px;" title="Presensi wajib, sanksi SP berlaku"><i class="fas fa-exclamation-triangle"></i> SP Berlaku</span>
+                                        </div>
+                                    @endif
                                 @endif
                             </td>
                             <td>

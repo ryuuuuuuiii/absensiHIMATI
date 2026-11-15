@@ -127,6 +127,10 @@ class MeetingSpamProtectionService
             $query->where('event_id', $eventId);
         }
 
+        if ($jenisRapat === 'kegiatan' && $request->filled('kegiatan_event_id')) {
+            $query->where('event_id', $request->input('kegiatan_event_id'));
+        }
+
         $existingMeetings = $query->get();
 
         if ($existingMeetings->isEmpty()) {
@@ -162,7 +166,9 @@ class MeetingSpamProtectionService
             'kepanitiaan' => $request->input('fokus_bahasan_kepanitiaan'),
             'bph' => $request->input('fokus_bahasan_bph'),
             'lintas_dept' => $request->input('fokus_bahasan_lintas'),
-            'kegiatan' => $request->input('nama_event_kegiatan') ?: $request->input('fokus_bahasan_kegiatan'),
+            'kegiatan' => $request->input('nama_event_kegiatan')
+                ?: ($request->filled('kegiatan_event_id') ? Event::find($request->input('kegiatan_event_id'))?->nama_event : null)
+                ?: $request->input('fokus_bahasan_kegiatan'),
             default => null,
         };
 

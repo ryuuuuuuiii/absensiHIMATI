@@ -51,7 +51,9 @@ class ReportController extends Controller
                 DB::raw('SUM(CASE WHEN a.status = "hadir" THEN 1 ELSE 0 END) as hadir'),
                 DB::raw('SUM(CASE WHEN a.status = "izin" THEN 1 ELSE 0 END) as izin'),
                 DB::raw('SUM(CASE WHEN a.status = "sakit" THEN 1 ELSE 0 END) as sakit'),
-                DB::raw('SUM(CASE WHEN a.status = "alpha" THEN 1 ELSE 0 END) as alpha')
+                DB::raw('SUM(CASE WHEN a.status = "alpha" THEN 1 ELSE 0 END) as alpha'),
+                DB::raw('SUM(CASE WHEN a.status = "alpha" AND (a.sp_ignored = 0 OR a.sp_ignored IS NULL) THEN 1 ELSE 0 END) as alpha_wajib'),
+                DB::raw('SUM(CASE WHEN a.status = "alpha" AND a.sp_ignored = 1 THEN 1 ELSE 0 END) as alpha_dibebaskan')
             );
 
         if ($filterDept) {

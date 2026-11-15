@@ -361,9 +361,11 @@ class PublicMeetingController extends Controller
             'izin' => $attendances->where('status', 'izin')->count(),
             'sakit' => $attendances->where('status', 'sakit')->count(),
             'alpha' => $attendances->where('status', 'alpha')->count(),
+            'alpha_wajib' => $attendances->where('status', 'alpha')->where('sp_ignored', false)->count(),
+            'alpha_dibebaskan' => $attendances->where('status', 'alpha')->where('sp_ignored', true)->count(),
         ];
 
-        $attendancesData = $attendances->map(function ($a) {
+        $attendancesData = $attendances->map(function ($a) use ($meeting) {
             return [
                 'id' => $a->id,
                 'user_id' => $a->user_id,
@@ -374,6 +376,9 @@ class PublicMeetingController extends Controller
                 'sp_label' => $a->member ? $a->member->sp_label : null,
                 'is_active' => $a->member ? (bool) $a->member->is_active : true,
                 'status' => $a->status,
+                'sp_ignored' => (bool) $a->sp_ignored,
+                'is_wajib' => $meeting->isWajib(),
+                'is_dibebaskan' => $meeting->isDibebaskan(),
                 'scanned_at' => $a->scanned_at ? $a->scanned_at->format('H:i').' WITA' : null,
                 'scan_method' => $a->scan_method,
                 'keterangan' => $a->keterangan,
@@ -384,6 +389,14 @@ class PublicMeetingController extends Controller
         if ($request->ajax() || $request->wantsJson() || $request->query('json')) {
             return response()->json([
                 'success' => true,
+                'meeting' => [
+                    'id' => $meeting->id,
+                    'status' => $meeting->status,
+                    'is_kegiatan' => $meeting->isKegiatan(),
+                    'sifat_kegiatan' => $meeting->sifat_kegiatan,
+                    'is_wajib' => $meeting->isWajib(),
+                    'is_dibebaskan' => $meeting->isDibebaskan(),
+                ],
                 'stats' => $stats,
                 'attendances' => $attendancesData,
             ]);

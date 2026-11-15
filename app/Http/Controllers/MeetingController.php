@@ -314,8 +314,10 @@ class MeetingController extends Controller
         $izinCount = $attendances->where('status', 'izin')->count();
         $sakitCount = $attendances->where('status', 'sakit')->count();
         $alphaCount = $attendances->where('status', 'alpha')->count();
+        $alphaWajibCount = $attendances->where('status', 'alpha')->where('sp_ignored', false)->count();
+        $alphaDibebaskanCount = $attendances->where('status', 'alpha')->where('sp_ignored', true)->count();
 
-        return view('meetings.show', compact('meeting', 'attendances', 'hadirCount', 'izinCount', 'sakitCount', 'alphaCount'));
+        return view('meetings.show', compact('meeting', 'attendances', 'hadirCount', 'izinCount', 'sakitCount', 'alphaCount', 'alphaWajibCount', 'alphaDibebaskanCount'));
     }
 
     public function scan($id)

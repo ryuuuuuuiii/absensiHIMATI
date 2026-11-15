@@ -550,6 +550,18 @@
             <div class="live-stat-info">
                 <h3 id="statAlpha">{{ $stats['alpha'] }}</h3>
                 <p>Belum Hadir</p>
+                @if($stats['alpha'] > 0 && (($stats['alpha_wajib'] ?? 0) > 0 || ($stats['alpha_dibebaskan'] ?? 0) > 0))
+                    <div id="statAlphaSub" style="font-size: 10px; margin-top: 2px; display: flex; gap: 4px; flex-wrap: wrap;">
+                        @if(($stats['alpha_wajib'] ?? 0) > 0)
+                            <span class="badge badge-danger" style="padding: 1px 4px; font-size: 9px;" title="{{ $stats['alpha_wajib'] }} Belum hadir SP berlaku">{{ $stats['alpha_wajib'] }} Wajib</span>
+                        @endif
+                        @if(($stats['alpha_dibebaskan'] ?? 0) > 0)
+                            <span class="badge badge-success" style="padding: 1px 4px; font-size: 9px;" title="{{ $stats['alpha_dibebaskan'] }} Belum hadir bebas SP">{{ $stats['alpha_dibebaskan'] }} Bebas SP</span>
+                        @endif
+                    </div>
+                @else
+                    <div id="statAlphaSub" style="display: none; font-size: 10px; margin-top: 2px; gap: 4px; flex-wrap: wrap;"></div>
+                @endif
             </div>
         </div>
     </div>
@@ -631,6 +643,15 @@
                                 <span class="badge badge-sakit"><i class="fas fa-medkit"></i> Sakit</span>
                             @else
                                 <span class="badge badge-alpha"><i class="fas fa-clock"></i> Belum Hadir</span>
+                                @if($a->sp_ignored)
+                                    <div style="margin-top: 3px;">
+                                        <span class="badge badge-success" style="font-size: 9px; padding: 2px 6px;" title="Presensi dibebaskan, tidak kena sanksi SP"><i class="fas fa-shield-alt"></i> Bebas SP</span>
+                                    </div>
+                                @elseif($meeting->isWajib())
+                                    <div style="margin-top: 3px;">
+                                        <span class="badge badge-danger" style="font-size: 9px; padding: 2px 6px;" title="Presensi wajib, sanksi SP berlaku"><i class="fas fa-exclamation-triangle"></i> SP Berlaku</span>
+                                    </div>
+                                @endif
                             @endif
                         </td>
                         <td>
@@ -963,6 +984,11 @@
                     statusBadge = '<span class="badge badge-sakit"><i class="fas fa-medkit"></i> Sakit</span>';
                 } else {
                     statusBadge = '<span class="badge badge-alpha"><i class="fas fa-clock"></i> Belum Hadir</span>';
+                    if (item.sp_ignored) {
+                        statusBadge += '<div style="margin-top: 3px;"><span class="badge badge-success" style="font-size: 9px; padding: 2px 6px;" title="Presensi dibebaskan, tidak kena sanksi SP"><i class="fas fa-shield-alt"></i> Bebas SP</span></div>';
+                    } else if (item.is_wajib) {
+                        statusBadge += '<div style="margin-top: 3px;"><span class="badge badge-danger" style="font-size: 9px; padding: 2px 6px;" title="Presensi wajib, sanksi SP berlaku"><i class="fas fa-exclamation-triangle"></i> SP Berlaku</span></div>';
+                    }
                 }
 
                 // Time & Method
@@ -1057,6 +1083,26 @@
         if (statIzinEl) statIzinEl.textContent = stats.izin;
         if (statSakitEl) statSakitEl.textContent = stats.sakit;
         if (statAlphaEl) statAlphaEl.textContent = stats.alpha;
+
+        const statAlphaSubEl = document.getElementById('statAlphaSub');
+        if (statAlphaSubEl) {
+            const w = stats.alpha_wajib || 0;
+            const d = stats.alpha_dibebaskan || 0;
+            if (stats.alpha > 0 && (w > 0 || d > 0)) {
+                let subHtml = '';
+                if (w > 0) {
+                    subHtml += `<span class="badge badge-danger" style="padding: 1px 4px; font-size: 9px;" title="${w} Belum hadir SP berlaku">${w} Wajib</span>`;
+                }
+                if (d > 0) {
+                    subHtml += `<span class="badge badge-success" style="padding: 1px 4px; font-size: 9px;" title="${d} Belum hadir bebas SP">${d} Bebas SP</span>`;
+                }
+                statAlphaSubEl.innerHTML = subHtml;
+                statAlphaSubEl.style.display = 'flex';
+            } else {
+                statAlphaSubEl.innerHTML = '';
+                statAlphaSubEl.style.display = 'none';
+            }
+        }
 
         if (pillAllEl) pillAllEl.textContent = stats.total;
         if (pillHadirEl) pillHadirEl.textContent = stats.hadir;

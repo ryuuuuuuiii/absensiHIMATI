@@ -10,6 +10,7 @@ use App\Services\FileUploadService;
 use App\Services\MeetingSpamProtectionService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -188,6 +189,7 @@ class KegiatanAttendanceTest extends TestCase
     public function test_kegiatan_can_be_created_from_registered_event(): void
     {
         $creator = Member::where('departemen', 'Inti')->firstOrFail();
+        $this->resetCreationCooldown($creator->id);
         $event = Event::create([
             'nama_event' => 'HIMATI E-Sport Championship '.Str::random(4),
             'status' => 'active',
@@ -247,6 +249,7 @@ class KegiatanAttendanceTest extends TestCase
     public function test_kegiatan_from_event_is_automatically_wajib_for_all_pengurus(): void
     {
         $creator = Member::where('departemen', 'Inti')->firstOrFail();
+        $this->resetCreationCooldown($creator->id);
         $event = Event::create([
             'nama_event' => 'Dies Natalis HIMA TI',
             'deskripsi' => 'Perayaan tahunan',
@@ -280,6 +283,7 @@ class KegiatanAttendanceTest extends TestCase
     public function test_kegiatan_manual_with_semua_pengurus_is_wajib_for_all_pengurus(): void
     {
         $creator = Member::where('departemen', 'Inti')->firstOrFail();
+        $this->resetCreationCooldown($creator->id);
 
         $this->actingAs($creator, 'member')->post('/rapat', [
             'created_by' => $creator->id,
@@ -307,6 +311,7 @@ class KegiatanAttendanceTest extends TestCase
     public function test_kegiatan_manual_with_dibebaskan_is_exempt_from_sp(): void
     {
         $creator = Member::where('departemen', 'Inti')->firstOrFail();
+        $this->resetCreationCooldown($creator->id);
 
         $this->actingAs($creator, 'member')->post('/rapat', [
             'created_by' => $creator->id,
@@ -363,5 +368,11 @@ class KegiatanAttendanceTest extends TestCase
             'qr_code' => 'HIMATI-TEST-'.Str::upper(Str::random(8)),
             'is_bph' => false,
         ]);
+    }
+
+    private function resetCreationCooldown(int $memberId): void
+    {
+        RateLimiter::clear('create-meeting:member:'.$memberId);
+        Meeting::where('created_by', $memberId)->update(['created_at' => now()->subMinutes(5)]);
     }
 }

@@ -32,6 +32,14 @@
                     <span class="badge badge-primary"><i class="fas fa-calendar-check"></i> {{ $meeting->jenis_label }}</span>
                 @endif
 
+                @if($meeting->isKegiatan())
+                    @if($meeting->isDibebaskan())
+                        <span class="badge badge-success"><i class="fas fa-user-check"></i> Sifat: Dibebaskan (Bebas SP)</span>
+                    @else
+                        <span class="badge badge-primary"><i class="fas fa-user-lock"></i> Sifat: Wajib Seluruh Pengurus</span>
+                    @endif
+                @endif
+
                 @if(!empty($meeting->departemen_collab))
                     <span class="badge badge-purple"><i class="fas fa-handshake"></i> Kolaborasi</span>
                 @endif
@@ -122,6 +130,18 @@
             <label><i class="fas fa-wifi"></i> Mode Rapat</label>
             <p>{{ $meeting->mode_rapat === 'offline' ? '🏢 Tatap Muka (Offline)' : '🌐 Online Link' }}</p>
         </div>
+        @if($meeting->isKegiatan())
+        <div class="meeting-info-item">
+            <label><i class="fas fa-users-cog"></i> Sifat Presensi</label>
+            <p>
+                @if($meeting->isDibebaskan())
+                    <span class="badge badge-success"><i class="fas fa-user-check"></i> Dibebaskan (Bebas SP)</span>
+                @else
+                    <span class="badge badge-primary"><i class="fas fa-user-lock"></i> Wajib Seluruh Pengurus</span>
+                @endif
+            </p>
+        </div>
+        @endif
         @if($meeting->departemen)
         <div class="meeting-info-item">
             <label><i class="fas fa-building"></i> Departemen</label>
@@ -192,6 +212,16 @@
         <div class="stat-info">
             <h3>{{ $alphaCount }}</h3>
             <p>Alpha</p>
+            @if($alphaCount > 0 && (($alphaWajibCount ?? 0) > 0 || ($alphaDibebaskanCount ?? 0) > 0))
+                <div style="font-size: 10px; margin-top: 3px; display: flex; gap: 4px; flex-wrap: wrap;">
+                    @if(($alphaWajibCount ?? 0) > 0)
+                        <span class="badge badge-danger" style="padding: 1px 4px; font-size: 9px;" title="{{ $alphaWajibCount }} Alpha sanksi SP berlaku">{{ $alphaWajibCount }} Wajib</span>
+                    @endif
+                    @if(($alphaDibebaskanCount ?? 0) > 0)
+                        <span class="badge badge-success" style="padding: 1px 4px; font-size: 9px;" title="{{ $alphaDibebaskanCount }} Alpha bebas sanksi SP">{{ $alphaDibebaskanCount }} Bebas SP</span>
+                    @endif
+                </div>
+            @endif
         </div>
     </div>
 </div>
@@ -282,6 +312,15 @@
                             <span class="badge badge-sakit"><i class="fas fa-medkit"></i> Sakit</span>
                         @else
                             <span class="badge badge-alpha"><i class="fas fa-times-circle"></i> Alpha</span>
+                            @if($a->sp_ignored)
+                                <div style="margin-top: 3px;">
+                                    <span class="badge badge-success" style="font-size: 9px; padding: 2px 6px;" title="Presensi dibebaskan, tidak kena sanksi SP"><i class="fas fa-shield-alt"></i> Bebas SP</span>
+                                </div>
+                            @elseif($meeting->isWajib())
+                                <div style="margin-top: 3px;">
+                                    <span class="badge badge-danger" style="font-size: 9px; padding: 2px 6px;" title="Presensi wajib, sanksi SP berlaku"><i class="fas fa-exclamation-triangle"></i> SP Berlaku</span>
+                                </div>
+                            @endif
                         @endif
                     </td>
                     <td>
