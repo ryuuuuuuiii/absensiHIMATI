@@ -617,7 +617,7 @@ class MemberPortalTest extends TestCase
             ->assertOk();
 
         $responseCompleted->assertSee('HIMATI Cup 2026');
-        $responseCompleted->assertSee('+900 EXP');
+        $responseCompleted->assertSee('+1.500 EXP');
     }
 
     public function test_voluntary_kegiatan_absence_is_not_counted_as_alpha_in_portal_stats_or_history(): void
