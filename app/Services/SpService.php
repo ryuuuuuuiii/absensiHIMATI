@@ -21,7 +21,11 @@ class SpService
             ->join('meetings', 'meetings.id', '=', 'attendances.meeting_id')
             ->where('attendances.user_id', $member->id)
             ->where('attendances.sp_ignored', false)
-            ->where('meetings.status', 'completed')
+            ->where('meetings.status', '!=', 'cancelled')
+            ->where(function ($q) {
+                $q->where('meetings.status', 'completed')
+                    ->orWhereDate('meetings.tanggal', '<', now()->toDateString());
+            })
             ->orderBy('meetings.tanggal', 'asc')
             ->orderBy('meetings.waktu_mulai', 'asc')
             ->orderBy('meetings.id', 'asc')

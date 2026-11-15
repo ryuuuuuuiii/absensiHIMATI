@@ -183,34 +183,47 @@
 
     <!-- Card Gamifikasi & Lencana Acara -->
     @php $lvl = $member->level_data; @endphp
-    <div class="card" style="padding: 18px;">
-        <div class="card-header" style="margin-bottom: 12px; padding: 0; border: none;">
-            <h3 class="card-title" style="font-size: 1rem;"><i class="fas fa-gamepad"></i> Level & Gamifikasi</h3>
-            <span class="exp-total-pill"><i class="fas fa-bolt"></i> {{ number_format($lvl['exp']) }} EXP</span>
+    <div class="card portal-level-card" style="padding: 18px;">
+        <div class="card-header" style="margin-bottom: 12px; padding: 0; border: none; display: flex; align-items: center; justify-content: space-between;">
+            <h3 class="card-title" style="font-size: 1rem; margin: 0; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-gamepad" style="color: var(--blue-primary);"></i>
+                <span>Level & Gamifikasi</span>
+            </h3>
+            <span class="exp-total-pill"><i class="fas fa-bolt" style="color: #F59E0B;"></i> {{ number_format($lvl['exp']) }} EXP</span>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-            <span class="level-icon-badge" style="background: {{ $lvl['badge_bg'] }}; width: 44px; height: 44px;">
-                <img src="{{ $lvl['tier_icon_url'] }}" alt="{{ $lvl['title'] }}" class="tier-minecraft-icon" style="width: 24px; height: 24px;">
-            </span>
-            <div>
-                <div style="font-weight: 800; font-size: 1.1rem; color: var(--text-primary);">
-                    Lv. {{ $lvl['level'] }} &bull; {{ $lvl['title'] }} {{ $lvl['sub_rank'] }}
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 14px;">
+            <div class="level-icon-badge" style="background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(0,0,0,0.3)), {{ $lvl['badge_bg'] }}; border: 2px solid {{ $lvl['badge_color'] }}; box-shadow: 0 4px 12px rgba(0,0,0,0.25), 0 0 10px {{ $lvl['badge_color'] }}44;">
+                <img src="{{ $lvl['tier_icon_url'] }}" alt="{{ $lvl['title'] }}" class="tier-minecraft-icon" style="width: 32px; height: 32px;">
+            </div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="font-size: 1.15rem; font-weight: 800; color: {{ $lvl['badge_color'] }};">
+                        Lv. {{ $lvl['level'] }}
+                    </span>
+                    <span style="color: var(--text-muted);">&bull;</span>
+                    <span style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary);">
+                        {{ $lvl['title'] }} {{ $lvl['sub_rank'] }}
+                    </span>
                 </div>
-                <div style="font-size: 0.76rem; color: var(--text-muted);">
-                    Tier {{ $lvl['tier_name'] }} Minecraft &bull; Progres: {{ $lvl['percentage'] }}%
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span class="badge" style="background: {{ $lvl['badge_bg'] }}; color: {{ $lvl['badge_color'] }}; border: 1px solid {{ $lvl['badge_color'] }}66; font-size: 0.72rem; padding: 2px 8px; border-radius: 6px; font-weight: 700;">
+                        Tier {{ $lvl['tier_name'] }} Minecraft
+                    </span>
+                    <span>&bull;</span>
+                    <span>Progres: <strong>{{ $lvl['percentage'] }}%</strong> ({{ $lvl['progress'] }}/{{ $lvl['needed'] }} EXP)</span>
                 </div>
             </div>
         </div>
 
-        <div class="level-bar-track" style="margin-bottom: 12px;">
-            <div class="level-bar-fill" style="width: {{ $lvl['percentage'] }}%;"></div>
+        <div class="level-bar-track" style="margin-bottom: 14px; height: 8px; border-radius: 9999px; background: var(--bg-surface-subtle); overflow: hidden; border: 1px solid var(--border-color);">
+            <div class="level-bar-fill" style="width: {{ $lvl['percentage'] }}%; height: 100%; background: linear-gradient(90deg, #30AFFF, {{ $lvl['badge_color'] }}); border-radius: 9999px; transition: width 0.4s ease;"></div>
         </div>
 
         <!-- Lencana Acara (Badges) -->
         <div style="border-top: 1px solid var(--border-color); padding-top: 10px;">
             <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 8px;">
-                <i class="fas fa-award"></i> Lencana Kegiatan ({{ $badges->count() }})
+                <i class="fas fa-award" style="color: #F59E0B;"></i> Lencana Kegiatan ({{ $badges->count() }})
             </span>
             @if ($badges->isEmpty())
                 <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted); font-style: italic;">

@@ -10162,30 +10162,37 @@ textarea.form-control {
     gap: 12px;
 }
 
+.level-icon-badge,
 .portal-level-card .level-icon-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
     border-radius: 12px;
     border: 2px solid #061A2E;
-    box-shadow: 0 3px 0 #061A2E;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
     flex-shrink: 0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
 }
 
+[data-theme="dark"] .level-icon-badge,
 [data-theme="dark"] .portal-level-card .level-icon-badge {
-    border-color: #30AFFF;
-    box-shadow: 0 3px 0 #000000;
+    border-color: rgba(48, 175, 255, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
+.tier-minecraft-icon,
 .portal-level-card .tier-minecraft-icon {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
     object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
 }
 
 .portal-level-card .level-card-title {

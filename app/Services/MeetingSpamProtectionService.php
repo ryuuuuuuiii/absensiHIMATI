@@ -196,7 +196,7 @@ class MeetingSpamProtectionService
             return $this->meetingValidityCache[$meeting->id] = false;
         }
 
-        if ($meeting->status !== 'completed') {
+        if ($meeting->status !== 'completed' && (! $meeting->tanggal || ! $meeting->tanggal->isPast() || $meeting->tanggal->isToday())) {
             return $this->meetingValidityCache[$meeting->id] = false;
         }
 

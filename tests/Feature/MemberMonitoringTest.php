@@ -205,6 +205,84 @@ class MemberMonitoringTest extends TestCase
         $this->assertEquals(405, $deleteResponse->getStatusCode());
     }
 
+    public function test_past_meeting_alpha_is_synced_to_track_record_and_sp_streak(): void
+    {
+        $inti = $this->createMember([
+            'nama_lengkap' => 'Muhammad Faisal',
+            'departemen' => 'Inti',
+            'jabatan' => 'Wakil Ketua Umum',
+            'is_bph' => true,
+        ]);
+
+        $targetMember = $this->createMember([
+            'nama_lengkap' => 'Fatimmatuzahra',
+            'departemen' => 'Inti',
+            'jabatan' => 'Sekretaris',
+            'is_bph' => true,
+        ]);
+
+        // Buat rapat yang sudah lewat beberapa hari lalu dengan status scanning
+        $meeting = Meeting::create([
+            'created_by' => $inti->id,
+            'jenis_rapat' => 'internal_dept',
+            'mode_rapat' => 'offline',
+            'departemen' => 'Inti',
+            'fokus_bahasan' => 'Rapat Internal Inti Bahas Evaluasi',
+            'tanggal' => now()->subDays(3)->toDateString(),
+            'waktu_mulai' => '16:00:00',
+            'waktu_selesai' => '18:00:00',
+            'status' => 'scanning',
+            'unique_link' => Str::lower(Str::random(12)),
+            'absent_link' => Str::lower(Str::random(12)),
+        ]);
+
+        Attendance::create([
+            'meeting_id' => $meeting->id,
+            'user_id' => $targetMember->id,
+            'status' => 'alpha',
+            'scan_method' => 'qr_scan',
+            'sp_ignored' => false,
+        ]);
+
+        $response = $this->actingAs($inti, 'member')->get(route('portal.members.show', $targetMember->id));
+
+        $response->assertOk();
+
+        // Track record harus sinkron: Alpha tercatat di statistik dan di riwayat
+        $response->assertSee('Rapat Internal Inti Bahas Evaluasi');
+        $response->assertSee('Total Rapat');
+        $response->assertSee('Alpha');
+        $response->assertSee('1 Pertemuan');
+        $response->assertSee('1 / 3 Kegiatan');
+    }
+
+    public function test_track_record_renders_polished_minecraft_tier_badge_and_gamification_card(): void
+    {
+        $inti = $this->createMember([
+            'nama_lengkap' => 'Ketua Umum HIMA TI',
+            'departemen' => 'Inti',
+            'jabatan' => 'Ketua Umum',
+            'is_bph' => true,
+        ]);
+
+        $targetMember = $this->createMember([
+            'nama_lengkap' => 'Anggota Aktif',
+            'departemen' => 'Medinfo',
+            'jabatan' => 'Staff',
+            'is_bph' => false,
+            'exp' => 250,
+        ]);
+
+        $response = $this->actingAs($inti, 'member')->get(route('portal.members.show', $targetMember->id));
+
+        $response->assertOk();
+        $response->assertSee('portal-level-card');
+        $response->assertSee('level-icon-badge');
+        $response->assertSee('tier-minecraft-icon');
+        $response->assertSee('Tier Kayu Minecraft');
+        $response->assertSee('Level');
+    }
+
     private function createMember(array $attributes = []): Member
     {
         return Member::create(array_merge([

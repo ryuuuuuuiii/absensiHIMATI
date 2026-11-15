@@ -433,6 +433,12 @@ class PortalController extends Controller
                 $q->with('creator');
             }])
             ->join('meetings', 'meetings.id', '=', 'attendances.meeting_id')
+            ->where('meetings.status', '!=', 'cancelled')
+            ->where(function ($q) {
+                $q->where('meetings.status', 'completed')
+                    ->orWhere('attendances.status', '!=', 'alpha')
+                    ->orWhereDate('meetings.tanggal', '<', now()->toDateString());
+            })
             ->orderByDesc('meetings.tanggal')
             ->orderByDesc('meetings.waktu_mulai')
             ->select('attendances.*')
@@ -482,7 +488,12 @@ class PortalController extends Controller
         return cache()->remember("portal_stats_{$member->id}", 30, function () use ($member) {
             $summary = $member->attendances()
                 ->join('meetings', 'meetings.id', '=', 'attendances.meeting_id')
-                ->where('meetings.status', 'completed')
+                ->where('meetings.status', '!=', 'cancelled')
+                ->where(function ($q) {
+                    $q->where('meetings.status', 'completed')
+                        ->orWhere('attendances.status', '!=', 'alpha')
+                        ->orWhereDate('meetings.tanggal', '<', now()->toDateString());
+                })
                 ->selectRaw("
                     COUNT(*) as total,
                     SUM(CASE WHEN attendances.status = 'hadir' THEN 1 ELSE 0 END) as hadir,
