@@ -7,7 +7,9 @@ use App\Services\SpService;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 
 class Member extends Authenticatable
 {
@@ -226,7 +228,29 @@ class Member extends Authenticatable
             return null;
         }
 
-        return asset('uploads/profiles/'.$this->profile_photo);
+        // Cek keberadaan file di penyimpanan lokal
+        $localPath = public_path('uploads/profiles/'.$this->profile_photo);
+        if (File::exists($localPath)) {
+            return asset('uploads/profiles/'.$this->profile_photo);
+        }
+
+        // Cek keberadaan file di database stored_uploads (untuk hosting serverless Vercel)
+        try {
+            if (Schema::hasTable('stored_uploads')) {
+                $hasStored = DB::table('stored_uploads')
+                    ->where('folder', 'profiles')
+                    ->where('filename', $this->profile_photo)
+                    ->exists();
+
+                if ($hasStored) {
+                    return asset('uploads/profiles/'.$this->profile_photo);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Abaikan jika tabel belum siap
+        }
+
+        return null;
     }
 
     public function hasAccount(): bool

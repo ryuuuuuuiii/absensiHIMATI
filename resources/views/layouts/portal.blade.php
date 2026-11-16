@@ -260,7 +260,8 @@
                     <a href="{{ route('portal.profile') }}" class="header-avatar-link" title="Profil Saya">
                         <div class="header-avatar-circle">
                             @if ($portalMember?->profile_photo_url)
-                                <img src="{{ $portalMember->profile_photo_url }}" alt="{{ $portalMember->nama_lengkap }}">
+                                <img src="{{ $portalMember->profile_photo_url }}" alt="{{ $portalMember->nama_lengkap }}" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                                <span class="header-avatar-fallback" style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;">{{ $portalMember?->initials ?? 'P' }}</span>
                             @else
                                 {{ $portalMember?->initials ?? 'P' }}
                             @endif

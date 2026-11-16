@@ -919,7 +919,8 @@
         <div class="profile-avatar-wrapper">
             <div class="profile-avatar-large">
                 @if ($member->profile_photo_url)
-                    <img src="{{ $member->profile_photo_url }}" alt="{{ $member->nama_lengkap }}" id="profileDisplayImg">
+                    <img src="{{ $member->profile_photo_url }}" alt="{{ $member->nama_lengkap }}" id="profileDisplayImg" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                    <div class="profile-avatar-initials" style="display: none;">{{ $member->initials }}</div>
                 @else
                     <div class="profile-avatar-initials">{{ $member->initials }}</div>
                 @endif

@@ -17,7 +17,8 @@
     <div class="portal-hero-user">
         <div class="portal-hero-avatar">
             @if ($member->profile_photo_url)
-                <img src="{{ $member->profile_photo_url }}" alt="{{ $member->nama_lengkap }}">
+                <img src="{{ $member->profile_photo_url }}" alt="{{ $member->nama_lengkap }}" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                <span class="avatar-fallback-initials" style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; font-weight: 700;">{{ $member->initials }}</span>
             @else
                 {{ $member->initials }}
             @endif

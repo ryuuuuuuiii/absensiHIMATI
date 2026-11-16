@@ -59,23 +59,26 @@ class FileUploadService
             $savedToDisk = false;
         }
 
-        // Jika filesystem read-only (seperti di Vercel), simpan ke database TiDB
-        if (! $savedToDisk) {
+        // Simpan juga ke tabel database stored_uploads sebagai backup (agar tersinkronisasi antara cloud & localhost)
+        try {
             $this->ensureTable();
-
-            $content = file_get_contents($file->getRealPath());
-            DB::table('stored_uploads')->updateOrInsert(
-                [
-                    'folder' => $folder,
-                    'filename' => $filename,
-                ],
-                [
-                    'mime_type' => $file->getClientMimeType() ?: ($file->getMimeType() ?: 'image/jpeg'),
-                    'file_size' => strlen($content),
-                    'payload' => $content,
-                    'created_at' => now(),
-                ]
-            );
+            $content = $savedToDisk ? @file_get_contents($targetDir.'/'.$filename) : @file_get_contents($file->getRealPath());
+            if ($content !== false && strlen($content) > 0) {
+                DB::table('stored_uploads')->updateOrInsert(
+                    [
+                        'folder' => $folder,
+                        'filename' => $filename,
+                    ],
+                    [
+                        'mime_type' => $file->getClientMimeType() ?: ($file->getMimeType() ?: 'image/jpeg'),
+                        'file_size' => strlen($content),
+                        'payload' => $content,
+                        'created_at' => now(),
+                    ]
+                );
+            }
+        } catch (\Throwable $e) {
+            // Abaikan kegagalan backup database jika DDL/koneksi bermasalah
         }
 
         return $filename;
@@ -127,6 +130,18 @@ class FileUploadService
                 ->first();
 
             if ($stored) {
+                try {
+                    $targetDir = dirname($localPath);
+                    if (! File::isDirectory($targetDir)) {
+                        @File::makeDirectory($targetDir, 0755, true);
+                    }
+                    if (is_dir($targetDir) && is_writable($targetDir)) {
+                        @file_put_contents($localPath, $stored->payload);
+                    }
+                } catch (\Throwable $e) {
+                    // Abaikan jika tidak bisa menulis ke disk
+                }
+
                 return response($stored->payload)
                     ->header('Content-Type', $stored->mime_type)
                     ->header('Cache-Control', 'public, max-age=31536000');
