@@ -685,6 +685,27 @@ class MemberPortalTest extends TestCase
         $response->assertDontSee('Bakti Sosial TI');
     }
 
+    public function test_portal_renders_exp_popup_when_exp_increases(): void
+    {
+        $member = $this->createMember(['exp' => 200]);
+
+        // Cold visit - no popup active
+        $response = $this->actingAs($member, 'member')->get(route('portal.dashboard'));
+        $response->assertOk();
+        $response->assertSee('globalExpModal');
+        $this->assertStringNotContainsString('exp-modal-overlay active', $response->getContent());
+
+        // Now member's EXP increases (e.g. attendance recorded or event completed)
+        $member->increment('exp', 100);
+
+        // Next visit should detect increase and show popup active
+        $responseNext = $this->actingAs($member, 'member')->get(route('portal.dashboard'));
+        $responseNext->assertOk();
+        $responseNext->assertSee('exp-modal-overlay active', false);
+        $responseNext->assertSee('+100');
+        $responseNext->assertSee('EXP BERTAMBAH!');
+    }
+
     private function createMember(array $attributes = []): Member
     {
         return Member::create(array_merge([

@@ -300,6 +300,16 @@ class PortalController extends Controller
         $expNotice = $exp ? " (+{$exp} EXP)" : '';
         cache()->forget("portal_stats_{$member->id}");
 
+        if ($exp) {
+            $freshMember = $member->fresh();
+            session()->flash('exp_popup', [
+                'exp' => $exp,
+                'reason' => 'Presensi Kehadiran',
+                'total_exp' => (int) $freshMember->exp,
+                'level_data' => $freshMember->level_data,
+            ]);
+        }
+
         return back()->with('success', 'Presensi kehadiran berhasil dicatat!'.$expNotice.$member->sp_attendance_notice.' Terima kasih!');
     }
 

@@ -51,7 +51,9 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
-        View::composer('layouts.portal', function ($view) {
+        View::composer(['layouts.portal', 'layouts.public'], function ($view) {
+            $expPopupData = session('exp_popup');
+
             if (auth('member')->check()) {
                 $portalMember = auth('member')->user();
                 app(SpService::class)->ensureActiveSpNotification($portalMember);
@@ -74,9 +76,37 @@ class AppServiceProvider extends ServiceProvider
                     return ! ($read && $read->read_at);
                 })->count();
 
+                // Deteksi pertambahan EXP untuk memicu pop-up gamifikasi
+                $lastKnownExpKey = 'member_last_known_exp_'.$portalMember->id;
+
+                if (! $expPopupData && session()->has($lastKnownExpKey)) {
+                    $lastExp = (int) session($lastKnownExpKey);
+                    $currentExp = (int) $portalMember->exp;
+
+                    if ($currentExp > $lastExp) {
+                        $diff = $currentExp - $lastExp;
+                        $prevLevel = (int) floor($lastExp / 300) + 1;
+                        $curLevel = (int) floor($currentExp / 300) + 1;
+
+                        $expPopupData = [
+                            'exp' => $diff,
+                            'reason' => $diff >= 500 ? 'Kepanitiaan Event' : 'Presensi Kehadiran',
+                            'total_exp' => $currentExp,
+                            'is_level_up' => $curLevel > $prevLevel,
+                            'prev_level' => $prevLevel,
+                            'level_data' => $portalMember->level_data,
+                        ];
+                    }
+                }
+
+                // Perbarui posisi EXP yang diketahui di session
+                session([$lastKnownExpKey => (int) $portalMember->exp]);
+
                 $view->with('portalAnnouncements', $portalAnnouncements)
                     ->with('portalUnreadNotifCount', $portalUnreadNotifCount);
             }
+
+            $view->with('expPopupData', $expPopupData);
         });
     }
 }

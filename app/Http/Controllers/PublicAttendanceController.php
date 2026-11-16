@@ -143,6 +143,13 @@ class PublicAttendanceController extends Controller
             $exp = app(GamificationService::class)->awardAttendanceExp($attendance, $member);
             if ($exp) {
                 $expNotice = " (+{$exp} EXP)";
+                $freshMember = $member->fresh();
+                session()->flash('exp_popup', [
+                    'exp' => $exp,
+                    'reason' => $meeting->isKegiatan() ? 'Presensi Kegiatan' : 'Presensi Kehadiran',
+                    'total_exp' => (int) $freshMember->exp,
+                    'level_data' => $freshMember->level_data,
+                ]);
             }
         }
 

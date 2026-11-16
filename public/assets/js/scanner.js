@@ -305,8 +305,11 @@ async function processAttendance(userData) {
                 spInfoText = ` • Status Akun: ${spLabelText} (${spDetailText})`;
             }
 
-            showScanResult('success', 'Berhasil! ✓' + (user.sp_level > 0 ? ` [${user.sp_label || ('SP ' + user.sp_level)}]` : ''), 
-                `<strong>${escapeHTML(user.nama || 'Peserta')}</strong> (${escapeHTML(user.departemen || '')}${badgeText}) berhasil tercatat hadir${spInfoText}.`);
+            const expBadgeText = user.exp_awarded ? ` • <span style="color:#F59E0B;font-weight:800;"><i class="fas fa-bolt"></i> +${user.exp_awarded} EXP</span>` : '';
+            const levelInfoText = user.level_data ? ` (Lv. ${user.level_data.level} ${user.level_data.title})` : '';
+
+            showScanResult('success', 'Berhasil! ✓' + (user.exp_awarded ? ` +${user.exp_awarded} EXP` : '') + (user.sp_level > 0 ? ` [${user.sp_label || ('SP ' + user.sp_level)}]` : ''), 
+                `<strong>${escapeHTML(user.nama || 'Peserta')}</strong> (${escapeHTML(user.departemen || '')}${badgeText}) berhasil tercatat hadir${expBadgeText}${levelInfoText}${spInfoText}.`);
             playSound('success');
 
             // Save state

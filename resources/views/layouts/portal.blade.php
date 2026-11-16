@@ -862,6 +862,7 @@
         });
     </script>
     @include('partials.popup_alert')
+    @include('partials.exp_popup')
     @stack('scripts')
 </body>
 </html>

@@ -459,6 +459,9 @@ class MeetingController extends Controller
                 'sp_source_label' => $member->sp_source_label,
                 'sp_reason' => $member->sp_level > 0 ? $member->sp_reason_display : null,
                 'sp_warning' => $member->sp_warning_text,
+                'exp_awarded' => (int) ($scanResult['exp_awarded'] ?? 0),
+                'total_exp' => (int) $member->fresh()->exp,
+                'level_data' => $member->fresh()->level_data,
             ],
         ]);
     }
