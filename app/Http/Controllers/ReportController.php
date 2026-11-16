@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ReportController extends Controller
 {
@@ -33,6 +35,21 @@ class ReportController extends Controller
             ->orderByDesc('avg_hadir')
             ->get();
 
+        // Defensive check: pastikan kolom sifat_kegiatan sudah ada atau jalankan migrasi jika belum
+        $hasSifat = false;
+        try {
+            $hasSifat = Schema::hasColumn('meetings', 'sifat_kegiatan');
+            if (! $hasSifat) {
+                Artisan::call('migrate', ['--force' => true]);
+                $hasSifat = Schema::hasColumn('meetings', 'sifat_kegiatan');
+            }
+        } catch (\Throwable $e) {
+            $hasSifat = false;
+        }
+
+        $sifatCondition = $hasSifat ? ' AND (m.sifat_kegiatan IS NULL OR m.sifat_kegiatan != "dibebaskan")' : '';
+        $sifatDibebaskanCondition = $hasSifat ? ' OR m.sifat_kegiatan = "dibebaskan"' : '';
+
         // Individual attendance recap
         $query = DB::table('users as u')
             ->leftJoin('attendances as a', 'a.user_id', '=', 'u.id')
@@ -47,13 +64,13 @@ class ReportController extends Controller
                 'u.nama_lengkap',
                 'u.departemen',
                 'u.jabatan',
-                DB::raw('COUNT(DISTINCT CASE WHEN a.status IN ("hadir", "izin", "sakit") OR (a.status = "alpha" AND (a.sp_ignored = 0 OR a.sp_ignored IS NULL) AND (m.sifat_kegiatan IS NULL OR m.sifat_kegiatan != "dibebaskan")) THEN m.id ELSE NULL END) as total_rapat'),
+                DB::raw('COUNT(DISTINCT CASE WHEN a.status IN ("hadir", "izin", "sakit") OR (a.status = "alpha" AND (a.sp_ignored = 0 OR a.sp_ignored IS NULL)'.$sifatCondition.') THEN m.id ELSE NULL END) as total_rapat'),
                 DB::raw('SUM(CASE WHEN a.status = "hadir" THEN 1 ELSE 0 END) as hadir'),
                 DB::raw('SUM(CASE WHEN a.status = "izin" THEN 1 ELSE 0 END) as izin'),
                 DB::raw('SUM(CASE WHEN a.status = "sakit" THEN 1 ELSE 0 END) as sakit'),
-                DB::raw('SUM(CASE WHEN a.status = "alpha" AND (a.sp_ignored = 0 OR a.sp_ignored IS NULL) AND (m.sifat_kegiatan IS NULL OR m.sifat_kegiatan != "dibebaskan") THEN 1 ELSE 0 END) as alpha'),
-                DB::raw('SUM(CASE WHEN a.status = "alpha" AND (a.sp_ignored = 0 OR a.sp_ignored IS NULL) AND (m.sifat_kegiatan IS NULL OR m.sifat_kegiatan != "dibebaskan") THEN 1 ELSE 0 END) as alpha_wajib'),
-                DB::raw('SUM(CASE WHEN a.status = "alpha" AND (a.sp_ignored = 1 OR m.sifat_kegiatan = "dibebaskan") THEN 1 ELSE 0 END) as alpha_dibebaskan')
+                DB::raw('SUM(CASE WHEN a.status = "alpha" AND (a.sp_ignored = 0 OR a.sp_ignored IS NULL)'.$sifatCondition.' THEN 1 ELSE 0 END) as alpha'),
+                DB::raw('SUM(CASE WHEN a.status = "alpha" AND (a.sp_ignored = 0 OR a.sp_ignored IS NULL)'.$sifatCondition.' THEN 1 ELSE 0 END) as alpha_wajib'),
+                DB::raw('SUM(CASE WHEN a.status = "alpha" AND (a.sp_ignored = 1'.$sifatDibebaskanCondition.') THEN 1 ELSE 0 END) as alpha_dibebaskan')
             );
 
         if ($filterDept) {

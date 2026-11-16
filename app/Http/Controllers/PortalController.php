@@ -98,19 +98,9 @@ class PortalController extends Controller
             ->with('meeting')
             ->whereHas('meeting', function ($builder) {
                 $builder->where('status', 'completed');
-            })
-            ->where(function ($q) {
-                $q->where('attendances.status', '!=', 'alpha')
-                    ->orWhere(function ($sub) {
-                        $sub->where(function ($s) {
-                            $s->where('attendances.sp_ignored', 0)
-                                ->orWhereNull('attendances.sp_ignored');
-                        })->where(function ($s) {
-                            $s->whereNull('meetings.sifat_kegiatan')
-                                ->orWhere('meetings.sifat_kegiatan', '!=', 'dibebaskan');
-                        });
-                    });
             });
+
+        $this->applyEffectiveAttendanceFilter($query);
 
         if (in_array($status, ['hadir', 'izin', 'sakit', 'alpha'], true)) {
             $query->where('attendances.status', $status);
@@ -125,21 +115,13 @@ class PortalController extends Controller
             ->withQueryString();
 
         // Breakdown per kategori rapat untuk visualisasi diagram track record
-        $categoryStats = $member->attendances()
+        $categoryStatsQuery = $member->attendances()
             ->join('meetings', 'meetings.id', '=', 'attendances.meeting_id')
-            ->where('meetings.status', 'completed')
-            ->where(function ($q) {
-                $q->where('attendances.status', '!=', 'alpha')
-                    ->orWhere(function ($sub) {
-                        $sub->where(function ($s) {
-                            $s->where('attendances.sp_ignored', 0)
-                                ->orWhereNull('attendances.sp_ignored');
-                        })->where(function ($s) {
-                            $s->whereNull('meetings.sifat_kegiatan')
-                                ->orWhere('meetings.sifat_kegiatan', '!=', 'dibebaskan');
-                        });
-                    });
-            })
+            ->where('meetings.status', 'completed');
+
+        $this->applyEffectiveAttendanceFilter($categoryStatsQuery);
+
+        $categoryStats = $categoryStatsQuery
             ->select(
                 'meetings.jenis_rapat',
                 DB::raw('COUNT(*) as total'),
@@ -533,7 +515,7 @@ class PortalController extends Controller
 
         $stats = $this->attendanceStats($member);
 
-        $attendances = $member->attendances()
+        $attendancesQuery = $member->attendances()
             ->with(['meeting' => function ($q) {
                 $q->with('creator');
             }])
@@ -543,19 +525,11 @@ class PortalController extends Controller
                 $q->where('meetings.status', 'completed')
                     ->orWhere('attendances.status', '!=', 'alpha')
                     ->orWhereDate('meetings.tanggal', '<', now()->toDateString());
-            })
-            ->where(function ($q) {
-                $q->where('attendances.status', '!=', 'alpha')
-                    ->orWhere(function ($sub) {
-                        $sub->where(function ($s) {
-                            $s->where('attendances.sp_ignored', 0)
-                                ->orWhereNull('attendances.sp_ignored');
-                        })->where(function ($s) {
-                            $s->whereNull('meetings.sifat_kegiatan')
-                                ->orWhere('meetings.sifat_kegiatan', '!=', 'dibebaskan');
-                        });
-                    });
-            })
+            });
+
+        $this->applyEffectiveAttendanceFilter($attendancesQuery);
+
+        $attendances = $attendancesQuery
             ->orderByDesc('meetings.tanggal')
             ->orderByDesc('meetings.waktu_mulai')
             ->select('attendances.*')
@@ -633,32 +607,67 @@ class PortalController extends Controller
         return auth('member')->user();
     }
 
+    protected function hasSifatKegiatanColumn(): bool
+    {
+        static $hasColumn = null;
+        if ($hasColumn !== null) {
+            return $hasColumn;
+        }
+
+        try {
+            $hasColumn = Schema::hasColumn('meetings', 'sifat_kegiatan');
+            if (! $hasColumn) {
+                // Self-heal: jalankan migrate --force otomatis pada cloud/production jika kolom belum ada
+                Artisan::call('migrate', ['--force' => true]);
+                $hasColumn = Schema::hasColumn('meetings', 'sifat_kegiatan');
+            }
+        } catch (\Throwable $e) {
+            $hasColumn = false;
+        }
+
+        return (bool) $hasColumn;
+    }
+
+    protected function applyEffectiveAttendanceFilter($query): void
+    {
+        $hasSifat = $this->hasSifatKegiatanColumn();
+
+        $query->where(function ($q) use ($hasSifat) {
+            $q->where('attendances.status', '!=', 'alpha')
+                ->orWhere(function ($sub) use ($hasSifat) {
+                    $sub->where(function ($s) {
+                        $s->where('attendances.sp_ignored', 0)
+                            ->orWhereNull('attendances.sp_ignored');
+                    });
+
+                    if ($hasSifat) {
+                        $sub->where(function ($s) {
+                            $s->whereNull('meetings.sifat_kegiatan')
+                                ->orWhere('meetings.sifat_kegiatan', '!=', 'dibebaskan');
+                        });
+                    }
+                });
+        });
+    }
+
     /**
      * @return array{total: int, hadir: int, izin: int, sakit: int, alpha: int, percentage: float}
      */
     private function attendanceStats(Member $member): array
     {
         return cache()->remember("portal_stats_{$member->id}", 30, function () use ($member) {
-            $summary = $member->attendances()
+            $query = $member->attendances()
                 ->join('meetings', 'meetings.id', '=', 'attendances.meeting_id')
                 ->where('meetings.status', '!=', 'cancelled')
                 ->where(function ($q) {
                     $q->where('meetings.status', 'completed')
                         ->orWhere('attendances.status', '!=', 'alpha')
                         ->orWhereDate('meetings.tanggal', '<', now()->toDateString());
-                })
-                ->where(function ($q) {
-                    $q->where('attendances.status', '!=', 'alpha')
-                        ->orWhere(function ($sub) {
-                            $sub->where(function ($s) {
-                                $s->where('attendances.sp_ignored', 0)
-                                    ->orWhereNull('attendances.sp_ignored');
-                            })->where(function ($s) {
-                                $s->whereNull('meetings.sifat_kegiatan')
-                                    ->orWhere('meetings.sifat_kegiatan', '!=', 'dibebaskan');
-                            });
-                        });
-                })
+                });
+
+            $this->applyEffectiveAttendanceFilter($query);
+
+            $summary = $query
                 ->selectRaw("
                     COUNT(*) as total,
                     SUM(CASE WHEN attendances.status = 'hadir' THEN 1 ELSE 0 END) as hadir,

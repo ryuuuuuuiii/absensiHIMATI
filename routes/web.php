@@ -266,11 +266,16 @@ Route::get('/system/migrate/{secret?}', function (?string $secret = null) {
         $output = Artisan::output();
 
         cache()->forget('db_migrated_gamification_v2');
+        cache()->forget('db_auto_migrated_v5');
+        cache()->forget('db_auto_migrated_v6');
 
         return response('<div style="background:#090D16;color:#30AFFF;padding:24px;font-family:monospace;border-radius:12px;margin:20px;box-shadow:0 8px 24px rgba(0,0,0,0.5);">
             <h2 style="color:#10B981;margin-top:0;">&#10004; Database Migration Sukses</h2>
             <pre style="color:#E2E8F0;background:#0F172A;padding:16px;border-radius:8px;overflow-x:auto;">'.e($output).'</pre>
-            <p><a href="/portal/profil" style="color:#30AFFF;font-weight:bold;text-decoration:none;">&larr; Buka Profil Sekarang</a></p>
+            <p>
+                <a href="/portal" style="color:#30AFFF;font-weight:bold;text-decoration:none;margin-right:16px;">&rarr; Buka Dashboard Portal</a>
+                <a href="/portal/profil" style="color:#10B981;font-weight:bold;text-decoration:none;">&rarr; Buka Profil Saya</a>
+            </p>
         </div>');
     } catch (Throwable $e) {
         return response('<div style="background:#090D16;color:#EF4444;padding:24px;font-family:monospace;border-radius:12px;margin:20px;">

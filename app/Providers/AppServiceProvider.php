@@ -41,13 +41,11 @@ class AppServiceProvider extends ServiceProvider
         Paginator::defaultView('vendor.pagination.custom');
         Paginator::defaultSimpleView('vendor.pagination.custom');
 
-        // Auto-run pending migrations in production/cloud if gamification tables are missing
-        if (! cache()->has('db_migrated_gamification_v2')) {
+        // Auto-run pending migrations in production/cloud (e.g. Vercel + TiDB)
+        if (! cache()->has('db_auto_migrated_v6') || ! Schema::hasTable('member_badges') || ! Schema::hasColumn('meetings', 'sifat_kegiatan')) {
             try {
-                if (! Schema::hasTable('member_badges')) {
-                    Artisan::call('migrate', ['--force' => true]);
-                }
-                cache()->forever('db_migrated_gamification_v2', true);
+                Artisan::call('migrate', ['--force' => true]);
+                cache()->forever('db_auto_migrated_v6', true);
             } catch (\Throwable $e) {
                 // Log and continue gracefully
             }
