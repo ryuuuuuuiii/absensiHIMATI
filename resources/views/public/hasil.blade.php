@@ -371,6 +371,8 @@
     <p style="color: var(--text-muted); font-size: var(--font-sm); max-width: 520px; margin: 0 auto var(--space-6);">
         @if ($meeting->status === 'completed')
             Rapat telah ditutup. Sisa peserta yang tidak hadir tercatat sebagai Alpha dan form presensi online sudah ditutup.
+        @elseif ($meeting->isKegiatan())
+            Presensi kegiatan berbasis foto dokumentasi kamera. Seluruh peserta (termasuk pembuat rapat) wajib mengambil foto dokumentasi langsung untuk tercatat hadir. Silakan buka tombol di bawah untuk presensi diri Anda dan bagikan link ke peserta lain.
         @elseif ($meeting->mode_rapat === 'online')
             Bagikan link presensi tunggal di bawah ke grup peserta rapat untuk absensi mandiri. Jika sesi rapat telah selesai, klik tombol <strong>Selesaikan Rapat</strong> di bawah untuk menutup absensi.
         @else
@@ -382,8 +384,12 @@
     <div style="display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap;">
         @if ($meeting->status === 'scanning' || $meeting->status === 'draft')
             @if ($meeting->isKegiatan())
-                <a href="{{ $onlineUrl }}" target="_blank" class="btn btn-primary btn-lg" style="display: inline-flex; align-items: center; gap: 10px; padding: 14px 28px; font-size: var(--font-base);">
-                    <i class="fas fa-camera"></i> Buka Presensi Foto Kegiatan
+                @php
+                    $activeMemberId = auth('member')->id() ?? (auth('web')->check() ? \App\Models\Member::where('email', auth('web')->user()->email)->value('id') : null);
+                    $hasActiveMemberAttended = $activeMemberId ? $meeting->attendances()->where('user_id', $activeMemberId)->where('status', 'hadir')->exists() : false;
+                @endphp
+                <a href="{{ $onlineUrl }}" target="_blank" class="btn {{ $hasActiveMemberAttended ? 'btn-success' : 'btn-primary' }} btn-lg" style="display: inline-flex; align-items: center; gap: 10px; padding: 14px 28px; font-size: var(--font-base);">
+                    <i class="fas {{ $hasActiveMemberAttended ? 'fa-check-circle' : 'fa-camera' }}"></i> {{ $hasActiveMemberAttended ? 'Presensi Foto Anda Sudah Tercatat' : 'Buka Presensi Foto Kegiatan (Ambil Foto Anda)' }}
                 </a>
             @elseif ($meeting->mode_rapat === 'offline')
                 <a href="{{ $scanUrl }}" class="btn btn-primary btn-lg" style="display: inline-flex; align-items: center; gap: 10px; padding: 14px 28px; font-size: var(--font-base);">

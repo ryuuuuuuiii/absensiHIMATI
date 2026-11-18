@@ -305,19 +305,22 @@ class PublicMeetingController extends Controller
             $isKegiatan = ($kategori === 'kegiatan' || $jenisRapat === 'kegiatan');
             $spIgnored = ($isKegiatan && $sifatKegiatan === 'dibebaskan') ? 1 : 0;
             foreach ($memberIds as $mId) {
+                // Untuk kegiatan, pembuat rapat juga WAJIB melakukan presensi foto dokumentasi terlebih dahulu
+                // baru dihitung hadir (tidak otomatis hadir).
                 $isCreator = ($m->created_by && (int) $mId === (int) $m->created_by);
-                if ($isCreator) {
+                $isAutoHadir = $isCreator && ! $isKegiatan;
+                if ($isAutoHadir) {
                     $hasCreatorAttended = true;
                 }
 
                 $attendanceRecords[] = [
                     'meeting_id' => $m->id,
                     'user_id' => (int) $mId,
-                    'status' => $isCreator ? 'hadir' : 'alpha',
-                    'scanned_at' => $isCreator ? $now : null,
-                    'scan_method' => $isCreator ? 'manual' : 'qr_scan',
+                    'status' => $isAutoHadir ? 'hadir' : 'alpha',
+                    'scanned_at' => $isAutoHadir ? $now : null,
+                    'scan_method' => $isKegiatan ? 'foto_kegiatan' : ($isAutoHadir ? 'manual' : 'qr_scan'),
                     'sp_ignored' => $spIgnored,
-                    'exp_awarded' => $isCreator,
+                    'exp_awarded' => $isAutoHadir,
                     'created_at' => $now,
                 ];
             }

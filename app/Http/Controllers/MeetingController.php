@@ -254,22 +254,26 @@ class MeetingController extends Controller
                     break;
             }
 
+            $isKegiatan = $m->isKegiatan();
             $now = now();
             $attendanceRecords = [];
             $hasCreatorAttended = false;
             foreach ($memberIds as $mId) {
+                // Untuk kegiatan, pembuat rapat juga WAJIB melakukan presensi foto dokumentasi terlebih dahulu
+                // baru dihitung hadir (tidak otomatis hadir).
                 $isCreator = ($m->created_by && (int) $mId === (int) $m->created_by);
-                if ($isCreator) {
+                $isAutoHadir = $isCreator && ! $isKegiatan;
+                if ($isAutoHadir) {
                     $hasCreatorAttended = true;
                 }
 
                 $attendanceRecords[] = [
                     'meeting_id' => $m->id,
                     'user_id' => (int) $mId,
-                    'status' => $isCreator ? 'hadir' : 'alpha',
-                    'scanned_at' => $isCreator ? $now : null,
-                    'scan_method' => $isCreator ? 'manual' : 'qr_scan',
-                    'exp_awarded' => $isCreator,
+                    'status' => $isAutoHadir ? 'hadir' : 'alpha',
+                    'scanned_at' => $isAutoHadir ? $now : null,
+                    'scan_method' => $isKegiatan ? 'foto_kegiatan' : ($isAutoHadir ? 'manual' : 'qr_scan'),
+                    'exp_awarded' => $isAutoHadir,
                     'created_at' => $now,
                 ];
             }

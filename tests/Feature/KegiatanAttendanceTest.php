@@ -58,6 +58,53 @@ class KegiatanAttendanceTest extends TestCase
             ->assertSee(route('public.online', $meeting->unique_link));
     }
 
+    public function test_kegiatan_creator_is_not_automatically_present_and_must_submit_photo_documentation(): void
+    {
+        $creator = Member::where('departemen', 'Inti')->firstOrFail();
+        $this->resetCreationCooldown($creator->id);
+        $initialExp = (int) $creator->fresh()->exp;
+
+        $this->actingAs($creator, 'member')->post('/rapat', [
+            'created_by' => $creator->id,
+            'kategori' => 'kegiatan',
+            'jenis_rapat' => 'internal_dept',
+            'mode_rapat' => 'offline',
+            'departemen' => 'Inti',
+            'fokus_bahasan_internal' => 'Kegiatan Bersih Kampus TI',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '08:00',
+        ])->assertRedirect();
+
+        $meeting = Meeting::where('fokus_bahasan', 'Kegiatan Bersih Kampus TI')->firstOrFail();
+
+        // Creator attendance MUST be alpha initially (no auto-hadir for kegiatan)
+        $creatorAttendance = Attendance::where('meeting_id', $meeting->id)
+            ->where('user_id', $creator->id)
+            ->firstOrFail();
+
+        $this->assertSame('alpha', $creatorAttendance->status);
+        $this->assertNull($creatorAttendance->scanned_at);
+        $this->assertNull($creatorAttendance->bukti_foto);
+        $this->assertFalse((bool) $creatorAttendance->exp_awarded);
+        $this->assertSame($initialExp, (int) $creator->fresh()->exp);
+
+        // Creator submits photo documentation
+        $this->actingAs($creator, 'member')
+            ->post(route('public.online.submit', $meeting->unique_link), [
+                'status' => 'hadir',
+                'konfirmasi_wajah' => '1',
+                'bukti_foto' => UploadedFile::fake()->image('creator_selfie.jpg'),
+            ])->assertSessionHas('success');
+
+        $freshAttendance = $creatorAttendance->fresh();
+        $this->assertSame('hadir', $freshAttendance->status);
+        $this->assertNotNull($freshAttendance->scanned_at);
+        $this->assertNotNull($freshAttendance->bukti_foto);
+        $this->assertTrue((bool) $freshAttendance->exp_awarded);
+        $this->uploadedProofs[] = $freshAttendance->bukti_foto;
+        $this->assertGreaterThan($initialExp, (int) $creator->fresh()->exp);
+    }
+
     public function test_offline_kegiatan_requires_face_photo_and_confirmation_to_be_present(): void
     {
         $meeting = $this->createKegiatan('offline');
