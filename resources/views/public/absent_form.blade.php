@@ -134,18 +134,8 @@
                     </span>
                 @endif
             </div>
-            <div class="online-member-switch">
-                <span>Pengajuan izin/sakit otomatis dicatat untuk akun ini. Bukan Anda? </span>
-                <a href="#" onclick="event.preventDefault(); document.getElementById('switchAccountForm').submit();">
-                    Ganti Akun
-                </a>
-            </div>
         </div>
     </div>
-
-    <form id="switchAccountForm" action="{{ auth('member')->check() ? route('portal.logout') : route('logout') }}" method="POST" style="display: none;">
-        @csrf
-    </form>
 
     @if($existingAttendance)
         @if($existingAttendance->status === 'hadir')
