@@ -112,11 +112,8 @@
 
         <div style="display: flex; gap: var(--space-3); justify-content: center; margin-top: var(--space-6); flex-wrap: wrap;">
             <button class="btn btn-primary" onclick="downloadBadge()">
-                <i class="fas fa-id-card"></i> Download Kartu QR
+                <i class="fas fa-id-card"></i> Unduh Kartu QR
             </button>
-            <a href="{{ route('portal.qr.download') }}" class="btn btn-secondary">
-                <i class="fas fa-file-image"></i> Unduh File PNG
-            </a>
         </div>
     </div>
 </div>
