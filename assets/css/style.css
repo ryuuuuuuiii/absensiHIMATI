@@ -1680,6 +1680,7 @@ textarea.form-control {
     margin: 0;
     user-select: none;
     display: flex;
+    min-width: 0;
 }
 
 .segmented-option input[type="radio"] {
@@ -1696,7 +1697,7 @@ textarea.form-control {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 11px 16px;
+    padding: 10px 14px;
     border-radius: var(--radius-lg);
     font-size: 0.9rem;
     font-weight: 600;
@@ -1704,11 +1705,34 @@ textarea.form-control {
     background: transparent;
     transition: all var(--transition-fast);
     white-space: nowrap;
+    min-width: 0;
+}
+
+.segmented-btn span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .segmented-btn i {
     font-size: 0.95rem;
     transition: transform var(--transition-fast);
+    flex-shrink: 0;
+}
+
+@media (max-width: 576px) {
+    .segmented-control {
+        padding: 4px !important;
+        gap: 4px !important;
+    }
+    .segmented-btn {
+        padding: 8px 6px !important;
+        font-size: 0.82rem !important;
+        gap: 5px !important;
+    }
+    .segmented-btn i {
+        font-size: 0.82rem !important;
+    }
 }
 
 .segmented-option:hover .segmented-btn {

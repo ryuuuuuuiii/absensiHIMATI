@@ -291,14 +291,14 @@
                             <input type="radio" name="sumber_nama_kegiatan" value="manual" onchange="toggleSumberKegiatan('manual')" checked>
                             <span class="segmented-btn">
                                 <i class="fas fa-pen"></i>
-                                <span>Bikin / Ketik Sendiri</span>
+                                <span>Ketik Manual</span>
                             </span>
                         </label>
                         <label class="segmented-option">
                             <input type="radio" name="sumber_nama_kegiatan" value="event" onchange="toggleSumberKegiatan('event')">
                             <span class="segmented-btn">
                                 <i class="fas fa-calendar-alt"></i>
-                                <span>Ambil dari Event</span>
+                                <span>Pilih Event</span>
                             </span>
                         </label>
                     </div>
