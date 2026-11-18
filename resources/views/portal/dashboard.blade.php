@@ -536,6 +536,7 @@
                     @foreach ($attendedAttendances as $attendance)
                         @if ($attendance->meeting)
                             @php
+                                $isKegiatan = $attendance->meeting->isKegiatan();
                                 $catLabel = match($attendance->meeting->jenis_rapat) {
                                     'internal_dept' => 'Internal ' . ($attendance->meeting->departemen ?? 'Dept'),
                                     'kepanitiaan' => 'Kepanitiaan',

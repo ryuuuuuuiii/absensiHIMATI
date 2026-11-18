@@ -706,6 +706,60 @@ class MemberPortalTest extends TestCase
         $responseNext->assertSee('EXP BERTAMBAH!');
     }
 
+    public function test_portal_dashboard_renders_attended_meetings_including_kegiatan(): void
+    {
+        $member = $this->createMember();
+        $admin = Admin::first() ?? Admin::create([
+            'nama' => 'Admin Test',
+            'email' => 'admin_test@himati.id',
+            'password' => Hash::make('password'),
+        ]);
+
+        $meeting1 = Meeting::create([
+            'created_by' => $admin->id,
+            'jenis_rapat' => 'internal_dept',
+            'departemen' => 'PSDM',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '09:00:00',
+            'status' => 'scanning',
+            'unique_link' => 'meet-'.Str::random(10),
+            'absent_link' => 'abs-'.Str::random(10),
+            'mode_rapat' => 'offline',
+        ]);
+
+        $meeting2 = Meeting::create([
+            'created_by' => $admin->id,
+            'jenis_rapat' => 'kegiatan',
+            'kategori' => 'kegiatan',
+            'tanggal' => now()->toDateString(),
+            'waktu_mulai' => '13:00:00',
+            'status' => 'scanning',
+            'unique_link' => 'keg-'.Str::random(10),
+            'absent_link' => 'abs-'.Str::random(10),
+            'mode_rapat' => 'offline',
+        ]);
+
+        Attendance::create([
+            'meeting_id' => $meeting1->id,
+            'user_id' => $member->id,
+            'status' => 'hadir',
+            'scanned_at' => now(),
+            'scan_method' => 'qr_scan',
+        ]);
+
+        Attendance::create([
+            'meeting_id' => $meeting2->id,
+            'user_id' => $member->id,
+            'status' => 'hadir',
+            'scanned_at' => now(),
+            'scan_method' => 'foto_kegiatan',
+        ]);
+
+        $response = $this->actingAs($member, 'member')->get(route('portal.dashboard'));
+        $response->assertOk();
+        $response->assertSee('Kegiatan ·');
+    }
+
     private function createMember(array $attributes = []): Member
     {
         return Member::create(array_merge([
