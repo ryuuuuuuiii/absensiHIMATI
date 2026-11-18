@@ -8,6 +8,7 @@ use App\Models\Member;
 use App\Services\FileUploadService;
 use App\Services\GamificationService;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 
 class PublicAttendanceController extends Controller
 {
@@ -74,6 +75,27 @@ class PublicAttendanceController extends Controller
         $eligibilityError = $meeting->checkMemberEligibility($member);
         if ($eligibilityError) {
             return back()->with('error', $eligibilityError);
+        }
+
+        // Konversi fallback jika bukti foto dikirim dari kamera WebRTC sebagai data base64
+        if (! $request->files->has('bukti_foto') && $request->filled('bukti_foto_base64')) {
+            $base64Data = (string) $request->input('bukti_foto_base64');
+            if (preg_match('/^data:image\/(\w+);base64,/', $base64Data, $type)) {
+                $rawBase64 = substr($base64Data, strpos($base64Data, ',') + 1);
+                $ext = strtolower($type[1]) === 'jpeg' ? 'jpg' : strtolower($type[1]);
+                if (in_array($ext, ['jpg', 'png', 'webp'])) {
+                    $binary = base64_decode($rawBase64);
+                    if ($binary !== false) {
+                        $tempPath = tempnam(sys_get_temp_dir(), 'camera_');
+                        file_put_contents($tempPath, $binary);
+                        $file = new UploadedFile($tempPath, 'camera_capture_'.time().'.'.$ext, 'image/'.$ext, null, true);
+                        $request->files->set('bukti_foto', $file);
+                        (function () use ($file) {
+                            $this->convertedFiles['bukti_foto'] = $file;
+                        })->call($request);
+                    }
+                }
+            }
         }
 
         $userId = $member->id;
@@ -204,6 +226,27 @@ class PublicAttendanceController extends Controller
         $eligibilityError = $meeting->checkMemberEligibility($member);
         if ($eligibilityError) {
             return back()->with('error', $eligibilityError);
+        }
+
+        // Konversi fallback jika bukti foto dikirim dari kamera WebRTC sebagai data base64
+        if (! $request->files->has('bukti_foto') && $request->filled('bukti_foto_base64')) {
+            $base64Data = (string) $request->input('bukti_foto_base64');
+            if (preg_match('/^data:image\/(\w+);base64,/', $base64Data, $type)) {
+                $rawBase64 = substr($base64Data, strpos($base64Data, ',') + 1);
+                $ext = strtolower($type[1]) === 'jpeg' ? 'jpg' : strtolower($type[1]);
+                if (in_array($ext, ['jpg', 'png', 'webp'])) {
+                    $binary = base64_decode($rawBase64);
+                    if ($binary !== false) {
+                        $tempPath = tempnam(sys_get_temp_dir(), 'camera_');
+                        file_put_contents($tempPath, $binary);
+                        $file = new UploadedFile($tempPath, 'camera_capture_'.time().'.'.$ext, 'image/'.$ext, null, true);
+                        $request->files->set('bukti_foto', $file);
+                        (function () use ($file) {
+                            $this->convertedFiles['bukti_foto'] = $file;
+                        })->call($request);
+                    }
+                }
+            }
         }
 
         $request->validate([

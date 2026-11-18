@@ -97,6 +97,28 @@ class KegiatanAttendanceTest extends TestCase
         $this->uploadedProofs[] = $record->bukti_foto;
     }
 
+    public function test_kegiatan_attendance_can_be_submitted_via_camera_base64(): void
+    {
+        $meeting = $this->createKegiatan('offline');
+        $member = $this->createMember();
+
+        // 1x1 transparent png in base64
+        $base64Image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+        $this->actingAs($member, 'member')
+            ->post(route('public.online.submit', $meeting->unique_link), [
+                'status' => 'hadir',
+                'konfirmasi_wajah' => '1',
+                'bukti_foto_base64' => $base64Image,
+            ])->assertSessionHas('success');
+
+        $record = Attendance::where('meeting_id', $meeting->id)->where('user_id', $member->id)->firstOrFail();
+        $this->assertSame('hadir', $record->status);
+        $this->assertSame('foto_kegiatan', $record->scan_method);
+        $this->assertNotNull($record->bukti_foto);
+        $this->uploadedProofs[] = $record->bukti_foto;
+    }
+
     public function test_online_kegiatan_requires_camera_on_screenshot_without_face_checkbox(): void
     {
         $meeting = $this->createKegiatan('online');
