@@ -107,25 +107,22 @@ class PublicAttendanceController extends Controller
         $status = $request->input('status');
         $isProofRequired = ($status === 'hadir' || ! $status) && ! $hasExistingProof;
 
-        $isFaceRequired = $meeting->isKegiatan() && $meeting->mode_rapat === 'offline' && $status === 'hadir';
-
         $proofMessage = match (true) {
-            $meeting->isKegiatan() && $meeting->mode_rapat === 'offline' => 'Foto kehadiran di lokasi kegiatan (wajah Anda harus terlihat jelas) wajib diunggah.',
-            $meeting->isKegiatan() => 'Screenshot Zoom/Google Meet dengan kamera menyala (wajah terlihat) wajib diunggah.',
-            default => 'Foto bukti dokumentasi rapat online (screenshot Google Meet/Zoom atau foto kehadiran) wajib diunggah.',
+            $meeting->isKegiatan() && $meeting->mode_rapat === 'offline' => 'Foto dokumentasi di lokasi kegiatan wajib diunggah/diambil.',
+            $meeting->isKegiatan() => 'Foto dokumentasi kegiatan wajib diunggah/diambil.',
+            default => 'Foto bukti dokumentasi rapat online wajib diunggah.',
         };
 
         $request->validate([
             'status' => ['required', 'in:hadir,izin,sakit'],
             'keterangan' => ['nullable', 'string', 'max:255'],
             'bukti_foto' => [$isProofRequired ? 'required' : 'nullable', 'image', 'max:5120'], // 5MB
-            'konfirmasi_wajah' => [$isFaceRequired ? 'accepted' : 'nullable'],
+            'konfirmasi_wajah' => ['nullable'],
         ], [
             'status.required' => 'Status kehadiran wajib dipilih.',
             'bukti_foto.required' => $proofMessage,
             'bukti_foto.image' => 'File bukti dokumentasi harus berupa file gambar (JPG, PNG, JPEG, dll.).',
             'bukti_foto.max' => 'Ukuran file foto bukti dokumentasi maksimal 5MB.',
-            'konfirmasi_wajah.accepted' => 'Centang pernyataan bahwa wajah Anda terlihat jelas pada foto.',
         ]);
 
         $status = $request->input('status');

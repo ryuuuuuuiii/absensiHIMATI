@@ -5,10 +5,10 @@
     $isOfflineKegiatan = $isKegiatan && $meeting->mode_rapat === 'offline';
     $isOnlineKegiatan = $isKegiatan && $meeting->mode_rapat === 'online';
     $proofHelper = $isOfflineKegiatan
-        ? 'Wajib foto di lokasi kegiatan dan WAJAH ANDA HARUS TERLIHAT JELAS (maksimal 5MB).'
+        ? 'Ambil foto dokumentasi langsung di lokasi/tempat kegiatan (maksimal 5MB).'
         : ($isOnlineKegiatan
-            ? 'Wajib screenshot layar Zoom / Google Meet dengan KAMERA MENYALA dan wajah Anda terlihat (maksimal 5MB).'
-            : 'Wajib melampirkan screenshot layar rapat online (Google Meet, Zoom, dll.) atau foto kehadiran Anda (maksimal 5MB).');
+            ? 'Unggah foto/screenshot dokumentasi saat kegiatan berlangsung (maksimal 5MB).'
+            : 'Lampirkan foto bukti kehadiran atau dokumentasi rapat (maksimal 5MB).');
 @endphp
 
 @section('title', 'Presensi ' . ($isKegiatan ? 'Kegiatan' : 'Online') . ' — ' . $meeting->jenis_label)
@@ -248,14 +248,14 @@
                 <i class="fas fa-camera"></i>
                 <div>
                     @if($isOfflineKegiatan)
-                        <strong>Presensi Offline — Wajib Foto dengan Wajah Terlihat</strong>
+                        <strong>Presensi Offline — Foto Dokumentasi di Lokasi Kegiatan</strong>
                         <div style="font-size: 0.88rem; margin-top: 2px;">
-                            Ambil foto langsung di lokasi kegiatan. Wajah Anda harus terlihat jelas. Foto tanpa wajah, foto orang lain, atau foto bukan di lokasi kegiatan dapat dianggap tidak sah.
+                            Ambil foto dokumentasi langsung di lokasi/tempat kegiatan berlangsung.
                         </div>
                     @else
-                        <strong>Presensi Online — Wajib Screenshot dengan Kamera Menyala</strong>
+                        <strong>Presensi Online — Foto Dokumentasi Kegiatan</strong>
                         <div style="font-size: 0.88rem; margin-top: 2px;">
-                            Unggah screenshot layar Zoom / Google Meet saat kegiatan berlangsung dengan kamera Anda menyala dan wajah terlihat. Kamera mati dapat dianggap tidak sah.
+                            Ambil foto atau tangkapan layar dokumentasi saat kegiatan online berlangsung.
                         </div>
                     @endif
                     <div style="font-size: 0.82rem; margin-top: 4px;">Tidak bisa hadir? Pilih status <strong>Izin</strong> atau <strong>Sakit</strong> di bawah dan isi keterangannya.</div>
@@ -317,14 +317,6 @@
                         <div id="videoContainer" style="position: relative; width: 100%; max-width: 440px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: #000; display: none;">
                             <video id="cameraVideo" playsinline autoplay muted style="width: 100%; height: auto; max-height: 380px; object-fit: cover; display: block; border-radius: 12px;"></video>
                             
-                            <!-- Face Guide Overlay -->
-                            <div id="cameraFaceGuide" style="position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                                <div style="width: 62%; height: 74%; border: 2px dashed rgba(255, 255, 255, 0.6); border-radius: 50% 50% 45% 45%; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.25);"></div>
-                                <span style="position: absolute; bottom: 12px; background: rgba(0,0,0,0.7); color: #fff; font-size: 0.75rem; padding: 3px 12px; border-radius: 20px; backdrop-filter: blur(4px);">
-                                    Posisikan wajah Anda di dalam area
-                                </span>
-                            </div>
-
                             <!-- Live Badge -->
                             <div style="position: absolute; top: 10px; left: 10px; background: rgba(239, 68, 68, 0.9); color: white; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; display: flex; align-items: center; gap: 5px;">
                                 <span class="pulse-cam" style="width: 7px; height: 7px; border-radius: 50%; background: #fff; display: inline-block;"></span> LIVE KAMERA
@@ -336,9 +328,9 @@
                             <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(56, 189, 248, 0.12); color: #38bdf8; display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 12px;">
                                 <i class="fas fa-camera"></i>
                             </div>
-                            <h4 style="font-size: 1rem; margin-bottom: 4px; color: var(--text-primary);">Kamera Presensi Kehadiran</h4>
+                            <h4 style="font-size: 1rem; margin-bottom: 4px; color: var(--text-primary);">Kamera Dokumentasi Kegiatan</h4>
                             <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 16px; max-width: 380px; margin-left: auto; margin-right: auto;">
-                                Foto wajib diambil langsung menggunakan kamera di lokasi kegiatan. Pemilihan file galeri dinonaktifkan demi keaslian presensi.
+                                Ambil foto dokumentasi langsung di lokasi kegiatan. Pemilihan file galeri dinonaktifkan demi keaslian presensi.
                             </p>
                             <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
                                 <button type="button" class="btn btn-primary" id="btnStartCamera" style="padding: 10px 20px; font-weight: 600; border-radius: 10px;">
@@ -390,8 +382,8 @@
                     </div>
 
                     <!-- Hidden Inputs for Form Submission -->
-                    <!-- Input capture="user" fallback (strictly opens camera app on mobile, bypassing file selector) -->
-                    <input type="file" id="nativeCameraInput" accept="image/*" capture="user" style="display: none;">
+                    <!-- Input capture="environment" fallback (strictly opens camera app on mobile, bypassing file selector) -->
+                    <input type="file" id="nativeCameraInput" accept="image/*" capture="environment" style="display: none;">
                     <input type="hidden" name="bukti_foto_base64" id="bukti_foto_base64" value="">
                     <canvas id="snapshotCanvas" style="display: none;"></canvas>
 
@@ -422,20 +414,6 @@
                     {{ $proofHelper }}
                 </small>
             </div>
-
-            @if($isOfflineKegiatan)
-                <div class="form-group" id="faceConfirmGroup">
-                    <label class="form-check" style="align-items: flex-start;">
-                        <input type="checkbox" name="konfirmasi_wajah" id="konfirmasiWajah" value="1" {{ old('konfirmasi_wajah') ? 'checked' : '' }}>
-                        <span class="form-check-label">Saya menyatakan wajah saya terlihat jelas pada foto dan foto diambil di lokasi kegiatan.</span>
-                    </label>
-                    @error('konfirmasi_wajah')
-                        <div class="invalid-feedback" style="display: block; color: var(--danger); font-size: 0.8rem; margin-top: 4px;">
-                            <i class="fas fa-exclamation-circle"></i> {{ $message }}
-                        </div>
-                    @enderror
-                </div>
-            @endif
 
             <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnOnlineSubmit" style="margin-top: var(--space-6);" {{ ($eligibilityError || $member->sp_level >= 3) ? 'disabled' : '' }}>
                 <i class="fas fa-paper-plane"></i> {{ $existingAttendance ? 'Perbarui Presensi' : 'Kirim Presensi Kehadiran' }}
@@ -483,9 +461,9 @@
     const proofHelperHadir = @json($proofHelper);
 
     let currentStream = null;
-    let currentFacingMode = 'user'; // default front camera (selfie)
+    let currentFacingMode = 'environment'; // default kamera belakang untuk dokumentasi lokasi kegiatan
 
-    async function startCamera(facingMode = 'user') {
+    async function startCamera(facingMode = 'environment') {
         stopCamera();
         currentFacingMode = facingMode;
 
@@ -677,13 +655,8 @@
         const inputBukti = document.getElementById('bukti_foto');
         const reqBadge = document.getElementById('reqBuktiFoto');
         const helper = document.getElementById('helperBuktiFoto');
-        const faceGroup = document.getElementById('faceConfirmGroup');
-        const faceCheck = document.getElementById('konfirmasiWajah');
         const cameraSection = document.getElementById('cameraKegiatanWrapper');
         const fileSection = document.getElementById('fileUploadWrapper');
-
-        if (faceGroup) faceGroup.style.display = isHadir ? '' : 'none';
-        if (faceCheck) faceCheck.required = isHadir;
 
         if (isKegiatan) {
             if (isHadir) {
@@ -724,7 +697,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         updateDocRequirement();
 
-        document.getElementById('btnStartCamera')?.addEventListener('click', () => startCamera('user'));
+        document.getElementById('btnStartCamera')?.addEventListener('click', () => startCamera('environment'));
         document.getElementById('btnSwitchCamera')?.addEventListener('click', switchCamera);
         document.getElementById('btnCloseCamera')?.addEventListener('click', closeCamera);
         document.getElementById('btnCapturePhoto')?.addEventListener('click', captureSnapshot);

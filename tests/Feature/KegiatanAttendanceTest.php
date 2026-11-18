@@ -105,7 +105,7 @@ class KegiatanAttendanceTest extends TestCase
         $this->assertGreaterThan($initialExp, (int) $creator->fresh()->exp);
     }
 
-    public function test_offline_kegiatan_requires_face_photo_and_confirmation_to_be_present(): void
+    public function test_offline_kegiatan_requires_location_photo_documentation_to_be_present(): void
     {
         $meeting = $this->createKegiatan('offline');
         $member = $this->createMember();
@@ -113,16 +113,10 @@ class KegiatanAttendanceTest extends TestCase
         $this->actingAs($member, 'member')
             ->get(route('public.online', $meeting->unique_link))
             ->assertOk()
-            ->assertSee('WAJAH ANDA HARUS TERLIHAT JELAS');
+            ->assertSee('lokasi');
 
         $this->post(route('public.online.submit', $meeting->unique_link), [
             'status' => 'hadir',
-            'bukti_foto' => UploadedFile::fake()->image('selfie.jpg'),
-        ])->assertSessionHasErrors('konfirmasi_wajah');
-
-        $this->post(route('public.online.submit', $meeting->unique_link), [
-            'status' => 'hadir',
-            'konfirmasi_wajah' => '1',
         ])->assertSessionHasErrors('bukti_foto');
 
         $this->assertDatabaseMissing('attendances', [
@@ -133,8 +127,7 @@ class KegiatanAttendanceTest extends TestCase
 
         $this->post(route('public.online.submit', $meeting->unique_link), [
             'status' => 'hadir',
-            'konfirmasi_wajah' => '1',
-            'bukti_foto' => UploadedFile::fake()->image('selfie.jpg'),
+            'bukti_foto' => UploadedFile::fake()->image('dokumentasi_lokasi.jpg'),
         ])->assertSessionHas('success');
 
         $record = Attendance::where('meeting_id', $meeting->id)->where('user_id', $member->id)->firstOrFail();
@@ -155,7 +148,6 @@ class KegiatanAttendanceTest extends TestCase
         $this->actingAs($member, 'member')
             ->post(route('public.online.submit', $meeting->unique_link), [
                 'status' => 'hadir',
-                'konfirmasi_wajah' => '1',
                 'bukti_foto_base64' => $base64Image,
             ])->assertSessionHas('success');
 
@@ -174,7 +166,7 @@ class KegiatanAttendanceTest extends TestCase
         $this->actingAs($member, 'member')
             ->get(route('public.online', $meeting->unique_link))
             ->assertOk()
-            ->assertSee('KAMERA MENYALA');
+            ->assertSee('Foto Dokumentasi Kegiatan');
 
         $this->post(route('public.online.submit', $meeting->unique_link), [
             'status' => 'hadir',
