@@ -11,6 +11,7 @@ use App\Models\Member;
 use App\Services\GamificationService;
 use App\Services\GoogleSyncService;
 use App\Services\MeetingSpamProtectionService;
+use App\Services\WebPushService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -216,11 +217,12 @@ class PublicMeetingController extends Controller
 
         $uniqueLink = Str::lower(Str::random(12));
         $absentLink = Str::lower(Str::random(12));
+        $participantUserIds = [];
 
         $meeting = DB::transaction(function () use (
             $createdBy, $jenisRapat, $kategori, $sifatKegiatan, $modeRapat, $eventId, $departemen, $namaEvent,
             $divisiRapat, $tipeDivisi, $fokusBahasan, $departemenCollab,
-            $request, $uniqueLink, $absentLink
+            $request, $uniqueLink, $absentLink, &$participantUserIds
         ) {
             $m = Meeting::create([
                 'created_by' => $createdBy,
@@ -334,10 +336,18 @@ class PublicMeetingController extends Controller
                 cache()->forget("portal_stats_{$m->created_by}");
             }
 
+            $participantUserIds = $memberIds->all();
+
             return $m;
         });
 
         $this->spamService->recordCreation($request, $createdBy);
+
+        try {
+            app(WebPushService::class)->notifyMeetingCreated($meeting, $participantUserIds);
+        } catch (\Throwable $e) {
+            // Jangan gagalkan pembuatan rapat jika pengiriman push gagal
+        }
 
         return redirect()->route('public.hasil', $meeting->unique_link);
     }
@@ -510,24 +520,43 @@ class PublicMeetingController extends Controller
         $meeting = Meeting::where('unique_link', $uniqueLink)->firstOrFail();
 
         if ($meeting->status === 'completed') {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Rapat yang sudah diselesaikan tidak dapat dibatalkan.',
+                ], 422);
+            }
+
             return back()->with('danger', 'Rapat yang sudah diselesaikan tidak dapat dibatalkan.');
         }
 
-        $meeting->update([
-            'status' => 'cancelled',
-            'waktu_selesai' => now()->format('H:i:s'),
-        ]);
+        $affectedUserIds = [];
+
+        DB::transaction(function () use ($meeting, &$affectedUserIds) {
+            $affectedUserIds = $meeting->attendances()->pluck('user_id')->unique()->values()->all();
+
+            app(GamificationService::class)->revokeMeetingAttendancesExp($meeting);
+
+            $meeting->update([
+                'status' => 'cancelled',
+                'waktu_selesai' => now()->format('H:i:s'),
+            ]);
+        });
+
+        foreach ($affectedUserIds as $userId) {
+            cache()->forget("portal_stats_{$userId}");
+        }
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Sesi absensi telah dibatalkan.',
+                'message' => 'Sesi absensi telah dibatalkan dan EXP yang sempat masuk telah dibatalkan.',
                 'redirect_url' => route('public.hasil', $meeting->unique_link),
             ]);
         }
 
         return redirect()->route('public.hasil', $meeting->unique_link)
-            ->with('warning', 'Sesi absensi telah dibatalkan. Anggota tidak akan dicatat Alpha untuk sesi ini.');
+            ->with('warning', 'Sesi absensi telah dibatalkan. Anggota tidak akan dicatat Alpha dan EXP yang sempat masuk untuk sesi ini telah dibatalkan.');
     }
 
     public function updateExpiry(Request $request, $uniqueLink)

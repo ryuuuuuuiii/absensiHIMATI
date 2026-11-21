@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Announcement;
 use App\Models\Member;
+use App\Services\WebPushService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -84,7 +85,7 @@ class AnnouncementController extends Controller
             return back()->withInput()->withErrors(['target_user_id' => 'Pilih anggota penerima pesan notifikasi.']);
         }
 
-        Announcement::create([
+        $announcement = Announcement::create([
             'admin_id' => auth()->id(),
             'judul' => $validated['judul'],
             'konten' => $validated['konten'],
@@ -97,6 +98,12 @@ class AnnouncementController extends Controller
             'pinned' => $request->boolean('pinned', false),
             'expires_at' => $validated['expires_at'] ?? null,
         ]);
+
+        try {
+            app(WebPushService::class)->notifyAnnouncementCreated($announcement);
+        } catch (\Throwable $e) {
+            // Jangan gagalkan pembuatan pengumuman jika push error
+        }
 
         return redirect()->route('announcements.index')
             ->with('success', 'Pengumuman / notifikasi berhasil dibuat dan dipublikasikan.');

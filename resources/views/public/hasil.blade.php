@@ -408,7 +408,7 @@
                 </button>
             </form>
 
-            <form action="{{ route('public.meeting.cancel', $meeting->unique_link) }}" method="POST" onsubmit="return confirm('Batalkan sesi rapat ini?\n\n- Sesi akan ditutup tanpa mencatat status Alpha pada peserta.\n- Tidak akan mempengaruhi sistem Surat Peringatan (SP) anggota.');" style="margin: 0; display: inline-block;">
+            <form action="{{ route('public.meeting.cancel', $meeting->unique_link) }}" method="POST" onsubmit="return confirm('Batalkan sesi rapat ini?\n\n- Sesi akan ditutup tanpa mencatat status Alpha pada peserta.\n- EXP yang sempat masuk pada sesi ini akan dibatalkan.\n- Tidak akan mempengaruhi sistem Surat Peringatan (SP) anggota.');" style="margin: 0; display: inline-block;">
                 @csrf
                 <button type="submit" class="btn btn-secondary btn-lg" style="display: inline-flex; align-items: center; gap: 8px; padding: 14px 20px; font-size: var(--font-base);">
                     <i class="fas fa-ban"></i> Batalkan Sesi

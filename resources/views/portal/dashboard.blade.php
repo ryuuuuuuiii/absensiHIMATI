@@ -109,6 +109,9 @@
     </div>
 </div>
 
+<!-- Banner Aktivasi Web Push Notification (Otomatis tersembunyi jika sudah aktif) -->
+@include('partials.web_push_card', ['compact' => true])
+
 @php
     $currentAlphaStreak = $member->consecutive_alpha_count;
 @endphp

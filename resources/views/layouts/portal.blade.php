@@ -10,8 +10,13 @@
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#071320">
     <title>@yield('title', 'Portal Pengurus') — {{ config('himati.app_name') }}</title>
 
-    <!-- Favicon -->
+    <!-- Favicon & PWA Manifest -->
     <link rel="icon" type="image/png" href="{{ \App\Models\Setting::getLogo2Url() ?? asset('assets/img/logo2.png') }}">
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Absensi HIMATI">
+    <link rel="apple-touch-icon" href="{{ asset('assets/img/logo2.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wdth,wght@75..125,500..700&family=Noto+Sans:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -863,6 +868,7 @@
     </script>
     @include('partials.popup_alert')
     @include('partials.exp_popup')
+    @include('partials.web_push_script')
     @stack('scripts')
 </body>
 </html>

@@ -139,7 +139,7 @@
                                     <i class="fas fa-camera"></i>
                                 </a>
                                 @endif
-                                <form action="{{ route('meetings.destroy', $m->id) }}" method="POST" onsubmit="return confirm('Hapus rapat ini beserta data kehadirannya?')" style="margin: 0;">
+                                <form action="{{ route('meetings.destroy', $m->id) }}" method="POST" onsubmit="return confirm('{{ $m->status === 'completed' ? 'Hapus rapat ini beserta seluruh data kehadirannya? Data alpha/presensi pengurus akan dihapus, namun EXP yang sudah masuk dari rapat selesai tetap dipertahankan.' : 'Hapus rapat ini beserta data kehadirannya? EXP yang sempat masuk pada sesi belum selesai juga akan dibatalkan.' }}')" style="margin: 0;">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-ghost btn-sm text-danger" title="Hapus Rapat">

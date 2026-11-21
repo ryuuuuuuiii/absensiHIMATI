@@ -18,7 +18,15 @@
       "dest": "/build/$1"
     },
     {
-      "src": "/(favicon\\.ico|robots\\.txt)",
+      "src": "/sw\\.js",
+      "headers": {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Service-Worker-Allowed": "/"
+      },
+      "dest": "/sw.js"
+    },
+    {
+      "src": "/(favicon\\.ico|robots\\.txt|manifest\\.json)",
       "dest": "/$1"
     },
     {

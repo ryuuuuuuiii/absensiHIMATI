@@ -36,4 +36,11 @@ return [
 
     // Password awal saat admin membuat / mereset akun pengurus.
     'default_member_password' => env('MEMBER_DEFAULT_PASSWORD', 'himati123'),
+
+    // Native Web Push Notification (VAPID ECDSA P-256)
+    'webpush' => [
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'subject' => env('VAPID_SUBJECT', env('APP_URL', 'mailto:admin@himati.id')),
+    ],
 ];

@@ -100,7 +100,7 @@
                     </button>
                 </form>
 
-                <form action="{{ route('meetings.cancel', $meeting->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan sesi rapat ini? Anggota tidak akan dicatat Alpha.');" style="margin: 0;">
+                <form action="{{ route('meetings.cancel', $meeting->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan sesi rapat ini? Anggota tidak akan dicatat Alpha dan EXP yang sempat masuk akan dibatalkan.');" style="margin: 0;">
                     @csrf
                     <button type="submit" class="btn btn-secondary">
                         <i class="fas fa-ban"></i> Batalkan Rapat

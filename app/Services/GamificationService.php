@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Attendance;
 use App\Models\Event;
+use App\Models\Meeting;
 use App\Models\Member;
 use App\Models\MemberBadge;
 use Illuminate\Support\Facades\Artisan;
@@ -51,7 +52,8 @@ class GamificationService
     }
 
     /**
-     * Mengurangi EXP jika status kehadiran diubah dari 'hadir' menjadi status lain.
+     * Mengurangi EXP jika status kehadiran diubah dari 'hadir' menjadi status lain,
+     * atau saat sesi rapat dibatalkan.
      */
     public function revokeAttendanceExp(Attendance $attendance, ?Member $member = null): ?int
     {
@@ -59,22 +61,58 @@ class GamificationService
             return null;
         }
 
-        $user = $member ?? $attendance->member ?? Member::find($attendance->user_id);
-        if (! $user) {
+        $userId = $member?->id ?? $attendance->user_id;
+        if (! $userId) {
             return null;
         }
 
         $expAmount = self::ATTENDANCE_EXP;
 
-        DB::transaction(function () use ($attendance, $user, $expAmount) {
+        return DB::transaction(function () use ($attendance, $userId, $expAmount) {
+            $lockedAttendance = Attendance::where('id', $attendance->id)->lockForUpdate()->first();
+            if (! $lockedAttendance || ! $lockedAttendance->exp_awarded) {
+                return null;
+            }
+
+            $user = Member::where('id', $userId)->lockForUpdate()->first();
+            if (! $user) {
+                return null;
+            }
+
             $user->update([
                 'exp' => max(0, ((int) $user->exp) - $expAmount),
             ]);
-            $attendance->update(['exp_awarded' => false]);
+            $lockedAttendance->update(['exp_awarded' => false]);
+            $attendance->exp_awarded = false;
             cache()->forget("portal_stats_{$user->id}");
-        });
 
-        return $expAmount;
+            return $expAmount;
+        });
+    }
+
+    /**
+     * Menarik kembali seluruh EXP kehadiran yang sudah masuk pada suatu rapat
+     * (misalnya saat rapat dibatalkan atau rapat yang belum selesai dihapus).
+     */
+    public function revokeMeetingAttendancesExp(Meeting $meeting): int
+    {
+        return DB::transaction(function () use ($meeting) {
+            $awardedAttendances = $meeting->attendances()
+                ->where('exp_awarded', true)
+                ->with('member')
+                ->lockForUpdate()
+                ->get();
+
+            $revokedCount = 0;
+
+            foreach ($awardedAttendances as $attendance) {
+                if ($this->revokeAttendanceExp($attendance, $attendance->member) !== null) {
+                    $revokedCount++;
+                }
+            }
+
+            return $revokedCount;
+        });
     }
 
     /**

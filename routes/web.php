@@ -12,6 +12,7 @@ use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PublicAttendanceController;
 use App\Http\Controllers\PublicMeetingController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Models\Meeting;
@@ -110,6 +111,14 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('/{announcement}/read', [PortalController::class, 'readAnnouncement'])->name('read');
             Route::post('/{announcement}/dismiss', [PortalController::class, 'dismissAnnouncement'])->name('dismiss');
             Route::post('/read-all', [PortalController::class, 'readAllAnnouncements'])->name('read_all');
+        });
+
+        // Web Push Notification (Notifikasi Layar HP / Browser)
+        Route::prefix('push')->name('push.')->group(function () {
+            Route::get('/config', [PushSubscriptionController::class, 'config'])->name('config');
+            Route::post('/subscribe', [PushSubscriptionController::class, 'subscribe'])->name('subscribe');
+            Route::post('/unsubscribe', [PushSubscriptionController::class, 'unsubscribe'])->name('unsubscribe');
+            Route::post('/test', [PushSubscriptionController::class, 'sendTest'])->name('test');
         });
     });
 });

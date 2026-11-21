@@ -112,6 +112,11 @@ class Member extends Authenticatable
         return $this->hasMany(MemberBadge::class, 'user_id')->latest();
     }
 
+    public function pushSubscriptions(): HasMany
+    {
+        return $this->hasMany(PushSubscription::class, 'user_id');
+    }
+
     /**
      * Data level, exp, progress bar, dan title pengurus
      */

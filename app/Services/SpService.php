@@ -11,11 +11,11 @@ use App\Models\Member;
 class SpService
 {
     /**
-     * Hitung level SP dan jumlah alpha berturut-turut saat ini dari riwayat rapat selesai.
+     * Hitung level SP dan jumlah alpha berturut-turut mentah dari sp_base_level dan riwayat rapat selesai.
      *
-     * @return array{sp_level: int, consecutive_alphas: int}
+     * @return array{calculated_sp: int, consecutive_alphas: int}
      */
-    public function calculateStreakAndLevel(Member $member): array
+    protected function computeCalculatedStreakAndLevel(Member $member): array
     {
         $attendances = Attendance::query()
             ->join('meetings', 'meetings.id', '=', 'attendances.meeting_id')
@@ -56,11 +56,25 @@ class SpService
             }
         }
 
-        $finalSp = min(3, max((int) $member->sp_level, $calculatedSp));
+        return [
+            'calculated_sp' => min(3, $calculatedSp),
+            'consecutive_alphas' => $streak,
+        ];
+    }
+
+    /**
+     * Hitung level SP dan jumlah alpha berturut-turut saat ini dari riwayat rapat selesai.
+     *
+     * @return array{sp_level: int, consecutive_alphas: int}
+     */
+    public function calculateStreakAndLevel(Member $member): array
+    {
+        $computed = $this->computeCalculatedStreakAndLevel($member);
+        $finalSp = min(3, max((int) $member->sp_level, $computed['calculated_sp']));
 
         return [
             'sp_level' => $finalSp,
-            'consecutive_alphas' => $finalSp >= 3 ? 0 : $streak,
+            'consecutive_alphas' => $finalSp >= 3 ? 0 : $computed['consecutive_alphas'],
         ];
     }
 
@@ -137,6 +151,111 @@ class SpService
             if ($attendance->member) {
                 $this->evaluateMember($attendance->member);
             }
+        }
+    }
+
+    /**
+     * Hitung ulang status SP otomatis (berbasis Alpha) setelah rapat/kehadiran dihapus.
+     * Hanya menurunkan SP otomatis jika riwayat alpha yang tersisa tidak lagi memenuhi ambang SP;
+     * tidak menghapus SP manual dari Admin dan tidak menaikkan SP baru saat rapat dihapus.
+     */
+    public function recalculateMemberAfterAttendanceRemoved(Member $member): Member
+    {
+        $oldLevel = (int) $member->sp_level;
+        if ($oldLevel <= 0 || ! $member->isSpFromAlpha()) {
+            return $member;
+        }
+
+        $computed = $this->computeCalculatedStreakAndLevel($member);
+        $targetLevel = min(3, max((int) ($member->sp_base_level ?? 0), $computed['calculated_sp']));
+
+        if ($targetLevel >= $oldLevel) {
+            return $member;
+        }
+
+        if ($targetLevel === 0) {
+            $member->forceFill([
+                'sp_level' => 0,
+                'is_active' => true,
+                'sp_reason' => null,
+                'sp_detail' => null,
+                'sp_issued_at' => null,
+            ])->saveQuietly();
+
+            Announcement::query()
+                ->where('target_type', 'personal')
+                ->where('target_user_id', $member->id)
+                ->where('judul', 'like', '[SURAT PERINGATAN]%')
+                ->where('pinned', true)
+                ->update([
+                    'pinned' => false,
+                    'is_active' => false,
+                ]);
+
+            cache()->forget("portal_layout_notifs_{$member->id}");
+
+            return $member;
+        }
+
+        $isStillAlphaSp = $targetLevel > (int) ($member->sp_base_level ?? 0);
+
+        if ($isStillAlphaSp) {
+            $reason = match ($targetLevel) {
+                1 => 'Otomatis: Alpha dalam kegiatan selama 3 kali berturut-turut',
+                2 => 'Otomatis: Pelanggaran berulang (Alpha 3 kali berturut-turut pada SP 1)',
+                default => 'Otomatis: Pemberhentian pengurus (Alpha 3 kali berturut-turut berulang setelah SP 2)',
+            };
+
+            $detail = match ($targetLevel) {
+                1 => 'Pengurus tercatat tidak hadir tanpa keterangan (Alpha) pada 3 kegiatan/rapat yang telah selesai secara berturut-turut.',
+                2 => 'Pengurus yang telah berstatus SP 1 kembali tercatat tidak hadir tanpa keterangan (Alpha) pada 3 kegiatan/rapat secara berturut-turut.',
+                default => 'Pengurus yang telah berstatus SP 2 kembali tercatat tidak hadir tanpa keterangan (Alpha) pada 3 kegiatan/rapat secara berturut-turut sehingga diberhentikan dan akun dinonaktifkan.',
+            };
+        } else {
+            $reason = match ($targetLevel) {
+                1 => 'Melakukan pelanggaran disiplin/aturan organisasi (SP 1 diberikan oleh Admin)',
+                2 => 'Melakukan pelanggaran disiplin/aturan organisasi (SP 2 ditetapkan oleh Admin)',
+                default => 'Pemberhentian pengurus atas pelanggaran berat/berulang (SP 3 oleh Admin — Akun Dinonaktifkan)',
+            };
+
+            $detail = match ($targetLevel) {
+                1 => 'Pengurus diberikan Surat Peringatan Pertama (SP 1) oleh Admin karena melanggar ketentuan, disiplin, atau tanggung jawab kepengurusan HIMA TI.',
+                2 => 'Pengurus diberikan Surat Peringatan Kedua (SP 2) oleh Admin karena melakukan pelanggaran berulang terhadap aturan kepengurusan HIMA TI.',
+                default => 'Pengurus diberhentikan dari kepengurusan HIMA TI (SP 3) dan akun dinonaktifkan karena pelanggaran berat atau pelanggaran berulang setelah SP 2.',
+            };
+        }
+
+        $member->forceFill([
+            'sp_level' => $targetLevel,
+            'is_active' => $targetLevel < 3,
+            'sp_reason' => $reason,
+            'sp_detail' => $detail,
+        ])->saveQuietly();
+
+        $this->syncSpNotification($member, $oldLevel);
+        cache()->forget("portal_layout_notifs_{$member->id}");
+
+        return $member;
+    }
+
+    /**
+     * Evaluasi ulang SP otomatis untuk sekumpulan pengurus setelah sebuah rapat dihapus.
+     *
+     * @param  array<int, int>  $memberIds
+     */
+    public function recalculateMembersAfterMeetingDeleted(array $memberIds): void
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $memberIds))));
+        if ($ids === []) {
+            return;
+        }
+
+        $members = Member::whereIn('id', $ids)
+            ->where('sp_level', '>', 0)
+            ->get();
+
+        foreach ($members as $member) {
+            $this->recalculateMemberAfterAttendanceRemoved($member);
         }
     }
 

@@ -280,6 +280,9 @@
         </div>
     </div>
 
+    <!-- Pengaturan Notifikasi Layar HP / Browser (Web Push) -->
+    @include('partials.web_push_card', ['compact' => false])
+
     <!-- Daftar Pesan Satu per Satu (Klik untuk Buka Rincian) -->
     <div class="notif-list-stack">
         @forelse($announcements as $item)

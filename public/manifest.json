@@ -1,0 +1,26 @@
+{
+  "name": "Absensi HIMA TI — Politeknik Hasnur",
+  "short_name": "Absensi HIMATI",
+  "description": "Portal Pengurus & Sistem Absensi HIMA TI Politeknik Hasnur",
+  "start_url": "/portal",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#071320",
+  "theme_color": "#30AFFF",
+  "icons": [
+    {
+      "src": "/assets/img/logo2.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/logo2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
+

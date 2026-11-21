@@ -12,6 +12,8 @@ use App\Services\FileUploadService;
 use App\Services\GamificationService;
 use App\Services\GoogleSyncService;
 use App\Services\MeetingSpamProtectionService;
+use App\Services\SpService;
+use App\Services\WebPushService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -177,10 +179,11 @@ class MeetingController extends Controller
 
         $uniqueLink = Str::lower(Str::random(12));
         $absentLink = Str::lower(Str::random(12));
+        $participantUserIds = [];
 
         $meeting = DB::transaction(function () use (
             $request, $jenisRapat, $modeRapat, $eventId, $departemen, $namaEvent,
-            $divisiRapat, $tipeDivisi, $fokusBahasan, $departemenCollab, $uniqueLink, $absentLink
+            $divisiRapat, $tipeDivisi, $fokusBahasan, $departemenCollab, $uniqueLink, $absentLink, &$participantUserIds
         ) {
             $m = Meeting::create([
                 'created_by' => $request->input('created_by'),
@@ -287,10 +290,18 @@ class MeetingController extends Controller
                 cache()->forget("portal_stats_{$m->created_by}");
             }
 
+            $participantUserIds = $memberIds->all();
+
             return $m;
         });
 
         $this->spamService->recordCreation($request, $createdBy);
+
+        try {
+            app(WebPushService::class)->notifyMeetingCreated($meeting, $participantUserIds);
+        } catch (\Throwable $e) {
+            // Jangan gagalkan pembuatan rapat jika pengiriman push gagal
+        }
 
         if ($modeRapat === 'offline') {
             return redirect()->route('meetings.scan', $meeting->id)
@@ -530,13 +541,25 @@ class MeetingController extends Controller
             return back()->with('danger', 'Rapat yang sudah diselesaikan tidak dapat dibatalkan.');
         }
 
-        $meeting->update([
-            'status' => 'cancelled',
-            'waktu_selesai' => now()->format('H:i:s'),
-        ]);
+        $affectedUserIds = [];
+
+        DB::transaction(function () use ($meeting, &$affectedUserIds) {
+            $affectedUserIds = $meeting->attendances()->pluck('user_id')->unique()->values()->all();
+
+            app(GamificationService::class)->revokeMeetingAttendancesExp($meeting);
+
+            $meeting->update([
+                'status' => 'cancelled',
+                'waktu_selesai' => now()->format('H:i:s'),
+            ]);
+        });
+
+        foreach ($affectedUserIds as $userId) {
+            cache()->forget("portal_stats_{$userId}");
+        }
 
         return redirect()->route('meetings.show', $meeting->id)
-            ->with('warning', 'Sesi rapat telah dibatalkan. Anggota tidak akan dicatat Alpha untuk sesi ini.');
+            ->with('warning', 'Sesi rapat telah dibatalkan. Anggota tidak akan dicatat Alpha dan EXP yang sempat masuk untuk sesi ini telah dibatalkan.');
     }
 
     public function updateExpiry(Request $request, $id)
@@ -656,10 +679,34 @@ class MeetingController extends Controller
     public function destroy($id)
     {
         $meeting = Meeting::findOrFail($id);
-        $meeting->delete();
+        $wasCompleted = $meeting->status === 'completed';
+        $affectedUserIds = [];
+
+        DB::transaction(function () use ($meeting, $wasCompleted, &$affectedUserIds) {
+            $affectedUserIds = $meeting->attendances()->pluck('user_id')->unique()->values()->all();
+
+            // Jika rapat belum selesai (draft/scanning/cancelled), batalkan EXP yang terlanjur masuk.
+            // Jika rapat sudah selesai (completed), EXP pengurus tetap dipertahankan.
+            if (! $wasCompleted) {
+                app(GamificationService::class)->revokeMeetingAttendancesExp($meeting);
+            }
+
+            $meeting->attendances()->delete();
+            $meeting->delete();
+        });
+
+        foreach ($affectedUserIds as $userId) {
+            cache()->forget("portal_stats_{$userId}");
+        }
+
+        app(SpService::class)->recalculateMembersAfterMeetingDeleted($affectedUserIds);
+
+        $message = $wasCompleted
+            ? 'Rapat berhasil dihapus beserta seluruh data kehadirannya. EXP dari rapat yang sudah selesai tetap dipertahankan.'
+            : 'Rapat berhasil dihapus beserta data kehadirannya.';
 
         return redirect()->route('meetings.index')
-            ->with('success', 'Rapat berhasil dihapus.');
+            ->with('success', $message);
     }
 
     public function getEventData(Request $request, $eventId = null)
