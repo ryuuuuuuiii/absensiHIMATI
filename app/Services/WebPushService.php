@@ -166,7 +166,7 @@ class WebPushService
             'body' => implode(' — ', $bodyParts),
             'url' => $targetUrl,
             'icon' => asset('assets/img/logo2.png'),
-            'badge' => asset('assets/img/logo2.png'),
+            'badge' => asset('assets/img/notif-badge.png'),
             'tag' => 'meeting-'.$meeting->id,
         ]);
     }
@@ -203,7 +203,7 @@ class WebPushService
             'body' => Str::limit(trim(preg_replace('/\s+/', ' ', strip_tags((string) $announcement->konten))), 140),
             'url' => route('portal.announcements.index'),
             'icon' => asset('assets/img/logo2.png'),
-            'badge' => asset('assets/img/logo2.png'),
+            'badge' => asset('assets/img/notif-badge.png'),
             'tag' => 'announcement-'.$announcement->id,
         ]);
     }
@@ -220,7 +220,7 @@ class WebPushService
             'body' => "Halo {$member->nama_lengkap}! Perangkat ini siap menerima notifikasi rapat & kegiatan terbaru.",
             'url' => route('portal.dashboard'),
             'icon' => asset('assets/img/logo2.png'),
-            'badge' => asset('assets/img/logo2.png'),
+            'badge' => asset('assets/img/notif-badge.png'),
             'tag' => 'test-push-'.$member->id.'-'.time(),
         ]);
     }
@@ -662,4 +662,3 @@ class WebPushService
         return null;
     }
 }
-

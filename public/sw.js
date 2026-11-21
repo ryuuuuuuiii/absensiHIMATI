@@ -26,7 +26,7 @@ self.addEventListener('push', function (event) {
     const options = {
         body: data.body || 'Ada pembaruan rapat atau kegiatan baru.',
         icon: data.icon || '/assets/img/logo2.png',
-        badge: data.badge || '/assets/img/logo2.png',
+        badge: data.badge || '/assets/img/notif-badge.png',
         tag: data.tag || 'himati-notification',
         renotify: true,
         vibrate: [150, 75, 150],
